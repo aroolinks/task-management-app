@@ -17,20 +17,20 @@ const cmsOptions: CMS[] = ['Wordpress', 'Shopify', 'Designing', 'SEO', 'Marketin
 
 const getPriorityColor = (priority: Priority) => {
   switch (priority) {
-    case 'Low': return 'bg-green-100 text-green-800';
-    case 'Medium': return 'bg-yellow-100 text-yellow-800';
-    case 'High': return 'bg-orange-100 text-orange-800';
-    case 'Urgent': return 'bg-red-100 text-red-800';
-    default: return 'bg-gray-100 text-gray-800';
+    case 'Low': return 'bg-slate-700 text-slate-200';
+    case 'Medium': return 'bg-slate-700 text-slate-200';
+    case 'High': return 'bg-slate-700 text-slate-200';
+    case 'Urgent': return 'bg-slate-700 text-slate-200';
+    default: return 'bg-slate-700 text-slate-200';
   }
 };
 
 const getStatusColor = (status: Status) => {
   switch (status) {
-    case 'Completed': return 'bg-green-100 text-green-800';
-    case 'InProcess': return 'bg-blue-100 text-blue-800';
-    case 'Waiting for Quote': return 'bg-yellow-100 text-yellow-800';
-    default: return 'bg-gray-100 text-gray-800';
+    case 'Completed': return 'bg-slate-700 text-slate-200';
+    case 'InProcess': return 'bg-slate-700 text-slate-200';
+    case 'Waiting for Quote': return 'bg-slate-700 text-slate-200';
+    default: return 'bg-slate-700 text-slate-200';
   }
 };
 
@@ -168,7 +168,7 @@ export default function TaskItem({ task, onToggleComplete, onDeleteTask, onEditT
             value={editData[field as keyof typeof editData] as string || ''}
             onChange={(e) => handleInlineEdit(field, e.target.value || null)}
             onBlur={() => setEditingField(null)}
-            className="bg-white border border-blue-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+className="bg-slate-800 border border-slate-600 text-slate-100 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-slate-500"
             autoFocus
           >
             <option value="">Select {label}...</option>
@@ -186,7 +186,7 @@ export default function TaskItem({ task, onToggleComplete, onDeleteTask, onEditT
           onChange={(e) => setEditData({ ...editData, [field]: e.target.value })}
           onBlur={() => handleInlineEdit(field, editData[field as keyof typeof editData])}
           onKeyPress={(e) => handleKeyPress(e, field)}
-          className="bg-white border border-blue-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-0 w-full"
+className="bg-slate-800 border border-slate-600 text-slate-100 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-slate-500 min-w-0 w-full"
           autoFocus
           step={type === 'number' ? '0.01' : undefined}
           min={type === 'number' ? '0' : undefined}
@@ -197,7 +197,7 @@ export default function TaskItem({ task, onToggleComplete, onDeleteTask, onEditT
     if (type === 'url') {
       return (
         <span 
-          className="inline-flex items-center gap-1 cursor-pointer hover:bg-blue-50 px-1.5 py-0.5 rounded transition-colors text-blue-700 max-w-[120px] truncate"
+className="inline-flex items-center gap-1 cursor-pointer hover:bg-slate-700/40 px-1.5 py-0.5 rounded transition-colors text-blue-300 max-w-[120px] truncate"
           onClick={() => handleFieldClick(field)}
           title="Click to edit"
         >
@@ -212,7 +212,7 @@ export default function TaskItem({ task, onToggleComplete, onDeleteTask, onEditT
 
     return (
       <span 
-        className="cursor-pointer hover:bg-blue-50 px-2 py-1 rounded transition-colors text-gray-900 font-medium"
+className="cursor-pointer hover:bg-slate-700/40 px-2 py-1 rounded transition-colors text-slate-100"
         onClick={() => handleFieldClick(field)}
         title="Click to edit"
       >
@@ -243,13 +243,13 @@ export default function TaskItem({ task, onToggleComplete, onDeleteTask, onEditT
   };
 
   return (
-    <div className="grid grid-cols-[24px_2fr_1.2fr_1.2fr_1.2fr_1.2fr_1.2fr_1.4fr_1fr_1fr_1fr_auto] items-center gap-0 px-3 py-1.5 bg-white hover:bg-blue-50/30 text-[11px] divide-x divide-gray-200">
+    <div className="grid grid-cols-[24px_2fr_1.2fr_1.2fr_1.2fr_1.2fr_1.2fr_1.4fr_1fr_1fr_1fr_auto] items-center gap-0 px-3 py-1.5 bg-transparent hover:bg-slate-700/40 text-[11px] text-slate-100 divide-x divide-slate-700">
       {/* Checkbox */}
       <input
         type="checkbox"
         checked={task.completed}
         onChange={() => onToggleComplete(task.id)}
-        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+        className="h-4 w-4 text-blue-400 focus:ring-blue-500 border-slate-600 bg-slate-800 rounded"
       />
 
       {/* Client Name */}
@@ -259,7 +259,7 @@ export default function TaskItem({ task, onToggleComplete, onDeleteTask, onEditT
             type="text"
             value={editData.clientName}
             onChange={(e) => setEditData({ ...editData, clientName: e.target.value })}
-className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+className="w-full px-2 py-1 text-xs bg-slate-800 border border-slate-600 text-slate-100 rounded focus:outline-none focus:ring-1 focus:ring-slate-500"
             placeholder="Client name..."
           />
         ) : editingField === 'clientName' ? (
@@ -269,12 +269,12 @@ className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline
             onChange={(e) => setEditData({ ...editData, clientName: e.target.value })}
             onBlur={() => handleInlineEdit('clientName', editData.clientName)}
             onKeyPress={(e) => handleKeyPress(e, 'clientName')}
-className="w-full px-2 py-1 text-xs border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+className="w-full px-2 py-1 text-xs bg-slate-800 border border-slate-600 text-slate-100 rounded focus:outline-none focus:ring-2 focus:ring-slate-500"
             autoFocus
           />
         ) : (
           <span 
-className={`truncate block cursor-pointer hover:bg-blue-50 px-2 py-1 rounded transition-colors ${task.completed ? 'text-gray-500 line-through' : 'text-gray-900 font-medium'}`}
+className={`truncate block cursor-pointer hover:bg-slate-700/40 px-2 py-1 rounded transition-colors ${task.completed ? 'text-slate-400 line-through' : 'text-slate-100'}`}
             onClick={() => handleFieldClick('clientName')}
             title="Click to edit client name"
           >
@@ -287,7 +287,7 @@ className={`truncate block cursor-pointer hover:bg-blue-50 px-2 py-1 rounded tra
       <div className="min-w-0 flex items-center gap-2 px-2 py-1 text-left">
         {renderEditableField('webUrl', 'Web URL', task.webUrl, 'url')}
         {task.webUrl && editingField !== 'webUrl' && (
-          <a href={task.webUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 text-xs shrink-0">
+<a href={task.webUrl} target="_blank" rel="noopener noreferrer" className="text-blue-300 hover:text-blue-200 text-xs shrink-0">
             <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
             </svg>
@@ -304,7 +304,7 @@ className={`truncate block cursor-pointer hover:bg-blue-50 px-2 py-1 rounded tra
       <div className="min-w-0 flex items-center gap-2 px-2 py-1 text-left">
         {renderEditableField('figmaUrl', 'Figma URL', task.figmaUrl, 'url')}
         {task.figmaUrl && editingField !== 'figmaUrl' && (
-          <a href={task.figmaUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 text-xs shrink-0">
+<a href={task.figmaUrl} target="_blank" rel="noopener noreferrer" className="text-blue-300 hover:text-blue-200 text-xs shrink-0">
             <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
             </svg>
@@ -316,7 +316,7 @@ className={`truncate block cursor-pointer hover:bg-blue-50 px-2 py-1 rounded tra
       <div className="min-w-0 flex items-center gap-2 px-2 py-1 text-left">
         {renderEditableField('assetUrl', 'Asset URL', task.assetUrl, 'url')}
         {task.assetUrl && editingField !== 'assetUrl' && (
-          <a href={task.assetUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 text-xs shrink-0">
+<a href={task.assetUrl} target="_blank" rel="noopener noreferrer" className="text-blue-300 hover:text-blue-200 text-xs shrink-0">
             <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
             </svg>
@@ -325,7 +325,7 @@ className={`truncate block cursor-pointer hover:bg-blue-50 px-2 py-1 rounded tra
       </div>
 
       {/* Due */}
-      <div className="min-w-0 border border-gray-100 rounded-sm px-2 py-1 text-left">
+      <div className="min-w-0 border border-slate-700 rounded-sm px-2 py-1 text-left">
         {renderEditableField('dueDate', 'Due Date', task.dueDate instanceof Date ? task.dueDate.toISOString().split('T')[0] : '', 'date')}
       </div>
 
@@ -336,7 +336,7 @@ className={`truncate block cursor-pointer hover:bg-blue-50 px-2 py-1 rounded tra
             value={editData.status}
             onChange={(e) => handleInlineEdit('status', e.target.value)}
             onBlur={() => setEditingField(null)}
-            className="px-2 py-1 text-xs font-medium rounded-full border border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+className="px-2 py-1 text-xs font-medium rounded-full border border-slate-600 bg-slate-800 text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-500"
             autoFocus
           >
             {statuses.map(s => (
@@ -345,7 +345,7 @@ className={`truncate block cursor-pointer hover:bg-blue-50 px-2 py-1 rounded tra
           </select>
         ) : (
           <span 
-            className={`inline-flex px-2 py-1 text-xs font-medium rounded-full cursor-pointer hover:ring-2 hover:ring-blue-300 transition-all ${getStatusColor(task.status)} ${task.completed ? 'opacity-50' : ''}`}
+className={`inline-flex px-2 py-1 text-xs font-medium rounded-full cursor-pointer hover:ring-2 hover:ring-slate-500 transition-all ${getStatusColor(task.status)} ${task.completed ? 'opacity-50' : ''}`}
             onClick={() => handleFieldClick('status')}
             title="Click to change status"
           >
@@ -361,7 +361,7 @@ className={`truncate block cursor-pointer hover:bg-blue-50 px-2 py-1 rounded tra
             value={editData.priority}
             onChange={(e) => handleInlineEdit('priority', e.target.value)}
             onBlur={() => setEditingField(null)}
-            className="px-2 py-1 text-xs font-medium rounded-full border border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+className="px-2 py-1 text-xs font-medium rounded-full border border-slate-600 bg-slate-800 text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-500"
             autoFocus
           >
             {priorities.map(p => (
@@ -370,7 +370,7 @@ className={`truncate block cursor-pointer hover:bg-blue-50 px-2 py-1 rounded tra
           </select>
         ) : (
           <span 
-            className={`inline-flex px-2 py-1 text-xs font-medium rounded-full cursor-pointer hover:ring-2 hover:ring-blue-300 transition-all ${getPriorityColor(task.priority)} ${task.completed ? 'opacity-50' : ''}`}
+className={`inline-flex px-2 py-1 text-xs font-medium rounded-full cursor-pointer hover:ring-2 hover:ring-slate-500 transition-all ${getPriorityColor(task.priority)} ${task.completed ? 'opacity-50' : ''}`}
             onClick={() => handleFieldClick('priority')}
             title="Click to change priority"
           >
@@ -385,7 +385,7 @@ className={`truncate block cursor-pointer hover:bg-blue-50 px-2 py-1 rounded tra
           renderEditableField('totalPrice', 'Total Price', task.totalPrice?.toString() || '', 'number')
         ) : (
           <span 
-            className="cursor-pointer hover:bg-blue-50 px-2 py-1 rounded transition-colors"
+className="cursor-pointer hover:bg-slate-700/40 px-2 py-1 rounded transition-colors"
             onClick={() => handleFieldClick('totalPrice')}
             title="Click to edit"
           >
@@ -400,7 +400,7 @@ className={`truncate block cursor-pointer hover:bg-blue-50 px-2 py-1 rounded tra
           renderEditableField('deposit', 'Deposit', task.deposit?.toString() || '', 'number')
         ) : (
           <span 
-            className="cursor-pointer hover:bg-blue-50 px-2 py-1 rounded transition-colors"
+className="cursor-pointer hover:bg-slate-700/40 px-2 py-1 rounded transition-colors"
             onClick={() => handleFieldClick('deposit')}
             title="Click to edit"
           >
@@ -415,7 +415,7 @@ className={`truncate block cursor-pointer hover:bg-blue-50 px-2 py-1 rounded tra
           <>
             <button
               onClick={handleSave}
-              className="text-green-600 hover:text-green-800 transition-colors duration-200"
+className="text-green-400 hover:text-green-300 transition-colors duration-200"
               aria-label="Save changes"
             >
 <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -424,7 +424,7 @@ className={`truncate block cursor-pointer hover:bg-blue-50 px-2 py-1 rounded tra
             </button>
             <button
               onClick={handleCancel}
-              className="text-gray-600 hover:text-gray-800 transition-colors duration-200"
+className="text-slate-300 hover:text-slate-200 transition-colors duration-200"
               aria-label="Cancel editing"
             >
 <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -436,7 +436,7 @@ className={`truncate block cursor-pointer hover:bg-blue-50 px-2 py-1 rounded tra
           <>
             <button
               onClick={() => setIsEditing(true)}
-              className="text-blue-600 hover:text-blue-800 transition-colors duration-200"
+className="text-slate-300 hover:text-slate-200 transition-colors duration-200"
               aria-label="Edit task"
             >
 <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -445,7 +445,7 @@ className={`truncate block cursor-pointer hover:bg-blue-50 px-2 py-1 rounded tra
             </button>
             <button
               onClick={() => onDeleteTask(task.id)}
-              className="text-red-600 hover:text-red-800 transition-colors duration-200"
+className="text-red-400 hover:text-red-300 transition-colors duration-200"
               aria-label="Delete task"
             >
 <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">

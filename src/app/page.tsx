@@ -80,7 +80,7 @@ export default function Home() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-6">
               <Logo size="lg" />
-              <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+              <div className="bg-slate-700 text-slate-100 px-3 py-1 rounded-full text-sm font-medium">
                 {totalByStatus} {totalByStatus === 1 ? 'Project' : 'Projects'}
               </div>
             </div>
@@ -94,7 +94,7 @@ export default function Home() {
               Add New Project
             </button>
           </div>
-          <p className="text-gray-600 mb-3">
+          <p className="text-slate-300 mb-3">
             Stay organized and track your tasks efficiently
           </p>
         </header>
