@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Task, TaskInput } from '@/types/task';
 
 interface MongoTask extends Omit<Task, 'id'> {
@@ -16,6 +16,77 @@ export function useTasks() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const hasAttemptedMigration = useRef(false);
+
+  // Attempt one-time migration from localStorage to server
+  const migrateLocalToServer = async (): Promise<{ imported: number; skipped: number }> => {
+    if (typeof window === 'undefined') return { imported: 0, skipped: 0 };
+
+    const raw = window.localStorage.getItem('tasks');
+    if (!raw) return { imported: 0, skipped: 0 };
+
+    let arr: unknown;
+    try {
+      arr = JSON.parse(raw);
+    } catch {
+      return { imported: 0, skipped: 0 };
+    }
+    if (!Array.isArray(arr) || arr.length === 0) return { imported: 0, skipped: 0 };
+
+    const isPriority = (v: any): v is Task['priority'] => ['Low','Medium','High','Urgent'].includes(v);
+    const isStatus = (v: any): v is Task['status'] => ['Completed','InProcess','Waiting for Quote'].includes(v);
+
+    let imported = 0;
+    let skipped = 0;
+
+    for (const item of arr as any[]) {
+      try {
+        const clientName = (item.clientName || item.name || '').toString().trim() || 'Unnamed Client';
+        const dueDate = item.dueDate ? new Date(item.dueDate) : null;
+        const completed = Boolean(item.completed);
+        const priority = isPriority(item.priority) ? item.priority : 'Low';
+        const status = isStatus(item.status) ? item.status : (completed ? 'Completed' : 'InProcess');
+        const cms = item.cms ?? null;
+        const webUrl = (item.webUrl || '').toString();
+        const figmaUrl = (item.figmaUrl || '').toString();
+        const assetUrl = (item.assetUrl || '').toString();
+        const totalPrice = Number.isFinite(item.totalPrice) ? Number(item.totalPrice) : null;
+        const deposit = Number.isFinite(item.deposit) ? Number(item.deposit) : null;
+
+        const payload = {
+          clientName,
+          dueDate,
+          completed,
+          priority,
+          status,
+          cms,
+          webUrl,
+          figmaUrl,
+          assetUrl,
+          totalPrice,
+          deposit,
+        } as const;
+
+        const res = await fetch('/api/tasks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+          skipped++;
+          continue;
+        }
+        imported++;
+      } catch {
+        skipped++;
+      }
+    }
+
+    // Clear after successful import attempt to avoid duplicates
+    try { window.localStorage.removeItem('tasks'); } catch {}
+
+    return { imported, skipped };
+  };
 
   // Fetch all tasks
   const fetchTasks = async () => {
@@ -50,6 +121,21 @@ export function useTasks() {
         }));
         setTasks(transformedTasks as unknown as Task[]);
         console.log('Tasks loaded:', transformedTasks.length); // Debug log
+
+        // One-time migration: if server has no tasks but localStorage does, import them
+        if (!hasAttemptedMigration.current && transformedTasks.length === 0) {
+          hasAttemptedMigration.current = true;
+          try {
+            const { imported } = await migrateLocalToServer();
+            if (imported > 0) {
+              // Refetch to load newly imported tasks
+              await fetchTasks();
+              return;
+            }
+          } catch {
+            // ignore migration errors
+          }
+        }
       } else {
         const errorDetails = result as { details?: string; error?: string };
         const errorMessage = errorDetails.details || errorDetails.error || 'Failed to fetch tasks';
