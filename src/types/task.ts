@@ -1,6 +1,6 @@
 export type Priority = 'Low' | 'Medium' | 'High' | 'Urgent';
-export type Status = 'Completed' | 'InProcess' | 'Waiting for Quote';
-export type CMS = 'Wordpress' | 'Shopify';
+export type Status = 'Completed' | 'InProcess' | 'Waiting for Quote' | 'Designing';
+export type CMS = 'Wordpress' | 'Shopify' | 'Jov Des' | 'Designing' | 'SEO' | 'Marketing';
 
 export interface Task {
   id: string;
