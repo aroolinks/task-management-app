@@ -12,13 +12,14 @@ interface AddTaskProps {
 const priorities: Priority[] = ['Low', 'Medium', 'High', 'Urgent'];
 const statuses: Status[] = ['InProcess', 'Waiting for Quote', 'Completed'];
 const cmsOptions: CMS[] = ['Wordpress', 'Shopify', 'Designing' , 'SEO' , 'Marketing'];
+const todayStr = new Date().toISOString().split('T')[0];
 
 export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps) {
-  const [dueDate, setDueDate] = useState('');
-  const [priority, setPriority] = useState<Priority>('Medium');
+  const [dueDate, setDueDate] = useState(todayStr);
+  const [priority, setPriority] = useState<Priority>('Low');
   
   // New field states
-  const [status, setStatus] = useState<Status>('InProcess');
+  const [status, setStatus] = useState<Status>('Waiting for Quote');
   const [clientName, setClientName] = useState('');
   const [cms, setCms] = useState<CMS | null>(null);
   const [webUrl, setWebUrl] = useState('');
@@ -44,10 +45,10 @@ export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps)
         totalPrice: totalPrice ? parseFloat(totalPrice) : null,
         deposit: deposit ? parseFloat(deposit) : null,
       });
-      setDueDate('');
-      setPriority('Medium');
+      setDueDate(todayStr);
+      setPriority('Low');
       // Reset new fields
-      setStatus('InProcess');
+      setStatus('Waiting for Quote');
       setClientName('');
       setCms(null);
       setWebUrl('');
@@ -60,10 +61,10 @@ export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps)
   };
 
   const handleCancel = () => {
-    setDueDate('');
-    setPriority('Medium');
+    setDueDate(todayStr);
+    setPriority('Low');
     // Reset new fields
-    setStatus('InProcess');
+    setStatus('Waiting for Quote');
     setClientName('');
     setCms(null);
     setWebUrl('');

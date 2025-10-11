@@ -22,12 +22,12 @@ export default function Home() {
   const handleAddTask = () => {
     const newTask: Task = {
       id: generateUUID(),
-      dueDate: null,
-      priority: 'Medium',
+      dueDate: new Date(),
+      priority: 'Low',
       completed: false,
       createdAt: new Date(),
       updatedAt: new Date(),
-      status: 'InProcess',
+      status: 'Waiting for Quote',
       clientName: '',
       cms: null,
       webUrl: '',
