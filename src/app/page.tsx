@@ -9,7 +9,6 @@ import AddTask from '@/components/AddTask';
 
 export default function Home() {
   const { tasks, loading, error, createTask, updateTask, deleteTask, toggleComplete } = useTasks();
-  const [autoEditId, setAutoEditId] = useState<string | undefined>(undefined);
   const [isAddTaskVisible, setIsAddTaskVisible] = useState(false);
 
   const handleAddTask = async (taskInput: TaskInput) => {
@@ -29,7 +28,8 @@ export default function Home() {
 
   const handleEditTask = useCallback(async (id: string, updates: Partial<Task>) => {
     // Remove fields that shouldn't be sent to the API
-    const { id: _, createdAt, updatedAt, _id, ...apiUpdates } = updates as any;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { id: taskId, createdAt, updatedAt, ...apiUpdates } = updates;
     await updateTask(id, apiUpdates);
   }, [updateTask]);
 
@@ -90,7 +90,6 @@ export default function Home() {
           onToggleComplete={handleToggleComplete}
           onDeleteTask={handleDeleteTask}
           onEditTask={handleEditTask}
-          autoEditId={autoEditId}
         />
         
         <AddTask 

@@ -9,10 +9,9 @@ interface TaskListProps {
   onToggleComplete: (id: string) => void;
   onDeleteTask: (id: string) => void;
   onEditTask: (id: string, updates: Partial<Task>) => void;
-  autoEditId?: string;
 }
 
-export default function TaskList({ tasks, onToggleComplete, onDeleteTask, onEditTask, autoEditId }: TaskListProps) {
+export default function TaskList({ tasks, onToggleComplete, onDeleteTask, onEditTask }: TaskListProps) {
   // Move all hooks to the top before any conditional returns
   const year = new Date().getFullYear();
   const months = Array.from({ length: 12 }, (_, i) => {
@@ -101,7 +100,6 @@ export default function TaskList({ tasks, onToggleComplete, onDeleteTask, onEdit
             onToggleComplete={onToggleComplete}
             onDeleteTask={onDeleteTask}
             onEditTask={onEditTask}
-            autoEdit={task.id === autoEditId}
           />
         ))}
       </div>

@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Task, TaskInput } from '@/types/task';
 
+interface MongoTask extends Omit<Task, 'id'> {
+  _id: string;
+}
+
 interface TaskApiResponse {
   success: boolean;
-  data?: Task | Task[];
+  data?: MongoTask | MongoTask[];
   error?: string;
   message?: string;
 }
@@ -23,7 +27,7 @@ export function useTasks() {
       
       if (result.success && Array.isArray(result.data)) {
         // Transform MongoDB _id to id for frontend compatibility
-        const transformedTasks = result.data.map(task => ({
+        const transformedTasks = result.data.map((task: MongoTask) => ({
           ...task,
           id: task._id,
         }));
@@ -54,9 +58,10 @@ export function useTasks() {
       const result: TaskApiResponse = await response.json();
       
       if (result.success && result.data) {
+        const mongoTask = result.data as MongoTask;
         const newTask = {
-          ...result.data,
-          id: result.data._id,
+          ...mongoTask,
+          id: mongoTask._id,
         };
         setTasks(prev => [...prev, newTask]);
         return true;
@@ -86,9 +91,10 @@ export function useTasks() {
       const result: TaskApiResponse = await response.json();
       
       if (result.success && result.data) {
+        const mongoTask = result.data as MongoTask;
         const updatedTask = {
-          ...result.data,
-          id: result.data._id,
+          ...mongoTask,
+          id: mongoTask._id,
         };
         setTasks(prev => 
           prev.map(task => 
