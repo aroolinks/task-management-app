@@ -13,14 +13,7 @@ interface TaskListProps {
 }
 
 export default function TaskList({ tasks, onToggleComplete, onDeleteTask, onEditTask, autoEditId }: TaskListProps) {
-  if (tasks.length === 0) {
-    return (
-      <div className="bg-white rounded-lg shadow-sm border p-8 text-center">
-        <p className="text-gray-500 text-lg">No tasks yet. Add your first task above!</p>
-      </div>
-    );
-  }
-
+  // Move all hooks to the top before any conditional returns
   const year = new Date().getFullYear();
   const months = Array.from({ length: 12 }, (_, i) => {
     const d = new Date(year, i, 1); // Jan (0) to Dec (11)
@@ -43,6 +36,15 @@ export default function TaskList({ tasks, onToggleComplete, onDeleteTask, onEdit
   const completedMonth = useMemo(() => visibleTasks.filter(t => t.status === 'Completed').length, [visibleTasks]);
   const inProcessMonth = useMemo(() => visibleTasks.filter(t => t.status === 'InProcess').length, [visibleTasks]);
   const totalMonth = completedMonth + inProcessMonth;
+
+  // Early return after all hooks are called
+  if (tasks.length === 0) {
+    return (
+      <div className="bg-white rounded-lg shadow-sm border p-8 text-center">
+        <p className="text-gray-500 text-lg">No tasks yet. Add your first task above!</p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-lg shadow-sm border overflow-hidden">

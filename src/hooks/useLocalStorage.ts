@@ -59,7 +59,7 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
       console.log(error);
       setStoredValue(initialValue);
     }
-  }, [key]); // Remove initialValue from dependencies to prevent infinite loops
+  }, [key, initialValue]);
 
   return [storedValue, setValue] as const;
 }
