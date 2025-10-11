@@ -25,21 +25,49 @@ export function useTasks() {
     const raw = window.localStorage.getItem('tasks');
     if (!raw) return { imported: 0, skipped: 0 };
 
-    let arr: unknown;
+    let parsed: unknown;
     try {
-      arr = JSON.parse(raw);
+      parsed = JSON.parse(raw);
     } catch {
       return { imported: 0, skipped: 0 };
     }
-    if (!Array.isArray(arr) || arr.length === 0) return { imported: 0, skipped: 0 };
+    if (!Array.isArray(parsed) || parsed.length === 0) return { imported: 0, skipped: 0 };
 
-    const isPriority = (v: any): v is Task['priority'] => ['Low','Medium','High','Urgent'].includes(v);
-    const isStatus = (v: any): v is Task['status'] => ['Completed','InProcess','Waiting for Quote'].includes(v);
+    type LocalTaskLegacy = Partial<{
+      id: string;
+      name: string;
+      clientName: string;
+      completed: boolean;
+      createdAt: string;
+      updatedAt: string;
+      dueDate: string | null;
+      priority: Task['priority'] | string;
+      status: Task['status'] | string;
+      cms: Task['cms'];
+      webUrl: string;
+      figmaUrl: string;
+      assetUrl: string;
+      totalPrice: number | string | null;
+      deposit: number | string | null;
+    }>;
+
+    const PRIORITIES: readonly Task['priority'][] = ['Low','Medium','High','Urgent'] as const;
+    const STATUSES: readonly Task['status'][] = ['Completed','InProcess','Waiting for Quote'] as const;
+
+    const isPriority = (v: unknown): v is Task['priority'] => typeof v === 'string' && (PRIORITIES as readonly string[]).includes(v);
+    const isStatus = (v: unknown): v is Task['status'] => typeof v === 'string' && (STATUSES as readonly string[]).includes(v);
+
+    const parseNum = (x: unknown): number | null => {
+      const n = typeof x === 'string' ? parseFloat(x) : typeof x === 'number' ? x : NaN;
+      return Number.isFinite(n) ? n : null;
+    };
+
+    const items = parsed as LocalTaskLegacy[];
 
     let imported = 0;
     let skipped = 0;
 
-    for (const item of arr as any[]) {
+    for (const item of items) {
       try {
         const clientName = (item.clientName || item.name || '').toString().trim() || 'Unnamed Client';
         const dueDate = item.dueDate ? new Date(item.dueDate) : null;
@@ -50,8 +78,8 @@ export function useTasks() {
         const webUrl = (item.webUrl || '').toString();
         const figmaUrl = (item.figmaUrl || '').toString();
         const assetUrl = (item.assetUrl || '').toString();
-        const totalPrice = Number.isFinite(item.totalPrice) ? Number(item.totalPrice) : null;
-        const deposit = Number.isFinite(item.deposit) ? Number(item.deposit) : null;
+        const totalPrice = parseNum(item.totalPrice ?? null);
+        const deposit = parseNum(item.deposit ?? null);
 
         const payload = {
           clientName,
