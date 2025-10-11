@@ -47,9 +47,15 @@ export default function Home() {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-red-400 mb-4">❌ Error loading tasks</div>
-          <p className="text-slate-300">{error}</p>
+        <div className="text-center max-w-md">
+          <div className="text-red-400 mb-4 text-xl">❌ Error loading tasks</div>
+          <p className="text-slate-300 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );

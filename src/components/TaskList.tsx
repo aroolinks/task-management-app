@@ -40,7 +40,13 @@ export default function TaskList({ tasks, onToggleComplete, onDeleteTask, onEdit
   if (tasks.length === 0) {
     return (
       <div className="bg-slate-800 rounded-lg border border-slate-700 p-8 text-center">
-        <p className="text-slate-300 text-lg">No tasks yet. Add your first task above!</p>
+        <div className="mb-4">
+          <svg className="mx-auto h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+        </div>
+        <h3 className="text-slate-100 text-lg font-medium mb-2">No projects yet</h3>
+        <p className="text-slate-300">Get started by adding your first project above!</p>
       </div>
     );
   }

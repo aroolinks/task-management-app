@@ -22,8 +22,22 @@ export function useTasks() {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch('/api/tasks');
+      
+      // Add timeout to prevent infinite loading
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
+      const response = await fetch('/api/tasks', {
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const result: TaskApiResponse = await response.json();
+      console.log('API Response:', result); // Debug log
       
       if (result.success && Array.isArray(result.data)) {
         // Transform MongoDB _id to id for frontend compatibility
@@ -32,11 +46,17 @@ export function useTasks() {
           id: task._id,
         }));
         setTasks(transformedTasks);
+        console.log('Tasks loaded:', transformedTasks.length); // Debug log
       } else {
         setError(result.error || 'Failed to fetch tasks');
+        console.error('API returned error:', result.error);
       }
     } catch (err) {
-      setError('Network error occurred');
+      if (err instanceof Error && err.name === 'AbortError') {
+        setError('Request timeout - please check your connection');
+      } else {
+        setError('Network error occurred');
+      }
       console.error('Error fetching tasks:', err);
     } finally {
       setLoading(false);
