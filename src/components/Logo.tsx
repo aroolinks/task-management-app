@@ -32,7 +32,7 @@ export default function Logo({ className = '', size = 'md', iconOnly = false }: 
       {/* Logo Text */}
       {!iconOnly && (
         <div className="flex flex-col">
-          <h1 className="text-xl font-bold text-gray-900 leading-tight">
+<h1 className="text-xl font-bold text-white leading-tight">
             Metalogics
           </h1>
           <p className="text-xs text-gray-500 leading-tight">

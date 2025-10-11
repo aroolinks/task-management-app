@@ -254,15 +254,25 @@ className="cursor-pointer hover:bg-slate-700/40 px-2 py-1 rounded transition-col
 
       {/* Client Name */}
       <div className="min-w-0 px-2 py-1 text-left">
-        <input
-          type="text"
-          value={editData.clientName}
-          onChange={(e) => setEditData({ ...editData, clientName: e.target.value })}
-          onBlur={() => handleInlineEdit('clientName', editData.clientName)}
-          onKeyPress={(e) => handleKeyPress(e, 'clientName')}
-          className="w-full px-2 py-1 text-xs bg-slate-800 border border-slate-600 text-slate-100 rounded focus:outline-none focus:ring-1 focus:ring-slate-500"
-          placeholder="Client name..."
-        />
+        {editingField === 'clientName' ? (
+          <input
+            type="text"
+            value={editData.clientName}
+            onChange={(e) => setEditData({ ...editData, clientName: e.target.value })}
+            onBlur={() => handleInlineEdit('clientName', editData.clientName)}
+            onKeyPress={(e) => handleKeyPress(e, 'clientName')}
+            className="w-full px-2 py-1 text-xs bg-slate-800 border border-slate-600 text-slate-100 rounded focus:outline-none focus:ring-2 focus:ring-slate-500"
+            autoFocus
+          />
+        ) : (
+          <span
+            className={`truncate block cursor-pointer hover:bg-slate-700/40 px-2 py-1 rounded transition-colors ${task.completed ? 'text-slate-400 line-through' : 'text-slate-100'}`}
+            onClick={() => handleFieldClick('clientName')}
+            title="Click to edit client name"
+          >
+            {task.clientName || 'Unnamed Client'}
+          </span>
+        )}
       </div>
 
       {/* Web */}
