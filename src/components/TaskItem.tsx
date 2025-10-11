@@ -186,7 +186,7 @@ className="bg-slate-800 border border-slate-600 text-slate-100 rounded px-2 py-1
           onChange={(e) => setEditData({ ...editData, [field]: e.target.value })}
           onBlur={() => handleInlineEdit(field, editData[field as keyof typeof editData])}
           onKeyPress={(e) => handleKeyPress(e, field)}
-className="bg-slate-800 border border-slate-600 text-slate-100 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-slate-500 min-w-0 w-full"
+className={`bg-slate-800 border border-slate-600 text-slate-100 rounded px-2 ${type === 'date' ? 'py-1.5 text-sm' : 'py-1 text-xs'} focus:outline-none focus:ring-2 focus:ring-slate-500 min-w-0 w-full`}
           autoFocus
           step={type === 'number' ? '0.01' : undefined}
           min={type === 'number' ? '0' : undefined}
@@ -279,7 +279,7 @@ className="cursor-pointer hover:bg-slate-700/40 px-2 py-1 rounded transition-col
       <div className="min-w-0 flex items-center gap-2 px-2 py-1 text-left">
         {renderEditableField('webUrl', 'Web URL', task.webUrl, 'url')}
         {task.webUrl && editingField !== 'webUrl' && (
-<a href={task.webUrl} target="_blank" rel="noopener noreferrer" className="text-blue-300 hover:text-blue-200 text-xs shrink-0">
+<a href={task.webUrl} target="_blank" rel="noopener noreferrer" className="text-white hover:text-slate-200 text-xs shrink-0">
             <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
             </svg>
@@ -296,7 +296,7 @@ className="cursor-pointer hover:bg-slate-700/40 px-2 py-1 rounded transition-col
       <div className="min-w-0 flex items-center gap-2 px-2 py-1 text-left">
         {renderEditableField('figmaUrl', 'Figma URL', task.figmaUrl, 'url')}
         {task.figmaUrl && editingField !== 'figmaUrl' && (
-<a href={task.figmaUrl} target="_blank" rel="noopener noreferrer" className="text-blue-300 hover:text-blue-200 text-xs shrink-0">
+<a href={task.figmaUrl} target="_blank" rel="noopener noreferrer" className="text-white hover:text-slate-200 text-xs shrink-0">
             <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
             </svg>
@@ -308,7 +308,7 @@ className="cursor-pointer hover:bg-slate-700/40 px-2 py-1 rounded transition-col
       <div className="min-w-0 flex items-center gap-2 px-2 py-1 text-left">
         {renderEditableField('assetUrl', 'Asset URL', task.assetUrl, 'url')}
         {task.assetUrl && editingField !== 'assetUrl' && (
-<a href={task.assetUrl} target="_blank" rel="noopener noreferrer" className="text-blue-300 hover:text-blue-200 text-xs shrink-0">
+<a href={task.assetUrl} target="_blank" rel="noopener noreferrer" className="text-white hover:text-slate-200 text-xs shrink-0">
             <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
             </svg>

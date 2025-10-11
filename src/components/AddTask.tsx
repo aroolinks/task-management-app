@@ -107,7 +107,7 @@ export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps)
               id="dueDate"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-800 border border-slate-600 text-slate-100 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
+              className="w-full px-3 py-3 text-base bg-slate-800 border border-slate-600 text-slate-100 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
             />
           </div>
           

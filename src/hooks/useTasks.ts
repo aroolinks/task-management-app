@@ -40,12 +40,15 @@ export function useTasks() {
       console.log('API Response:', result); // Debug log
       
       if (result.success && Array.isArray(result.data)) {
-        // Transform MongoDB _id to id for frontend compatibility
-        const transformedTasks = result.data.map((task: MongoTask) => ({
+        // Transform MongoDB _id to id and normalize date fields
+        const transformedTasks = (result.data as MongoTask[]).map((task) => ({
           ...task,
           id: task._id,
+          createdAt: new Date(task.createdAt as unknown as string),
+          updatedAt: new Date(task.updatedAt as unknown as string),
+          dueDate: task.dueDate ? new Date(task.dueDate as unknown as string) : null,
         }));
-        setTasks(transformedTasks);
+        setTasks(transformedTasks as unknown as Task[]);
         console.log('Tasks loaded:', transformedTasks.length); // Debug log
       } else {
         const errorDetails = result as { details?: string; error?: string };
@@ -82,10 +85,13 @@ export function useTasks() {
       
       if (result.success && result.data) {
         const mongoTask = result.data as MongoTask;
-        const newTask = {
-          ...mongoTask,
+        const newTask: Task = {
+          ...(mongoTask as unknown as Omit<Task, 'id'>),
           id: mongoTask._id,
-        };
+          createdAt: new Date((mongoTask as unknown as { createdAt: string }).createdAt),
+          updatedAt: new Date((mongoTask as unknown as { updatedAt: string }).updatedAt),
+          dueDate: (mongoTask as unknown as { dueDate?: string | null }).dueDate ? new Date((mongoTask as unknown as { dueDate: string }).dueDate) : null,
+        } as Task;
         setTasks(prev => [...prev, newTask]);
         return true;
       } else {
@@ -115,10 +121,13 @@ export function useTasks() {
       
       if (result.success && result.data) {
         const mongoTask = result.data as MongoTask;
-        const updatedTask = {
-          ...mongoTask,
+        const updatedTask: Task = {
+          ...(mongoTask as unknown as Omit<Task, 'id'>),
           id: mongoTask._id,
-        };
+          createdAt: new Date((mongoTask as unknown as { createdAt: string }).createdAt),
+          updatedAt: new Date((mongoTask as unknown as { updatedAt: string }).updatedAt),
+          dueDate: (mongoTask as unknown as { dueDate?: string | null }).dueDate ? new Date((mongoTask as unknown as { dueDate: string }).dueDate) : null,
+        } as Task;
         setTasks(prev => 
           prev.map(task => 
             task.id === id ? updatedTask : task
