@@ -37,7 +37,6 @@ export default function Home() {
       deposit: null,
     };
     setTasks(prev => [...prev, newTask]);
-    setAutoEditId(newTask.id);
   };
 
   const toggleComplete = useCallback((id: string) => {
