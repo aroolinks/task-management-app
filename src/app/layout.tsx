@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Task Manager - Stay Organized",
-  description: "A modern task management app built with Next.js and TypeScript",
+  title: "TaskFlow - Project Manager",
+  description: "Stay organized and track your projects efficiently with TaskFlow - a modern task management app built with Next.js and TypeScript",
 };
 
 export default function RootLayout({

@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react';
 import { Task } from '@/types/task';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import TaskList from '@/components/TaskList';
+import Logo from '@/components/Logo';
 
 // Simple UUID generator function
 function generateUUID(): string {
@@ -77,8 +78,8 @@ export default function Home() {
       <div className="max-w-6xl mx-auto px-4 py-8">
         <header className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-4">
-              <h1 className="text-3xl font-bold text-gray-900">Task Management</h1>
+            <div className="flex items-center gap-6">
+              <Logo size="lg" />
               <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
                 {totalByStatus} {totalByStatus === 1 ? 'Project' : 'Projects'}
               </div>
