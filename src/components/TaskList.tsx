@@ -81,7 +81,7 @@ export default function TaskList({ tasks, onToggleComplete, onDeleteTask, onEdit
         <div></div>
         <div className="text-left pl-2">Name</div>
         <div className="text-left pl-2">Web</div>
-        <div className="text-left pl-2">CMS</div>
+<div className="text-left pl-2">Job Desc</div>
         <div className="text-left pl-2">Figma</div>
         <div className="text-left pl-2">Asset</div>
         <div className="text-left pl-2">Due</div>

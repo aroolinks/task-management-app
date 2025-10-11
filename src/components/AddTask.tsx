@@ -11,7 +11,7 @@ interface AddTaskProps {
 
 const priorities: Priority[] = ['Low', 'Medium', 'High', 'Urgent'];
 const statuses: Status[] = ['InProcess', 'Waiting for Quote', 'Completed'];
-const cmsOptions: CMS[] = ['Wordpress', 'Shopify'];
+const cmsOptions: CMS[] = ['Wordpress', 'Shopify', 'Designing' , 'SEO' , 'Marketing'];
 
 export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps) {
   const [dueDate, setDueDate] = useState('');
@@ -146,8 +146,8 @@ export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps)
           
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="cms" className="block text-sm font-medium text-gray-700 mb-1">
-                CMS
+<label htmlFor="cms" className="block text-sm font-medium text-gray-700 mb-1">
+                Job Desc
               </label>
               <select
                 id="cms"
@@ -155,7 +155,7 @@ export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps)
                 onChange={(e) => setCms(e.target.value ? e.target.value as CMS : null)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
-                <option value="">Select CMS...</option>
+<option value="">Select Job Desc...</option>
                 {cmsOptions.map(c => (
                   <option key={c} value={c}>{c}</option>
                 ))}
