@@ -254,33 +254,15 @@ className="cursor-pointer hover:bg-slate-700/40 px-2 py-1 rounded transition-col
 
       {/* Client Name */}
       <div className="min-w-0 px-2 py-1 text-left">
-        {isEditing ? (
-          <input
-            type="text"
-            value={editData.clientName}
-            onChange={(e) => setEditData({ ...editData, clientName: e.target.value })}
-className="w-full px-2 py-1 text-xs bg-slate-800 border border-slate-600 text-slate-100 rounded focus:outline-none focus:ring-1 focus:ring-slate-500"
-            placeholder="Client name..."
-          />
-        ) : editingField === 'clientName' ? (
-          <input
-            type="text"
-            value={editData.clientName}
-            onChange={(e) => setEditData({ ...editData, clientName: e.target.value })}
-            onBlur={() => handleInlineEdit('clientName', editData.clientName)}
-            onKeyPress={(e) => handleKeyPress(e, 'clientName')}
-className="w-full px-2 py-1 text-xs bg-slate-800 border border-slate-600 text-slate-100 rounded focus:outline-none focus:ring-2 focus:ring-slate-500"
-            autoFocus
-          />
-        ) : (
-          <span 
-className={`truncate block cursor-pointer hover:bg-slate-700/40 px-2 py-1 rounded transition-colors ${task.completed ? 'text-slate-400 line-through' : 'text-slate-100'}`}
-            onClick={() => handleFieldClick('clientName')}
-            title="Click to edit client name"
-          >
-            {task.clientName || 'Unnamed Client'}
-          </span>
-        )}
+        <input
+          type="text"
+          value={editData.clientName}
+          onChange={(e) => setEditData({ ...editData, clientName: e.target.value })}
+          onBlur={() => handleInlineEdit('clientName', editData.clientName)}
+          onKeyPress={(e) => handleKeyPress(e, 'clientName')}
+          className="w-full px-2 py-1 text-xs bg-slate-800 border border-slate-600 text-slate-100 rounded focus:outline-none focus:ring-1 focus:ring-slate-500"
+          placeholder="Client name..."
+        />
       </div>
 
       {/* Web */}
@@ -434,15 +416,6 @@ className="text-slate-300 hover:text-slate-200 transition-colors duration-200"
           </>
         ) : (
           <>
-            <button
-              onClick={() => setIsEditing(true)}
-className="text-slate-300 hover:text-slate-200 transition-colors duration-200"
-              aria-label="Edit task"
-            >
-<svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              </svg>
-            </button>
             <button
               onClick={() => onDeleteTask(task.id)}
 className="text-red-400 hover:text-red-300 transition-colors duration-200"
