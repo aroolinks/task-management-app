@@ -1,72 +1,59 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { Task } from '@/types/task';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { Task, TaskInput } from '@/types/task';
+import { useTasks } from '@/hooks/useTasks';
 import TaskList from '@/components/TaskList';
 import Logo from '@/components/Logo';
-
-// Simple UUID generator function
-function generateUUID(): string {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    const r = Math.random() * 16 | 0;
-    const v = c === 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
-}
+import AddTask from '@/components/AddTask';
 
 export default function Home() {
-  const [tasks, setTasks] = useLocalStorage<Task[]>('tasks', []);
+  const { tasks, loading, error, createTask, updateTask, deleteTask, toggleComplete } = useTasks();
   const [autoEditId, setAutoEditId] = useState<string | undefined>(undefined);
+  const [isAddTaskVisible, setIsAddTaskVisible] = useState(false);
 
-  const handleAddTask = () => {
-    const newTask: Task = {
-      id: generateUUID(),
-      dueDate: new Date(),
-      priority: 'Low',
-      completed: false,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      status: 'Waiting for Quote',
-      clientName: '',
-      cms: null,
-      webUrl: '',
-      figmaUrl: '',
-      assetUrl: '',
-      totalPrice: null,
-      deposit: null,
-    };
-    setTasks(prev => [...prev, newTask]);
+  const handleAddTask = async (taskInput: TaskInput) => {
+    const success = await createTask(taskInput);
+    if (success) {
+      setIsAddTaskVisible(false);
+    }
   };
 
-  const toggleComplete = useCallback((id: string) => {
-    setTasks(prevTasks => 
-      prevTasks.map(task => {
-        if (task.id !== id) return task;
-        const newCompleted = !task.completed;
-        return {
-          ...task,
-          completed: newCompleted,
-          status: newCompleted ? 'Completed' : 'InProcess',
-          updatedAt: new Date(),
-        };
-      })
-    );
-  }, [setTasks]);
+  const handleToggleComplete = useCallback(async (id: string) => {
+    await toggleComplete(id);
+  }, [toggleComplete]);
 
-  const deleteTask = useCallback((id: string) => {
-    setTasks(prevTasks => prevTasks.filter(task => task.id !== id));
-  }, [setTasks]);
+  const handleDeleteTask = useCallback(async (id: string) => {
+    await deleteTask(id);
+  }, [deleteTask]);
 
-  const editTask = useCallback((id: string, updates: Partial<Task>) => {
-    setTasks(prevTasks => 
-      prevTasks.map(task => 
-        task.id === id 
-          ? { ...task, ...updates, updatedAt: new Date() }
-          : task
-      )
+  const handleEditTask = useCallback(async (id: string, updates: Partial<Task>) => {
+    // Remove fields that shouldn't be sent to the API
+    const { id: _, createdAt, updatedAt, _id, ...apiUpdates } = updates as any;
+    await updateTask(id, apiUpdates);
+  }, [updateTask]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-slate-300">Loading tasks...</p>
+        </div>
+      </div>
     );
-  }, [setTasks]);
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-400 mb-4">❌ Error loading tasks</div>
+          <p className="text-slate-300">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   const completedByStatus = tasks.filter(t => t.status === 'Completed').length;
   const inProcessByStatus = tasks.filter(t => t.status === 'InProcess').length;
@@ -74,7 +61,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
-      <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="max-w-full mx-auto px-6 py-8">
         <header className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-6">
@@ -84,7 +71,7 @@ export default function Home() {
               </div>
             </div>
             <button
-              onClick={handleAddTask}
+              onClick={() => setIsAddTaskVisible(true)}
               className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2 shadow-md hover:shadow-lg"
             >
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -100,10 +87,16 @@ export default function Home() {
         
         <TaskList 
           tasks={tasks}
-          onToggleComplete={toggleComplete}
-          onDeleteTask={deleteTask}
-          onEditTask={editTask}
+          onToggleComplete={handleToggleComplete}
+          onDeleteTask={handleDeleteTask}
+          onEditTask={handleEditTask}
           autoEditId={autoEditId}
+        />
+        
+        <AddTask 
+          onAddTask={handleAddTask}
+          isVisible={isAddTaskVisible}
+          onClose={() => setIsAddTaskVisible(false)}
         />
       </div>
     </div>

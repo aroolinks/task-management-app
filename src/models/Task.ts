@@ -2,25 +2,27 @@ import mongoose from 'mongoose';
 
 export interface ITask {
   _id: string;
-  title: string;
-  description?: string;
+  clientName: string;
   completed: boolean;
-  priority: 'low' | 'medium' | 'high';
-  dueDate?: Date;
+  priority: 'Low' | 'Medium' | 'High' | 'Urgent';
+  status: 'Completed' | 'InProcess' | 'Waiting for Quote';
+  cms: 'Wordpress' | 'Shopify' | 'Designing' | 'SEO' | 'Marketing' | null;
+  webUrl?: string;
+  figmaUrl?: string;
+  assetUrl?: string;
+  totalPrice?: number | null;
+  deposit?: number | null;
+  dueDate?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
 
 const TaskSchema = new mongoose.Schema<ITask>(
   {
-    title: {
+    clientName: {
       type: String,
-      required: [true, 'Please provide a title for this task.'],
-      maxlength: [200, 'Title cannot be more than 200 characters'],
-    },
-    description: {
-      type: String,
-      maxlength: [1000, 'Description cannot be more than 1000 characters'],
+      required: [true, 'Please provide a client name for this task.'],
+      maxlength: [200, 'Client name cannot be more than 200 characters'],
     },
     completed: {
       type: Boolean,
@@ -28,11 +30,42 @@ const TaskSchema = new mongoose.Schema<ITask>(
     },
     priority: {
       type: String,
-      enum: ['low', 'medium', 'high'],
-      default: 'medium',
+      enum: ['Low', 'Medium', 'High', 'Urgent'],
+      default: 'Low',
+    },
+    status: {
+      type: String,
+      enum: ['Completed', 'InProcess', 'Waiting for Quote'],
+      default: 'Waiting for Quote',
+    },
+    cms: {
+      type: String,
+      enum: ['Wordpress', 'Shopify', 'Designing', 'SEO', 'Marketing'],
+      default: null,
+    },
+    webUrl: {
+      type: String,
+      default: '',
+    },
+    figmaUrl: {
+      type: String,
+      default: '',
+    },
+    assetUrl: {
+      type: String,
+      default: '',
+    },
+    totalPrice: {
+      type: Number,
+      default: null,
+    },
+    deposit: {
+      type: Number,
+      default: null,
     },
     dueDate: {
       type: Date,
+      default: null,
     },
   },
   {

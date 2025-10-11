@@ -197,7 +197,7 @@ className="bg-slate-800 border border-slate-600 text-slate-100 rounded px-2 py-1
     if (type === 'url') {
       return (
         <span 
-className="inline-flex items-center gap-1 cursor-pointer hover:bg-slate-700/40 px-1.5 py-0.5 rounded transition-colors text-blue-300 max-w-[120px] truncate"
+className="inline-flex items-center gap-1 cursor-pointer hover:bg-slate-700/40 px-1.5 py-0.5 rounded transition-colors text-blue-300 max-w-[160px] truncate"
           onClick={() => handleFieldClick(field)}
           title="Click to edit"
         >
@@ -243,7 +243,7 @@ className="cursor-pointer hover:bg-slate-700/40 px-2 py-1 rounded transition-col
   };
 
   return (
-    <div className="grid grid-cols-[24px_2fr_1.2fr_1.2fr_1.2fr_1.2fr_1.2fr_1.4fr_1fr_1fr_1fr_auto] items-center gap-0 px-3 py-1.5 bg-transparent hover:bg-slate-700/40 text-[11px] text-slate-100 divide-x divide-slate-700">
+    <div className="grid grid-cols-[24px_3fr_1.5fr_1.5fr_1.5fr_1.5fr_1.5fr_1.8fr_1.3fr_1.2fr_1.2fr_auto] items-center gap-0 px-3 py-1.5 bg-transparent hover:bg-slate-700/40 text-[11px] text-slate-100 divide-x divide-slate-700">
       {/* Checkbox */}
       <input
         type="checkbox"
@@ -322,7 +322,7 @@ className="cursor-pointer hover:bg-slate-700/40 px-2 py-1 rounded transition-col
       </div>
 
       {/* Status */}
-      <div className="min-w-[130px] px-2 py-1 text-left">
+      <div className="min-w-[150px] px-2 py-1 text-left">
         {editingField === 'status' ? (
           <select
             value={editData.status}
