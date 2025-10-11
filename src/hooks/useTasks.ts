@@ -48,8 +48,11 @@ export function useTasks() {
         setTasks(transformedTasks);
         console.log('Tasks loaded:', transformedTasks.length); // Debug log
       } else {
-        setError(result.error || 'Failed to fetch tasks');
+        const errorDetails = result as { details?: string; error?: string };
+        const errorMessage = errorDetails.details || errorDetails.error || 'Failed to fetch tasks';
+        setError(errorMessage);
         console.error('API returned error:', result.error);
+        console.error('Error details:', errorDetails.details);
       }
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') {
