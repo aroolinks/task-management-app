@@ -12,7 +12,7 @@ interface TaskItemProps {
 }
 
 const priorities: Priority[] = ['Low', 'Medium', 'High', 'Urgent'];
-const statuses: Status[] = ['InProcess', 'Waiting for Quote', 'Designing', 'Completed'];
+const statuses: Status[] = ['InProcess', 'Waiting for Quote', 'Completed'];
 const cmsOptions: CMS[] = ['Wordpress', 'Shopify', 'Designing', 'SEO', 'Marketing'];
 
 const getPriorityColor = (priority: Priority) => {
@@ -30,7 +30,6 @@ const getStatusColor = (status: Status) => {
     case 'Completed': return 'bg-green-100 text-green-800';
     case 'InProcess': return 'bg-blue-100 text-blue-800';
     case 'Waiting for Quote': return 'bg-yellow-100 text-yellow-800';
-    case 'Designing': return 'bg-purple-100 text-purple-800';
     default: return 'bg-gray-100 text-gray-800';
   }
 };

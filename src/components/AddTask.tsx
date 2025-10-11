@@ -155,7 +155,6 @@ export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps)
                 onChange={(e) => setCms(e.target.value ? e.target.value as CMS : null)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
-<option value="">Select Job Desc...</option>
                 {cmsOptions.map(c => (
                   <option key={c} value={c}>{c}</option>
                 ))}

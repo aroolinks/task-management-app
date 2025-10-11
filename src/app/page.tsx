@@ -74,7 +74,7 @@ export default function Home() {
   const totalByStatus = completedByStatus + inProcessByStatus;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-900 text-white">
       <div className="max-w-6xl mx-auto px-4 py-8">
         <header className="mb-8">
           <div className="flex items-center justify-between mb-4">
