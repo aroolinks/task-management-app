@@ -21,7 +21,7 @@ export interface Task {
   totalPrice: number | null;
   deposit: number | null;
   invoiced: boolean; // New field for tracking invoice status
-  assignee: Assignee | null; // New field for task assignment
+  assignee: string | null; // New field for task assignment (allows custom names)
 }
 
 export type TaskInput = Omit<Task, 'id' | 'createdAt' | 'updatedAt'>;

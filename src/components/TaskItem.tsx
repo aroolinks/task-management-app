@@ -1,12 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { Task, Priority, Status, CMS, Assignee } from '@/types/task';
+import { Task, Priority, Status, CMS } from '@/types/task';
 
 interface TaskItemProps {
   task: Task;
   onDeleteTask: (id: string) => void;
   onEditTask: (id: string, updates: Partial<Task>) => void;
+  showCost?: boolean;
+  showDeposit?: boolean;
   autoEdit?: boolean;
 }
 
@@ -35,7 +37,7 @@ const getStatusColor = (status: Status) => {
   }
 };
 
-export default function TaskItem({ task, onDeleteTask, onEditTask, autoEdit = false }: TaskItemProps) {
+export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = false, showDeposit = false, autoEdit = false }: TaskItemProps) {
   const [isEditing, setIsEditing] = useState(autoEdit);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editData, setEditData] = useState({
@@ -112,7 +114,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, autoEdit = fa
         updates.deposit = value ? parseFloat(String(value)) : null;
         break;
       case 'assignee':
-        updates.assignee = value ? (String(value) as Assignee) : null;
+        updates.assignee = value ? String(value) : null;
         break;
     }
     
@@ -430,7 +432,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, autoEdit = fa
             onClick={() => handleFieldClick('totalPrice')}
             title="Click to edit"
           >
-            {task.totalPrice ? `£${task.totalPrice.toFixed(2)}` : 'N/A'}
+            {showCost ? (task.totalPrice ? `£${task.totalPrice.toFixed(2)}` : 'N/A') : '••••'}
           </span>
         )}
       </div>
@@ -445,7 +447,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, autoEdit = fa
             onClick={() => handleFieldClick('deposit')}
             title="Click to edit"
           >
-            {task.deposit ? `£${task.deposit.toFixed(2)}` : 'N/A'}
+            {showDeposit ? (task.deposit ? `£${task.deposit.toFixed(2)}` : 'N/A') : '••••'}
           </span>
         )}
       </div>

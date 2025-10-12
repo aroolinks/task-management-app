@@ -30,8 +30,25 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask }: TaskListPr
 
   // Define available groups
   const availableGroups = ['Casey', 'Jack', 'Upwork', 'Personal'];
+  
+  // Get assignees that have tasks assigned
+  const assigneesWithTasks = useMemo(() => {
+    const assignees: { [key: string]: Task[] } = {};
+    visibleTasks.forEach(task => {
+      if (task.assignee) {
+        if (!assignees[task.assignee]) {
+          assignees[task.assignee] = [];
+        }
+        assignees[task.assignee].push(task);
+      }
+    });
+    return assignees;
+  }, [visibleTasks]);
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
   const [showEarnings, setShowEarnings] = useState<boolean>(false);
+  const [showCost, setShowCost] = useState<boolean>(false);
+  const [showDeposit, setShowDeposit] = useState<boolean>(false);
+  const [selectedAssignee, setSelectedAssignee] = useState<string>('all');
 
   // Group tasks by clientGroup
   const groupedTasks = useMemo(() => {
@@ -46,14 +63,25 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask }: TaskListPr
     return groups;
   }, [visibleTasks]);
 
-  // Filter tasks by selected group
+  // Filter tasks by selected group and assignee
   const filteredTasks = useMemo(() => {
-    if (selectedGroup === 'all') return visibleTasks;
-    return visibleTasks.filter(task => {
-      const taskGroup = task.clientGroup || 'Ungrouped';
-      return taskGroup === selectedGroup;
-    });
-  }, [visibleTasks, selectedGroup]);
+    let tasks = visibleTasks;
+    
+    // Filter by assignee first
+    if (selectedAssignee !== 'all') {
+      tasks = tasks.filter(task => task.assignee === selectedAssignee);
+    }
+    
+    // Then filter by group
+    if (selectedGroup !== 'all') {
+      tasks = tasks.filter(task => {
+        const taskGroup = task.clientGroup || 'Ungrouped';
+        return taskGroup === selectedGroup;
+      });
+    }
+    
+    return tasks;
+  }, [visibleTasks, selectedGroup, selectedAssignee]);
 
   const handleGenerateInvoice = () => {
     try {
@@ -139,6 +167,26 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask }: TaskListPr
         </div>
       </div>
 
+      {/* Assignee tabs */}
+      <div className="flex items-center gap-1 px-3 py-2 bg-slate-800 border-b border-slate-700 overflow-x-auto">
+        <span className="text-xs font-semibold text-slate-400 mr-2">ASSIGNEE:</span>
+        <button
+          className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${selectedAssignee === 'all' ? 'bg-green-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+          onClick={() => setSelectedAssignee('all')}
+        >
+          All Assignees
+        </button>
+        {Object.entries(assigneesWithTasks).map(([assignee, assigneeTasks]) => (
+          <button
+            key={assignee}
+            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${selectedAssignee === assignee ? 'bg-green-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+            onClick={() => setSelectedAssignee(assignee)}
+          >
+            {assignee} ({assigneeTasks.length})
+          </button>
+        ))}
+      </div>
+
       {/* Group tabs */}
       <div className="flex items-center gap-1 px-3 py-2 bg-slate-750 border-b border-slate-700 overflow-x-auto">
         <button
@@ -180,8 +228,38 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask }: TaskListPr
         <div className="text-left px-2 py-1 overflow-hidden truncate">Due</div>
         <div className="text-left px-2 py-1 overflow-hidden truncate">Status</div>
         <div className="text-left px-2 py-1 overflow-hidden truncate">Priority</div>
-        <div className="text-left px-2 py-1 overflow-hidden truncate">Cost</div>
-        <div className="text-left px-2 py-1 overflow-hidden truncate">Deposit</div>
+        <div className="text-left px-2 py-1 overflow-hidden truncate flex items-center gap-1">
+          <span>Cost</span>
+          <button
+            onClick={() => setShowCost(!showCost)}
+            className="text-slate-400 hover:text-slate-200 transition-colors"
+            title={showCost ? 'Hide cost' : 'Show cost'}
+          >
+            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              {showCost ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+              )}
+            </svg>
+          </button>
+        </div>
+        <div className="text-left px-2 py-1 overflow-hidden truncate flex items-center gap-1">
+          <span>Deposit</span>
+          <button
+            onClick={() => setShowDeposit(!showDeposit)}
+            className="text-slate-400 hover:text-slate-200 transition-colors"
+            title={showDeposit ? 'Hide deposit' : 'Show deposit'}
+          >
+            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              {showDeposit ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+              )}
+            </svg>
+          </button>
+        </div>
         <div className="text-left px-2 py-1 overflow-hidden truncate">Assignee</div>
         <div className="text-left px-2 py-1 overflow-hidden truncate">Actions</div>
       </div>
@@ -194,6 +272,8 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask }: TaskListPr
               task={task}
               onDeleteTask={onDeleteTask}
               onEditTask={onEditTask}
+              showCost={showCost}
+              showDeposit={showDeposit}
             />
         ))}
       </div>

@@ -15,7 +15,7 @@ export interface ITask {
   deposit?: number | null;
   dueDate?: Date | null;
   invoiced: boolean;
-  assignee?: 'Haroon' | 'Sameed' | 'Bilal' | 'Abubakar' | 'Awais' | null;
+  assignee?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -81,7 +81,6 @@ const TaskSchema = new mongoose.Schema<ITask>(
     },
     assignee: {
       type: String,
-      enum: ['Haroon', 'Sameed', 'Bilal', 'Abubakar', 'Awais'],
       default: null,
     },
   },

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { TaskInput, Priority, Status, CMS, Assignee } from '@/types/task';
+import { TaskInput, Priority, Status, CMS } from '@/types/task';
 
 interface AddTaskProps {
   onAddTask: (task: TaskInput) => void;
@@ -31,6 +31,8 @@ export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps)
   const [totalPrice, setTotalPrice] = useState('');
   const [deposit, setDeposit] = useState('');
   const [assignee, setAssignee] = useState('');
+  const [customAssignee, setCustomAssignee] = useState('');
+  const [showCustomAssignee, setShowCustomAssignee] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,7 +52,7 @@ export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps)
         totalPrice: totalPrice ? parseFloat(totalPrice) : null,
         deposit: deposit ? parseFloat(deposit) : null,
         invoiced: false,
-        assignee: assignee ? (assignee as Assignee) : null,
+        assignee: showCustomAssignee ? (customAssignee.trim() || null) : (assignee || null),
       });
       setDueDate(todayStr);
       setPriority('Low');
@@ -65,6 +67,8 @@ export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps)
       setTotalPrice('');
       setDeposit('');
       setAssignee('');
+      setCustomAssignee('');
+      setShowCustomAssignee(false);
       onClose();
     }
   };
@@ -83,6 +87,8 @@ export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps)
     setTotalPrice('');
     setDeposit('');
     setAssignee('');
+    setCustomAssignee('');
+    setShowCustomAssignee(false);
     onClose();
   };
 
@@ -276,17 +282,39 @@ export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps)
             <label htmlFor="assignee" className="block text-sm font-medium text-slate-300 mb-1">
               Assignee
             </label>
-            <select
-              id="assignee"
-              value={assignee}
-              onChange={(e) => setAssignee(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-800 border border-slate-600 text-slate-100 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
-            >
-              <option value="">Select assignee...</option>
-              {assigneeOptions.map(person => (
-                <option key={person} value={person}>{person}</option>
-              ))}
-            </select>
+            <div className="space-y-2">
+              <select
+                id="assignee"
+                value={showCustomAssignee ? 'custom' : assignee}
+                onChange={(e) => {
+                  if (e.target.value === 'custom') {
+                    setShowCustomAssignee(true);
+                    setAssignee('');
+                  } else {
+                    setShowCustomAssignee(false);
+                    setAssignee(e.target.value);
+                    setCustomAssignee('');
+                  }
+                }}
+                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 text-slate-100 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
+              >
+                <option value="">Select assignee...</option>
+                {assigneeOptions.map(person => (
+                  <option key={person} value={person}>{person}</option>
+                ))}
+                <option value="custom">+ Add Custom Assignee</option>
+              </select>
+              
+              {showCustomAssignee && (
+                <input
+                  type="text"
+                  value={customAssignee}
+                  onChange={(e) => setCustomAssignee(e.target.value)}
+                  placeholder="Enter custom assignee name..."
+                  className="w-full px-3 py-2 bg-slate-800 border border-slate-600 text-slate-100 placeholder-slate-400 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
+                />
+              )}
+            </div>
           </div>
           
           <div className="flex space-x-3 pt-4">
