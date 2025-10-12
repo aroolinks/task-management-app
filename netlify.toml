@@ -1,0 +1,12 @@
+# Netlify configuration for Next.js 15
+# Uses the official Netlify Next.js Runtime via plugin
+
+[build]
+  command = "next build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
