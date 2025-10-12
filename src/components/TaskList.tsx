@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { Task } from '@/types/task';
 import TaskItem from './TaskItem';
+import { generateGroupInvoice, generateAllTasksInvoice } from '@/utils/invoiceGenerator';
 
 interface TaskListProps {
   tasks: Task[];
@@ -30,6 +31,7 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask }: TaskListPr
   // Define available groups
   const availableGroups = ['Casey', 'Jack', 'Upwork', 'Personal'];
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
+  const [showEarnings, setShowEarnings] = useState<boolean>(false);
 
   // Group tasks by clientGroup
   const groupedTasks = useMemo(() => {
@@ -52,6 +54,19 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask }: TaskListPr
       return taskGroup === selectedGroup;
     });
   }, [visibleTasks, selectedGroup]);
+
+  const handleGenerateInvoice = () => {
+    try {
+      if (selectedGroup === 'all') {
+        generateAllTasksInvoice(visibleTasks);
+      } else {
+        generateGroupInvoice(visibleTasks, selectedGroup);
+      }
+    } catch (error) {
+      console.error('Error generating invoice:', error);
+      alert('Error generating invoice. Please try again.');
+    }
+  };
 
   const totalEarnings = useMemo(() => {
     return visibleTasks.reduce((sum, t) => sum + (t.totalPrice || 0), 0);
@@ -102,7 +117,25 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask }: TaskListPr
           <span className="px-1.5 py-0.5 rounded bg-slate-700 text-slate-200">All: {totalMonth}</span>
           <span className="px-1.5 py-0.5 rounded bg-slate-700 text-slate-200">Completed: {completedMonth}</span>
           <span className="px-1.5 py-0.5 rounded bg-slate-700 text-slate-200">In progress: {inProcessMonth}</span>
-          <span className="px-1.5 py-0.5 rounded bg-slate-700 text-slate-200">Earnings: £{totalEarnings.toFixed(2)}</span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setShowEarnings(!showEarnings)}
+              className="px-1.5 py-0.5 rounded bg-slate-700 text-slate-200 hover:bg-slate-600 transition-colors cursor-pointer"
+              title={showEarnings ? 'Hide earnings' : 'Show earnings'}
+            >
+              Earnings: {showEarnings ? `£${totalEarnings.toFixed(2)}` : '••••'}
+            </button>
+            <button
+              onClick={handleGenerateInvoice}
+              className="px-1.5 py-0.5 rounded bg-blue-600 text-white hover:bg-blue-500 transition-colors flex items-center gap-1"
+              title="Generate PDF Invoice"
+            >
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              PDF
+            </button>
+          </div>
         </div>
       </div>
 
