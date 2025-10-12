@@ -137,19 +137,19 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask }: TaskListPr
       </div>
 
       {/* Header row */}
-      <div className="grid grid-cols-[1fr_0.8fr_1fr_1fr_1fr_1fr_0.6fr_1fr_1fr_0.6fr_0.6fr_auto] items-center gap-0 px-3 py-1.5 text-[11px] font-semibold text-slate-300 tracking-wide bg-slate-900 border-b border-slate-700 divide-x divide-slate-700">
-        <div className="text-left px-2 py-1">Name</div>
-        <div className="text-left px-2 py-1">Group</div>
-        <div className="text-left px-2 py-1">Web</div>
-        <div className="text-left px-2 py-1">Job Desc</div>
-        <div className="text-left px-2 py-1">Figma</div>
-        <div className="text-left px-2 py-1">Asset</div>
-        <div className="text-left px-2 py-1">Due</div>
-        <div className="text-left px-2 py-1">Status</div>
-        <div className="text-left px-2 py-1">Priority</div>
-        <div className="text-left px-2 py-1">Cost</div>
-        <div className="text-left px-2 py-1">Deposit</div>
-        <div className="text-left px-2 py-1">Actions</div>
+      <div className="grid grid-cols-[200px_120px_100px_120px_100px_100px_100px_160px_100px_100px_100px_80px] items-center gap-0 px-3 py-1.5 text-[11px] font-semibold text-slate-300 tracking-wide bg-slate-900 border-b border-slate-700 divide-x divide-slate-700">
+        <div className="text-left px-2 py-1 overflow-hidden truncate">Name</div>
+        <div className="text-left px-2 py-1 overflow-hidden truncate">Group</div>
+        <div className="text-left px-2 py-1 overflow-hidden truncate">Web</div>
+        <div className="text-left px-2 py-1 overflow-hidden truncate">Job Desc</div>
+        <div className="text-left px-2 py-1 overflow-hidden truncate">Figma</div>
+        <div className="text-left px-2 py-1 overflow-hidden truncate">Asset</div>
+        <div className="text-left px-2 py-1 overflow-hidden truncate">Due</div>
+        <div className="text-left px-2 py-1 overflow-hidden truncate">Status</div>
+        <div className="text-left px-2 py-1 overflow-hidden truncate">Priority</div>
+        <div className="text-left px-2 py-1 overflow-hidden truncate">Cost</div>
+        <div className="text-left px-2 py-1 overflow-hidden truncate">Deposit</div>
+        <div className="text-left px-2 py-1 overflow-hidden truncate">Actions</div>
       </div>
 
       {/* Filtered Data rows */}

@@ -260,10 +260,10 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, autoEdit = fa
   };
 
   return (
-    <div className={`grid grid-cols-[1fr_0.8fr_1fr_1fr_1fr_1fr_0.6fr_1fr_1fr_0.6fr_0.6fr_auto] items-center gap-0 px-3 py-1.5 text-[11px] ${task.status === 'Completed' ? 'text-slate-400' : 'text-slate-100'} divide-x divide-slate-700 ${getRowBgColor()}`}>
+    <div className={`grid grid-cols-[200px_120px_100px_120px_100px_100px_100px_160px_100px_100px_100px_80px] items-center gap-0 px-3 py-1.5 text-[11px] ${task.status === 'Completed' ? 'text-slate-400' : 'text-slate-100'} divide-x divide-slate-700 ${getRowBgColor()}`}>
 
       {/* Client Name */}
-      <div className="min-w-0 px-2 py-1 text-left">
+      <div className="px-2 py-1 text-left overflow-hidden">
         {editingField === 'clientName' ? (
           <input
             type="text"
@@ -286,7 +286,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, autoEdit = fa
       </div>
 
       {/* Client Group */}
-      <div className="min-w-0 px-2 py-1 text-left">
+      <div className="px-2 py-1 text-left overflow-hidden">
         {editingField === 'clientGroup' ? (
           <select
             value={editData.clientGroup || ''}
@@ -317,7 +317,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, autoEdit = fa
       </div>
 
       {/* Web */}
-      <div className="min-w-0 flex items-center gap-2 px-2 py-1 text-left">
+      <div className="flex items-center gap-2 px-2 py-1 text-left overflow-hidden">
         {renderEditableField('webUrl', 'Web URL', task.webUrl, 'url')}
         {task.webUrl && editingField !== 'webUrl' && (
           <a href={task.webUrl} target="_blank" rel="noopener noreferrer" className="text-white hover:text-slate-200 text-xs shrink-0">
@@ -329,12 +329,12 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, autoEdit = fa
       </div>
 
       {/* CMS */}
-      <div className="min-w-0 px-2 py-1 text-left">
+      <div className="px-2 py-1 text-left overflow-hidden">
         {renderEditableField('cms', 'Job Desc', task.cms, 'select', cmsOptions)}
       </div>
 
       {/* Figma */}
-      <div className="min-w-0 flex items-center gap-2 px-2 py-1 text-left">
+      <div className="flex items-center gap-2 px-2 py-1 text-left overflow-hidden">
         {renderEditableField('figmaUrl', 'Figma URL', task.figmaUrl, 'url')}
         {task.figmaUrl && editingField !== 'figmaUrl' && (
           <a href={task.figmaUrl} target="_blank" rel="noopener noreferrer" className="text-white hover:text-slate-200 text-xs shrink-0">
@@ -346,7 +346,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, autoEdit = fa
       </div>
 
       {/* Asset */}
-      <div className="min-w-0 flex items-center gap-2 px-2 py-1 text-left">
+      <div className="flex items-center gap-2 px-2 py-1 text-left overflow-hidden">
         {renderEditableField('assetUrl', 'Asset URL', task.assetUrl, 'url')}
         {task.assetUrl && editingField !== 'assetUrl' && (
           <a href={task.assetUrl} target="_blank" rel="noopener noreferrer" className="text-white hover:text-slate-200 text-xs shrink-0">
@@ -358,12 +358,12 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, autoEdit = fa
       </div>
 
       {/* Due */}
-      <div className="min-w-0 px-2 py-1 text-left">
+      <div className="px-2 py-1 text-left overflow-hidden">
         {renderEditableField('dueDate', 'Due Date', task.dueDate instanceof Date ? task.dueDate.toISOString().split('T')[0] : '', 'date')}
       </div>
 
       {/* Status */}
-      <div className="min-w-0 px-2 py-1 text-left">
+      <div className="px-2 py-1 text-left overflow-hidden">
         {editingField === 'status' ? (
           <select
             value={editData.status}
@@ -388,7 +388,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, autoEdit = fa
       </div>
 
       {/* Priority */}
-      <div className="min-w-0 px-2 py-1 text-left">
+      <div className="px-2 py-1 text-left overflow-hidden">
         {editingField === 'priority' ? (
           <select
             value={editData.priority}
@@ -413,7 +413,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, autoEdit = fa
       </div>
 
       {/* Total Cost */}
-      <div className="min-w-0 px-2 py-1 text-left">
+      <div className="px-2 py-1 text-left overflow-hidden">
         {editingField === 'totalPrice' ? (
           renderEditableField('totalPrice', 'Total Price', task.totalPrice?.toString() || '', 'number')
         ) : (
@@ -428,7 +428,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, autoEdit = fa
       </div>
 
       {/* Deposit */}
-      <div className="min-w-0 px-2 py-1 text-left">
+      <div className="px-2 py-1 text-left overflow-hidden">
         {editingField === 'deposit' ? (
           renderEditableField('deposit', 'Deposit', task.deposit?.toString() || '', 'number')
         ) : (
@@ -443,7 +443,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, autoEdit = fa
       </div>
 
       {/* Actions */}
-      <div className="min-w-0 flex items-center justify-start gap-2 px-2 py-1">
+      <div className="flex items-center justify-start gap-2 px-2 py-1 overflow-hidden">
         {isEditing ? (
           <>
             <button
