@@ -203,7 +203,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, autoEdit = fa
     if (type === 'url') {
       return (
         <span 
-          className="inline-flex items-center gap-1 cursor-pointer hover:bg-slate-700/40 px-1.5 py-0.5 rounded transition-colors text-blue-300 max-w-[160px] truncate"
+          className={`inline-flex items-center gap-1 cursor-pointer hover:bg-slate-700/40 px-1.5 py-0.5 rounded transition-colors ${task.status === 'Completed' ? 'text-blue-400' : 'text-blue-300'} max-w-[160px] truncate`}
           onClick={() => handleFieldClick(field)}
           title="Click to edit"
         >
@@ -218,7 +218,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, autoEdit = fa
 
     return (
       <span 
-        className="cursor-pointer hover:bg-slate-700/40 px-2 py-1 rounded transition-colors text-slate-100"
+        className={`cursor-pointer hover:bg-slate-700/40 px-2 py-1 rounded transition-colors ${task.status === 'Completed' ? 'text-slate-400' : 'text-slate-100'}`}
         onClick={() => handleFieldClick(field)}
         title="Click to edit"
       >
@@ -260,7 +260,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, autoEdit = fa
   };
 
   return (
-    <div className={`grid grid-cols-[1fr_0.8fr_1fr_1fr_1fr_1fr_0.6fr_1fr_1fr_0.6fr_0.6fr_auto] items-center gap-0 px-3 py-1.5 text-[11px] text-slate-100 divide-x divide-slate-700 ${getRowBgColor()}`}>
+    <div className={`grid grid-cols-[1fr_0.8fr_1fr_1fr_1fr_1fr_0.6fr_1fr_1fr_0.6fr_0.6fr_auto] items-center gap-0 px-3 py-1.5 text-[11px] ${task.status === 'Completed' ? 'text-slate-400' : 'text-slate-100'} divide-x divide-slate-700 ${getRowBgColor()}`}>
 
       {/* Client Name */}
       <div className="min-w-0 px-2 py-1 text-left">
@@ -276,7 +276,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, autoEdit = fa
           />
         ) : (
           <span
-            className={`truncate block cursor-pointer hover:bg-slate-700/40 px-2 py-1 rounded transition-colors ${task.status === 'Completed' ? 'text-slate-400 line-through' : 'text-slate-100'}`}
+            className={`truncate block cursor-pointer hover:bg-slate-700/40 px-2 py-1 rounded transition-colors ${task.status === 'Completed' ? 'text-slate-400' : 'text-slate-100'}`}
             onClick={() => handleFieldClick('clientName')}
             title="Click to edit client name"
           >
@@ -302,7 +302,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, autoEdit = fa
           </select>
         ) : (
           <span
-            className="flex items-center gap-1 cursor-pointer hover:bg-slate-700/40 px-2 py-1 rounded transition-colors text-slate-200"
+            className={`flex items-center gap-1 cursor-pointer hover:bg-slate-700/40 px-2 py-1 rounded transition-colors ${task.status === 'Completed' ? 'text-slate-400' : 'text-slate-200'}`}
             onClick={() => handleFieldClick('clientGroup')}
             title="Click to change group (will move task to different tab)"
           >
@@ -418,7 +418,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, autoEdit = fa
           renderEditableField('totalPrice', 'Total Price', task.totalPrice?.toString() || '', 'number')
         ) : (
           <span 
-            className="cursor-pointer hover:bg-slate-700/40 px-2 py-1 rounded transition-colors"
+            className={`cursor-pointer hover:bg-slate-700/40 px-2 py-1 rounded transition-colors ${task.status === 'Completed' ? 'text-slate-400' : 'text-slate-100'}`}
             onClick={() => handleFieldClick('totalPrice')}
             title="Click to edit"
           >
@@ -433,7 +433,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, autoEdit = fa
           renderEditableField('deposit', 'Deposit', task.deposit?.toString() || '', 'number')
         ) : (
           <span 
-            className="cursor-pointer hover:bg-slate-700/40 px-2 py-1 rounded transition-colors"
+            className={`cursor-pointer hover:bg-slate-700/40 px-2 py-1 rounded transition-colors ${task.status === 'Completed' ? 'text-slate-400' : 'text-slate-100'}`}
             onClick={() => handleFieldClick('deposit')}
             title="Click to edit"
           >
