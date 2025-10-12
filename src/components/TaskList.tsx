@@ -8,10 +8,9 @@ interface TaskListProps {
   tasks: Task[];
   onDeleteTask: (id: string) => void;
   onEditTask: (id: string, updates: Partial<Task>) => void;
-  onToggleInvoiced?: (id: string) => void;
 }
 
-export default function TaskList({ tasks, onDeleteTask, onEditTask, onToggleInvoiced }: TaskListProps) {
+export default function TaskList({ tasks, onDeleteTask, onEditTask }: TaskListProps) {
   // Move all hooks to the top before any conditional returns
   const year = new Date().getFullYear();
   const months = Array.from({ length: 12 }, (_, i) => {
@@ -151,7 +150,7 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, onToggleInvo
         <div className="text-left px-2 py-1 overflow-hidden truncate">Cost</div>
         <div className="text-left px-2 py-1 overflow-hidden truncate">Deposit</div>
         <div className="text-left px-2 py-1 overflow-hidden truncate">Assignee</div>
-        <div className="text-left px-2 py-1 overflow-hidden truncate">Invoice</div>
+        <div className="text-left px-2 py-1 overflow-hidden truncate">Actions</div>
       </div>
 
       {/* Filtered Data rows */}
@@ -162,7 +161,6 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, onToggleInvo
               task={task}
               onDeleteTask={onDeleteTask}
               onEditTask={onEditTask}
-              onToggleInvoiced={onToggleInvoiced}
             />
         ))}
       </div>

@@ -7,7 +7,6 @@ interface TaskItemProps {
   task: Task;
   onDeleteTask: (id: string) => void;
   onEditTask: (id: string, updates: Partial<Task>) => void;
-  onToggleInvoiced?: (id: string) => void;
   autoEdit?: boolean;
 }
 
@@ -36,7 +35,7 @@ const getStatusColor = (status: Status) => {
   }
 };
 
-export default function TaskItem({ task, onDeleteTask, onEditTask, onToggleInvoiced, autoEdit = false }: TaskItemProps) {
+export default function TaskItem({ task, onDeleteTask, onEditTask, autoEdit = false }: TaskItemProps) {
   const [isEditing, setIsEditing] = useState(autoEdit);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editData, setEditData] = useState({
@@ -456,7 +455,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, onToggleInvoi
         {renderEditableField('assignee', 'Assignee', task.assignee, 'select', assigneeOptions)}
       </div>
 
-      {/* Invoice */}
+      {/* Actions */}
       <div className="flex items-center justify-start gap-2 px-2 py-1 overflow-hidden">
         {isEditing ? (
           <>
@@ -481,13 +480,6 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, onToggleInvoi
           </>
         ) : (
           <>
-            <input
-              type="checkbox"
-              checked={task.invoiced || false}
-              onChange={() => onToggleInvoiced && onToggleInvoiced(task.id)}
-              className="h-4 w-4 text-blue-400 focus:ring-blue-500 border-slate-600 bg-slate-800 rounded"
-              title="Mark as invoiced"
-            />
             <button
               onClick={() => onDeleteTask(task.id)}
               className="text-red-400 hover:text-red-300 transition-colors duration-200"
