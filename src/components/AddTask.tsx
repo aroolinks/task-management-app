@@ -12,6 +12,7 @@ interface AddTaskProps {
 const priorities: Priority[] = ['Low', 'Medium', 'High', 'Urgent'];
 const statuses: Status[] = ['InProcess', 'Waiting for Quote', 'Completed'];
 const cmsOptions: CMS[] = ['Wordpress', 'Shopify', 'Designing' , 'SEO' , 'Marketing'];
+const groupOptions: string[] = ['Casey', 'Jack', 'Upwork', 'Personal'];
 const todayStr = new Date().toISOString().split('T')[0];
 
 export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps) {
@@ -31,7 +32,7 @@ export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (clientName.trim() && clientGroup.trim()) { // Check both required fields
+    if (clientName.trim() && clientGroup) { // Check both required fields
       onAddTask({
         dueDate: dueDate ? new Date(dueDate) : null,
         priority,
@@ -39,7 +40,7 @@ export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps)
         // New fields
         status,
         clientName: clientName.trim(),
-        clientGroup: clientGroup.trim(),
+        clientGroup: clientGroup,
         cms,
         webUrl: webUrl.trim(),
         figmaUrl: figmaUrl.trim(),
@@ -107,15 +108,18 @@ export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps)
               <label htmlFor="clientGroup" className="block text-sm font-medium text-slate-300 mb-1">
                 Client Group *
               </label>
-              <input
-                type="text"
+              <select
                 id="clientGroup"
                 value={clientGroup}
                 onChange={(e) => setClientGroup(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 text-slate-100 placeholder-slate-400 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
-                placeholder="Enter client group..."
+                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 text-slate-100 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
                 required
-              />
+              >
+                <option value="">Select a group...</option>
+                {groupOptions.map(group => (
+                  <option key={group} value={group}>{group}</option>
+                ))}
+              </select>
             </div>
           </div>
           

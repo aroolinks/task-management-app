@@ -27,6 +27,10 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask }: TaskListPr
     return tasks.filter(t => t.dueDate instanceof Date && t.dueDate.getFullYear() === y && (t.dueDate.getMonth() + 1) === m);
   }, [tasks, selectedMonth]);
 
+  // Define available groups
+  const availableGroups = ['Casey', 'Jack', 'Upwork', 'Personal'];
+  const [selectedGroup, setSelectedGroup] = useState<string>('all');
+
   // Group tasks by clientGroup
   const groupedTasks = useMemo(() => {
     const groups: { [key: string]: Task[] } = {};
@@ -39,6 +43,15 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask }: TaskListPr
     });
     return groups;
   }, [visibleTasks]);
+
+  // Filter tasks by selected group
+  const filteredTasks = useMemo(() => {
+    if (selectedGroup === 'all') return visibleTasks;
+    return visibleTasks.filter(task => {
+      const taskGroup = task.clientGroup || 'Ungrouped';
+      return taskGroup === selectedGroup;
+    });
+  }, [visibleTasks, selectedGroup]);
 
   const totalEarnings = useMemo(() => {
     return visibleTasks.reduce((sum, t) => sum + (t.totalPrice || 0), 0);
@@ -93,6 +106,36 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask }: TaskListPr
         </div>
       </div>
 
+      {/* Group tabs */}
+      <div className="flex items-center gap-1 px-3 py-2 bg-slate-750 border-b border-slate-700 overflow-x-auto">
+        <button
+          className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${selectedGroup === 'all' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+          onClick={() => setSelectedGroup('all')}
+        >
+          All Groups
+        </button>
+        {availableGroups.map(group => {
+          const groupTasks = groupedTasks[group] || [];
+          return (
+            <button
+              key={group}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${selectedGroup === group ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+              onClick={() => setSelectedGroup(group)}
+            >
+              {group} {groupTasks.length > 0 && `(${groupTasks.length})`}
+            </button>
+          );
+        })}
+        {groupedTasks['Ungrouped'] && (
+          <button
+            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${selectedGroup === 'Ungrouped' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+            onClick={() => setSelectedGroup('Ungrouped')}
+          >
+            Ungrouped ({groupedTasks['Ungrouped'].length})
+          </button>
+        )}
+      </div>
+
       {/* Header row */}
       <div className="grid grid-cols-[1fr_0.8fr_1fr_1fr_1fr_1fr_0.6fr_1fr_1fr_0.6fr_0.6fr_auto] items-center gap-0 px-3 py-1 text-[11px] font-semibold text-slate-300 tracking-wide bg-slate-900 border-b border-slate-700 divide-x divide-slate-700">
         <div className="text-left pl-2">Name</div>
@@ -109,33 +152,15 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask }: TaskListPr
         <div className="text-left pl-2">Actions</div>
       </div>
 
-      {/* Grouped Data rows */}
-      <div>
-        {Object.entries(groupedTasks).map(([groupName, groupTasks]) => (
-          <div key={groupName}>
-            {/* Group Header */}
-            <div className="bg-slate-700 px-3 py-2 border-b border-slate-600">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-slate-200">
-                  {groupName}
-                </h3>
-                <span className="text-xs text-slate-400 bg-slate-600 px-2 py-1 rounded">
-                  {groupTasks.length} {groupTasks.length === 1 ? 'project' : 'projects'}
-                </span>
-              </div>
-            </div>
-            {/* Group Tasks */}
-            <div className="divide-y divide-slate-700">
-              {groupTasks.map(task => (
-                <TaskItem
-                  key={task.id}
-                  task={task}
-                  onDeleteTask={onDeleteTask}
-                  onEditTask={onEditTask}
-                />
-              ))}
-            </div>
-          </div>
+      {/* Filtered Data rows */}
+      <div className="divide-y divide-slate-700">
+        {filteredTasks.map(task => (
+          <TaskItem
+            key={task.id}
+            task={task}
+            onDeleteTask={onDeleteTask}
+            onEditTask={onEditTask}
+          />
         ))}
       </div>
     </div>
