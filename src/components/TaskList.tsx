@@ -82,7 +82,7 @@ export default function TaskList({ tasks, onToggleComplete, onDeleteTask, onEdit
       </div>
 
       {/* Header row */}
-      <div className="grid grid-cols-[24px_1fr_1fr_1fr_1fr_1fr_0.6fr_1fr_1fr_1fr_1fr_auto] items-center gap-0 px-3 py-1 text-[11px] font-semibold text-slate-300 tracking-wide bg-slate-900 border-b border-slate-700 divide-x divide-slate-700">
+      <div className="grid grid-cols-[24px_1fr_1fr_1fr_1fr_1fr_0.6fr_1fr_1fr_0.6fr_0.6fr_auto] items-center gap-0 px-3 py-1 text-[11px] font-semibold text-slate-300 tracking-wide bg-slate-900 border-b border-slate-700 divide-x divide-slate-700">
         <div></div>
         <div className="text-left pl-2">Name</div>
         <div className="text-left pl-2">Web</div>

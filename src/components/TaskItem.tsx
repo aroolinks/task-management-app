@@ -253,7 +253,7 @@ export default function TaskItem({ task, onToggleComplete, onDeleteTask, onEditT
   };
 
   return (
-    <div className={`grid grid-cols-[24px_1fr_1fr_1fr_1fr_1fr_0.6fr_1fr_1fr_1fr_1fr_auto] items-center gap-0 px-3 py-1.5 text-[11px] text-slate-100 divide-x divide-slate-700 ${getRowBgColor()}`}>
+    <div className={`grid grid-cols-[24px_1fr_1fr_1fr_1fr_1fr_0.6fr_1fr_1fr_0.6fr_0.6fr_auto] items-center gap-0 px-3 py-1.5 text-[11px] text-slate-100 divide-x divide-slate-700 ${getRowBgColor()}`}>
       {/* Checkbox */}
       <input
         type="checkbox"
