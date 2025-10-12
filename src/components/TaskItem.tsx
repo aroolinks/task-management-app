@@ -358,12 +358,12 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, autoEdit = fa
       </div>
 
       {/* Due */}
-      <div className="min-w-0 border border-slate-700 rounded-sm px-2 py-1 text-left">
+      <div className="min-w-0 px-2 py-1 text-left">
         {renderEditableField('dueDate', 'Due Date', task.dueDate instanceof Date ? task.dueDate.toISOString().split('T')[0] : '', 'date')}
       </div>
 
       {/* Status */}
-      <div className="min-w-[150px] px-2 py-1 text-left">
+      <div className="min-w-0 px-2 py-1 text-left">
         {editingField === 'status' ? (
           <select
             value={editData.status}
@@ -443,7 +443,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, autoEdit = fa
       </div>
 
       {/* Actions */}
-      <div className="flex items-center justify-start gap-2 px-2 py-1">
+      <div className="min-w-0 flex items-center justify-start gap-2 px-2 py-1">
         {isEditing ? (
           <>
             <button
