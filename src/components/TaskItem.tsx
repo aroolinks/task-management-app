@@ -259,7 +259,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, autoEdit = fa
   };
 
   return (
-    <div className={`grid grid-cols-[1fr_1fr_1fr_1fr_1fr_0.6fr_1fr_1fr_0.6fr_0.6fr_auto] items-center gap-0 px-3 py-1.5 text-[11px] text-slate-100 divide-x divide-slate-700 ${getRowBgColor()}`}>
+    <div className={`grid grid-cols-[1fr_0.8fr_1fr_1fr_1fr_1fr_0.6fr_1fr_1fr_0.6fr_0.6fr_auto] items-center gap-0 px-3 py-1.5 text-[11px] text-slate-100 divide-x divide-slate-700 ${getRowBgColor()}`}>
 
       {/* Client Name */}
       <div className="min-w-0 px-2 py-1 text-left">
@@ -280,6 +280,35 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, autoEdit = fa
             title="Click to edit client name"
           >
             {task.clientName || 'Unnamed Client'}
+          </span>
+        )}
+      </div>
+
+      {/* Client Group */}
+      <div className="min-w-0 px-2 py-1 text-left">
+        {editingField === 'clientGroup' ? (
+          <input
+            type="text"
+            value={editData.clientGroup}
+            onChange={(e) => setEditData({ ...editData, clientGroup: e.target.value })}
+            onBlur={() => handleInlineEdit('clientGroup', editData.clientGroup)}
+            onKeyPress={(e) => handleKeyPress(e, 'clientGroup')}
+            className="w-full px-2 py-1 text-xs bg-slate-800 border border-slate-600 text-slate-100 rounded focus:outline-none focus:ring-2 focus:ring-slate-500"
+            placeholder="Enter group name"
+            autoFocus
+          />
+        ) : (
+          <span
+            className="flex items-center gap-1 cursor-pointer hover:bg-slate-700/40 px-2 py-1 rounded transition-colors text-slate-200"
+            onClick={() => handleFieldClick('clientGroup')}
+            title="Click to change group (will move task to different section)"
+          >
+            <svg className="h-3 w-3 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+            </svg>
+            <span className="truncate">
+              {task.clientGroup || 'No Group'}
+            </span>
           </span>
         )}
       </div>
