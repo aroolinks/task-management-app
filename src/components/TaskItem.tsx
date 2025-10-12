@@ -17,20 +17,20 @@ const cmsOptions: CMS[] = ['Wordpress', 'Shopify', 'Designing', 'SEO', 'Marketin
 
 const getPriorityColor = (priority: Priority) => {
   switch (priority) {
-    case 'Low': return 'bg-slate-700 text-slate-200';
-    case 'Medium': return 'bg-slate-700 text-slate-200';
-    case 'High': return 'bg-slate-700 text-slate-200';
-    case 'Urgent': return 'bg-slate-700 text-slate-200';
-    default: return 'bg-slate-700 text-slate-200';
+    case 'Low': return 'bg-blue-700 text-blue-100 border-blue-600';
+    case 'Medium': return 'bg-yellow-700 text-yellow-100 border-yellow-600';
+    case 'High': return 'bg-orange-700 text-orange-100 border-orange-600';
+    case 'Urgent': return 'bg-red-700 text-red-100 border-red-600';
+    default: return 'bg-slate-700 text-slate-200 border-slate-600';
   }
 };
 
 const getStatusColor = (status: Status) => {
   switch (status) {
-    case 'Completed': return 'bg-slate-700 text-slate-200';
-    case 'InProcess': return 'bg-slate-700 text-slate-200';
-    case 'Waiting for Quote': return 'bg-slate-700 text-slate-200';
-    default: return 'bg-slate-700 text-slate-200';
+    case 'Completed': return 'bg-green-700 text-green-100 border-green-600';
+    case 'InProcess': return 'bg-amber-700 text-amber-100 border-amber-600';
+    case 'Waiting for Quote': return 'bg-slate-700 text-slate-200 border-slate-600';
+    default: return 'bg-slate-700 text-slate-200 border-slate-600';
   }
 };
 
@@ -168,7 +168,7 @@ export default function TaskItem({ task, onToggleComplete, onDeleteTask, onEditT
             value={editData[field as keyof typeof editData] as string || ''}
             onChange={(e) => handleInlineEdit(field, e.target.value || null)}
             onBlur={() => setEditingField(null)}
-className="bg-slate-800 border border-slate-600 text-slate-100 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-slate-500"
+            className="bg-slate-800 border border-slate-600 text-slate-100 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-slate-500"
             autoFocus
           >
             <option value="">Select {label}...</option>
@@ -186,7 +186,7 @@ className="bg-slate-800 border border-slate-600 text-slate-100 rounded px-2 py-1
           onChange={(e) => setEditData({ ...editData, [field]: e.target.value })}
           onBlur={() => handleInlineEdit(field, editData[field as keyof typeof editData])}
           onKeyPress={(e) => handleKeyPress(e, field)}
-className={`bg-slate-800 border border-slate-600 text-slate-100 rounded px-2 ${type === 'date' ? 'py-1.5 text-sm' : 'py-1 text-xs'} focus:outline-none focus:ring-2 focus:ring-slate-500 min-w-0 w-full`}
+          className={`bg-slate-800 border border-slate-600 text-slate-100 rounded px-2 ${type === 'date' ? 'py-1.5 text-sm' : 'py-1 text-xs'} focus:outline-none focus:ring-2 focus:ring-slate-500 min-w-0 w-full`}
           autoFocus
           step={type === 'number' ? '0.01' : undefined}
           min={type === 'number' ? '0' : undefined}
@@ -197,7 +197,7 @@ className={`bg-slate-800 border border-slate-600 text-slate-100 rounded px-2 ${t
     if (type === 'url') {
       return (
         <span 
-className="inline-flex items-center gap-1 cursor-pointer hover:bg-slate-700/40 px-1.5 py-0.5 rounded transition-colors text-blue-300 max-w-[160px] truncate"
+          className="inline-flex items-center gap-1 cursor-pointer hover:bg-slate-700/40 px-1.5 py-0.5 rounded transition-colors text-blue-300 max-w-[160px] truncate"
           onClick={() => handleFieldClick(field)}
           title="Click to edit"
         >
@@ -212,7 +212,7 @@ className="inline-flex items-center gap-1 cursor-pointer hover:bg-slate-700/40 p
 
     return (
       <span 
-className="cursor-pointer hover:bg-slate-700/40 px-2 py-1 rounded transition-colors text-slate-100"
+        className="cursor-pointer hover:bg-slate-700/40 px-2 py-1 rounded transition-colors text-slate-100"
         onClick={() => handleFieldClick(field)}
         title="Click to edit"
       >
@@ -242,8 +242,18 @@ className="cursor-pointer hover:bg-slate-700/40 px-2 py-1 rounded transition-col
     return date.toLocaleDateString();
   };
 
+  // Get row background color based on status
+  const getRowBgColor = () => {
+    switch (task.status) {
+      case 'Completed': return 'bg-green-900/20 hover:bg-green-900/30 border-green-800/30';
+      case 'InProcess': return 'bg-amber-900/20 hover:bg-amber-900/30 border-amber-800/30';
+      case 'Waiting for Quote': return 'bg-transparent hover:bg-slate-700/40';
+      default: return 'bg-transparent hover:bg-slate-700/40';
+    }
+  };
+
   return (
-    <div className="grid grid-cols-[24px_3fr_1.5fr_1.5fr_1.5fr_1.5fr_1.5fr_1.8fr_1.3fr_1.2fr_1.2fr_auto] items-center gap-0 px-3 py-1.5 bg-transparent hover:bg-slate-700/40 text-[11px] text-slate-100 divide-x divide-slate-700">
+    <div className={`grid grid-cols-[24px_1fr_1fr_1fr_1fr_1fr_0.8fr_1fr_1fr_1fr_1fr_auto] items-center gap-0 px-3 py-1.5 text-[11px] text-slate-100 divide-x divide-slate-700 ${getRowBgColor()}`}>
       {/* Checkbox */}
       <input
         type="checkbox"
@@ -279,7 +289,7 @@ className="cursor-pointer hover:bg-slate-700/40 px-2 py-1 rounded transition-col
       <div className="min-w-0 flex items-center gap-2 px-2 py-1 text-left">
         {renderEditableField('webUrl', 'Web URL', task.webUrl, 'url')}
         {task.webUrl && editingField !== 'webUrl' && (
-<a href={task.webUrl} target="_blank" rel="noopener noreferrer" className="text-white hover:text-slate-200 text-xs shrink-0">
+          <a href={task.webUrl} target="_blank" rel="noopener noreferrer" className="text-white hover:text-slate-200 text-xs shrink-0">
             <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
             </svg>
@@ -289,14 +299,14 @@ className="cursor-pointer hover:bg-slate-700/40 px-2 py-1 rounded transition-col
 
       {/* CMS */}
       <div className="min-w-0 px-2 py-1 text-left">
-{renderEditableField('cms', 'Job Desc', task.cms, 'select', cmsOptions)}
+        {renderEditableField('cms', 'Job Desc', task.cms, 'select', cmsOptions)}
       </div>
 
       {/* Figma */}
       <div className="min-w-0 flex items-center gap-2 px-2 py-1 text-left">
         {renderEditableField('figmaUrl', 'Figma URL', task.figmaUrl, 'url')}
         {task.figmaUrl && editingField !== 'figmaUrl' && (
-<a href={task.figmaUrl} target="_blank" rel="noopener noreferrer" className="text-white hover:text-slate-200 text-xs shrink-0">
+          <a href={task.figmaUrl} target="_blank" rel="noopener noreferrer" className="text-white hover:text-slate-200 text-xs shrink-0">
             <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
             </svg>
@@ -308,7 +318,7 @@ className="cursor-pointer hover:bg-slate-700/40 px-2 py-1 rounded transition-col
       <div className="min-w-0 flex items-center gap-2 px-2 py-1 text-left">
         {renderEditableField('assetUrl', 'Asset URL', task.assetUrl, 'url')}
         {task.assetUrl && editingField !== 'assetUrl' && (
-<a href={task.assetUrl} target="_blank" rel="noopener noreferrer" className="text-white hover:text-slate-200 text-xs shrink-0">
+          <a href={task.assetUrl} target="_blank" rel="noopener noreferrer" className="text-white hover:text-slate-200 text-xs shrink-0">
             <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
             </svg>
@@ -328,7 +338,7 @@ className="cursor-pointer hover:bg-slate-700/40 px-2 py-1 rounded transition-col
             value={editData.status}
             onChange={(e) => handleInlineEdit('status', e.target.value)}
             onBlur={() => setEditingField(null)}
-className="px-2 py-1 text-xs font-medium rounded-full border border-slate-600 bg-slate-800 text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-500"
+            className="px-2 py-1 text-xs font-medium rounded-full border border-slate-600 bg-slate-800 text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-500"
             autoFocus
           >
             {statuses.map(s => (
@@ -337,7 +347,7 @@ className="px-2 py-1 text-xs font-medium rounded-full border border-slate-600 bg
           </select>
         ) : (
           <span 
-className={`inline-flex px-2 py-1 text-xs font-medium rounded-full cursor-pointer hover:ring-2 hover:ring-slate-500 transition-all ${getStatusColor(task.status)} ${task.completed ? 'opacity-50' : ''}`}
+            className={`inline-flex px-2 py-1 text-xs font-medium rounded-full cursor-pointer hover:ring-2 hover:ring-slate-500 transition-all border ${getStatusColor(task.status)} ${task.completed ? 'opacity-50' : ''}`}
             onClick={() => handleFieldClick('status')}
             title="Click to change status"
           >
@@ -353,7 +363,7 @@ className={`inline-flex px-2 py-1 text-xs font-medium rounded-full cursor-pointe
             value={editData.priority}
             onChange={(e) => handleInlineEdit('priority', e.target.value)}
             onBlur={() => setEditingField(null)}
-className="px-2 py-1 text-xs font-medium rounded-full border border-slate-600 bg-slate-800 text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-500"
+            className="px-2 py-1 text-xs font-medium rounded-full border border-slate-600 bg-slate-800 text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-500"
             autoFocus
           >
             {priorities.map(p => (
@@ -362,7 +372,7 @@ className="px-2 py-1 text-xs font-medium rounded-full border border-slate-600 bg
           </select>
         ) : (
           <span 
-className={`inline-flex px-2 py-1 text-xs font-medium rounded-full cursor-pointer hover:ring-2 hover:ring-slate-500 transition-all ${getPriorityColor(task.priority)} ${task.completed ? 'opacity-50' : ''}`}
+            className={`inline-flex px-2 py-1 text-xs font-medium rounded-full cursor-pointer hover:ring-2 hover:ring-slate-500 transition-all border ${getPriorityColor(task.priority)} ${task.completed ? 'opacity-50' : ''}`}
             onClick={() => handleFieldClick('priority')}
             title="Click to change priority"
           >
@@ -377,7 +387,7 @@ className={`inline-flex px-2 py-1 text-xs font-medium rounded-full cursor-pointe
           renderEditableField('totalPrice', 'Total Price', task.totalPrice?.toString() || '', 'number')
         ) : (
           <span 
-className="cursor-pointer hover:bg-slate-700/40 px-2 py-1 rounded transition-colors"
+            className="cursor-pointer hover:bg-slate-700/40 px-2 py-1 rounded transition-colors"
             onClick={() => handleFieldClick('totalPrice')}
             title="Click to edit"
           >
@@ -392,7 +402,7 @@ className="cursor-pointer hover:bg-slate-700/40 px-2 py-1 rounded transition-col
           renderEditableField('deposit', 'Deposit', task.deposit?.toString() || '', 'number')
         ) : (
           <span 
-className="cursor-pointer hover:bg-slate-700/40 px-2 py-1 rounded transition-colors"
+            className="cursor-pointer hover:bg-slate-700/40 px-2 py-1 rounded transition-colors"
             onClick={() => handleFieldClick('deposit')}
             title="Click to edit"
           >
@@ -407,7 +417,7 @@ className="cursor-pointer hover:bg-slate-700/40 px-2 py-1 rounded transition-col
           <>
             <button
               onClick={handleSave}
-className="text-green-400 hover:text-green-300 transition-colors duration-200"
+              className="text-green-400 hover:text-green-300 transition-colors duration-200"
               aria-label="Save changes"
             >
 <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -416,7 +426,7 @@ className="text-green-400 hover:text-green-300 transition-colors duration-200"
             </button>
             <button
               onClick={handleCancel}
-className="text-slate-300 hover:text-slate-200 transition-colors duration-200"
+              className="text-slate-300 hover:text-slate-200 transition-colors duration-200"
               aria-label="Cancel editing"
             >
 <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -428,7 +438,7 @@ className="text-slate-300 hover:text-slate-200 transition-colors duration-200"
           <>
             <button
               onClick={() => onDeleteTask(task.id)}
-className="text-red-400 hover:text-red-300 transition-colors duration-200"
+              className="text-red-400 hover:text-red-300 transition-colors duration-200"
               aria-label="Delete task"
             >
 <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
