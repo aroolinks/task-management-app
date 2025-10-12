@@ -8,7 +8,7 @@ import Logo from '@/components/Logo';
 import AddTask from '@/components/AddTask';
 
 export default function Home() {
-  const { tasks, loading, error, createTask, updateTask, deleteTask, toggleComplete } = useTasks();
+  const { tasks, loading, error, createTask, updateTask, deleteTask } = useTasks();
   const [isAddTaskVisible, setIsAddTaskVisible] = useState(false);
 
   const handleAddTask = async (taskInput: TaskInput) => {
@@ -17,10 +17,6 @@ export default function Home() {
       setIsAddTaskVisible(false);
     }
   };
-
-  const handleToggleComplete = useCallback(async (id: string) => {
-    await toggleComplete(id);
-  }, [toggleComplete]);
 
   const handleDeleteTask = useCallback(async (id: string) => {
     await deleteTask(id);
@@ -93,7 +89,6 @@ export default function Home() {
         
         <TaskList 
           tasks={tasks}
-          onToggleComplete={handleToggleComplete}
           onDeleteTask={handleDeleteTask}
           onEditTask={handleEditTask}
         />

@@ -5,7 +5,6 @@ import { Task, Priority, Status, CMS } from '@/types/task';
 
 interface TaskItemProps {
   task: Task;
-  onToggleComplete: (id: string) => void;
   onDeleteTask: (id: string) => void;
   onEditTask: (id: string, updates: Partial<Task>) => void;
   autoEdit?: boolean;
@@ -34,7 +33,7 @@ const getStatusColor = (status: Status) => {
   }
 };
 
-export default function TaskItem({ task, onToggleComplete, onDeleteTask, onEditTask, autoEdit = false }: TaskItemProps) {
+export default function TaskItem({ task, onDeleteTask, onEditTask, autoEdit = false }: TaskItemProps) {
   const [isEditing, setIsEditing] = useState(autoEdit);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editData, setEditData] = useState({
@@ -42,6 +41,7 @@ export default function TaskItem({ task, onToggleComplete, onDeleteTask, onEditT
     priority: task.priority,
     status: task.status,
     clientName: task.clientName,
+    clientGroup: task.clientGroup,
     cms: task.cms,
     webUrl: task.webUrl,
     figmaUrl: task.figmaUrl,
@@ -56,6 +56,7 @@ export default function TaskItem({ task, onToggleComplete, onDeleteTask, onEditT
       priority: editData.priority,
       status: editData.status,
       clientName: editData.clientName.trim(),
+      clientGroup: editData.clientGroup.trim(),
       cms: editData.cms,
       webUrl: editData.webUrl.trim(),
       figmaUrl: editData.figmaUrl.trim(),
@@ -75,6 +76,9 @@ export default function TaskItem({ task, onToggleComplete, onDeleteTask, onEditT
     switch (field) {
       case 'clientName':
         updates.clientName = value ? String(value).trim() : '';
+        break;
+      case 'clientGroup':
+        updates.clientGroup = value ? String(value).trim() : '';
         break;
       case 'dueDate':
         updates.dueDate = value ? new Date(String(value)) : null;
@@ -118,6 +122,7 @@ export default function TaskItem({ task, onToggleComplete, onDeleteTask, onEditT
         priority: task.priority,
         status: task.status,
         clientName: task.clientName,
+        clientGroup: task.clientGroup,
         cms: task.cms,
         webUrl: task.webUrl,
         figmaUrl: task.figmaUrl,
@@ -227,6 +232,7 @@ export default function TaskItem({ task, onToggleComplete, onDeleteTask, onEditT
       priority: task.priority,
       status: task.status,
       clientName: task.clientName,
+      clientGroup: task.clientGroup,
       cms: task.cms,
       webUrl: task.webUrl,
       figmaUrl: task.figmaUrl,
@@ -253,14 +259,7 @@ export default function TaskItem({ task, onToggleComplete, onDeleteTask, onEditT
   };
 
   return (
-    <div className={`grid grid-cols-[24px_1fr_1fr_1fr_1fr_1fr_0.6fr_1fr_1fr_0.6fr_0.6fr_auto] items-center gap-0 px-3 py-1.5 text-[11px] text-slate-100 divide-x divide-slate-700 ${getRowBgColor()}`}>
-      {/* Checkbox */}
-      <input
-        type="checkbox"
-        checked={task.completed}
-        onChange={() => onToggleComplete(task.id)}
-        className="h-4 w-4 text-blue-400 focus:ring-blue-500 border-slate-600 bg-slate-800 rounded"
-      />
+    <div className={`grid grid-cols-[1fr_1fr_1fr_1fr_1fr_0.6fr_1fr_1fr_0.6fr_0.6fr_auto] items-center gap-0 px-3 py-1.5 text-[11px] text-slate-100 divide-x divide-slate-700 ${getRowBgColor()}`}>
 
       {/* Client Name */}
       <div className="min-w-0 px-2 py-1 text-left">
@@ -276,7 +275,7 @@ export default function TaskItem({ task, onToggleComplete, onDeleteTask, onEditT
           />
         ) : (
           <span
-            className={`truncate block cursor-pointer hover:bg-slate-700/40 px-2 py-1 rounded transition-colors ${task.completed ? 'text-slate-400 line-through' : 'text-slate-100'}`}
+            className={`truncate block cursor-pointer hover:bg-slate-700/40 px-2 py-1 rounded transition-colors ${task.status === 'Completed' ? 'text-slate-400 line-through' : 'text-slate-100'}`}
             onClick={() => handleFieldClick('clientName')}
             title="Click to edit client name"
           >
@@ -347,7 +346,7 @@ export default function TaskItem({ task, onToggleComplete, onDeleteTask, onEditT
           </select>
         ) : (
           <span 
-            className={`inline-flex px-2 py-1 text-xs font-medium rounded-full cursor-pointer hover:ring-2 hover:ring-slate-500 transition-all border ${getStatusColor(task.status)} ${task.completed ? 'opacity-50' : ''}`}
+            className={`inline-flex px-2 py-1 text-xs font-medium rounded-full cursor-pointer hover:ring-2 hover:ring-slate-500 transition-all border ${getStatusColor(task.status)}`}
             onClick={() => handleFieldClick('status')}
             title="Click to change status"
           >
@@ -372,7 +371,7 @@ export default function TaskItem({ task, onToggleComplete, onDeleteTask, onEditT
           </select>
         ) : (
           <span 
-            className={`inline-flex px-2 py-1 text-xs font-medium rounded-full cursor-pointer hover:ring-2 hover:ring-slate-500 transition-all border ${getPriorityColor(task.priority)} ${task.completed ? 'opacity-50' : ''}`}
+            className={`inline-flex px-2 py-1 text-xs font-medium rounded-full cursor-pointer hover:ring-2 hover:ring-slate-500 transition-all border ${getPriorityColor(task.priority)}`}
             onClick={() => handleFieldClick('priority')}
             title="Click to change priority"
           >

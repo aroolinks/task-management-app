@@ -6,12 +6,11 @@ import TaskItem from './TaskItem';
 
 interface TaskListProps {
   tasks: Task[];
-  onToggleComplete: (id: string) => void;
   onDeleteTask: (id: string) => void;
   onEditTask: (id: string, updates: Partial<Task>) => void;
 }
 
-export default function TaskList({ tasks, onToggleComplete, onDeleteTask, onEditTask }: TaskListProps) {
+export default function TaskList({ tasks, onDeleteTask, onEditTask }: TaskListProps) {
   // Move all hooks to the top before any conditional returns
   const year = new Date().getFullYear();
   const months = Array.from({ length: 12 }, (_, i) => {
@@ -27,6 +26,19 @@ export default function TaskList({ tasks, onToggleComplete, onDeleteTask, onEdit
     const [y, m] = selectedMonth.split('-').map(Number);
     return tasks.filter(t => t.dueDate instanceof Date && t.dueDate.getFullYear() === y && (t.dueDate.getMonth() + 1) === m);
   }, [tasks, selectedMonth]);
+
+  // Group tasks by clientGroup
+  const groupedTasks = useMemo(() => {
+    const groups: { [key: string]: Task[] } = {};
+    visibleTasks.forEach(task => {
+      const groupName = task.clientGroup || 'Ungrouped';
+      if (!groups[groupName]) {
+        groups[groupName] = [];
+      }
+      groups[groupName].push(task);
+    });
+    return groups;
+  }, [visibleTasks]);
 
   const totalEarnings = useMemo(() => {
     return visibleTasks.reduce((sum, t) => sum + (t.totalPrice || 0), 0);
@@ -82,11 +94,10 @@ export default function TaskList({ tasks, onToggleComplete, onDeleteTask, onEdit
       </div>
 
       {/* Header row */}
-      <div className="grid grid-cols-[24px_1fr_1fr_1fr_1fr_1fr_0.6fr_1fr_1fr_0.6fr_0.6fr_auto] items-center gap-0 px-3 py-1 text-[11px] font-semibold text-slate-300 tracking-wide bg-slate-900 border-b border-slate-700 divide-x divide-slate-700">
-        <div></div>
+      <div className="grid grid-cols-[1fr_1fr_1fr_1fr_1fr_0.6fr_1fr_1fr_0.6fr_0.6fr_auto] items-center gap-0 px-3 py-1 text-[11px] font-semibold text-slate-300 tracking-wide bg-slate-900 border-b border-slate-700 divide-x divide-slate-700">
         <div className="text-left pl-2">Name</div>
         <div className="text-left pl-2">Web</div>
-<div className="text-left pl-2">Job Desc</div>
+        <div className="text-left pl-2">Job Desc</div>
         <div className="text-left pl-2">Figma</div>
         <div className="text-left pl-2">Asset</div>
         <div className="text-left pl-2">Due</div>
@@ -97,16 +108,33 @@ export default function TaskList({ tasks, onToggleComplete, onDeleteTask, onEdit
         <div className="text-left pl-2">Actions</div>
       </div>
 
-      {/* Data rows */}
-      <div className="divide-y divide-slate-700">
-        {visibleTasks.map(task => (
-          <TaskItem
-            key={task.id}
-            task={task}
-            onToggleComplete={onToggleComplete}
-            onDeleteTask={onDeleteTask}
-            onEditTask={onEditTask}
-          />
+      {/* Grouped Data rows */}
+      <div>
+        {Object.entries(groupedTasks).map(([groupName, groupTasks]) => (
+          <div key={groupName}>
+            {/* Group Header */}
+            <div className="bg-slate-700 px-3 py-2 border-b border-slate-600">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-slate-200">
+                  {groupName}
+                </h3>
+                <span className="text-xs text-slate-400 bg-slate-600 px-2 py-1 rounded">
+                  {groupTasks.length} {groupTasks.length === 1 ? 'project' : 'projects'}
+                </span>
+              </div>
+            </div>
+            {/* Group Tasks */}
+            <div className="divide-y divide-slate-700">
+              {groupTasks.map(task => (
+                <TaskItem
+                  key={task.id}
+                  task={task}
+                  onDeleteTask={onDeleteTask}
+                  onEditTask={onEditTask}
+                />
+              ))}
+            </div>
+          </div>
         ))}
       </div>
     </div>
