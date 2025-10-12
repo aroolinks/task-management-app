@@ -1,9 +1,11 @@
 import mongoose, { type Mongoose } from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI ?? 'mongodb://localhost:27017/taskmanagement';
+const isProd = process.env.NODE_ENV === 'production';
+// In production, require MONGODB_URI to be set. In development, allow localhost fallback.
+const MONGODB_URI = process.env.MONGODB_URI || (!isProd ? 'mongodb://localhost:27017/taskmanagement' : '');
 
 if (!MONGODB_URI) {
-  throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
+  throw new Error('MONGODB_URI is not set. In production, define it in your hosting environment.');
 }
 
 // Define the cache shape and read/write it from globalThis in a typed way
@@ -29,6 +31,8 @@ async function dbConnect(): Promise<Mongoose> {
   if (!cached!.promise) {
     const opts = {
       bufferCommands: false,
+      serverSelectionTimeoutMS: 8000, // fail fast instead of hanging
+      connectTimeoutMS: 8000,
     } as const;
 
     cached!.promise = mongoose.connect(MONGODB_URI, opts);
