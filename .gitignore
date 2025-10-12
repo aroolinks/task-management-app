@@ -35,6 +35,11 @@ yarn-error.log*
 
 # vercel
 .vercel
+.vercel.json
+
+# MongoDB connection test files
+test-connection.js
+test-mongodb.js
 
 # typescript
 *.tsbuildinfo
