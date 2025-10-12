@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { TaskInput, Priority, Status, CMS } from '@/types/task';
+import { TaskInput, Priority, Status, CMS, Assignee } from '@/types/task';
 
 interface AddTaskProps {
   onAddTask: (task: TaskInput) => void;
@@ -13,6 +13,7 @@ const priorities: Priority[] = ['Low', 'Medium', 'High', 'Urgent'];
 const statuses: Status[] = ['InProcess', 'Waiting for Quote', 'Completed'];
 const cmsOptions: CMS[] = ['Wordpress', 'Shopify', 'Designing' , 'SEO' , 'Marketing'];
 const groupOptions: string[] = ['Casey', 'Jack', 'Upwork', 'Personal'];
+const assigneeOptions: string[] = ['Haroon', 'Sameed', 'Bilal', 'Abubakar', 'Awais'];
 const todayStr = new Date().toISOString().split('T')[0];
 
 export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps) {
@@ -29,6 +30,7 @@ export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps)
   const [assetUrl, setAssetUrl] = useState('');
   const [totalPrice, setTotalPrice] = useState('');
   const [deposit, setDeposit] = useState('');
+  const [assignee, setAssignee] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,6 +49,8 @@ export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps)
         assetUrl: assetUrl.trim(),
         totalPrice: totalPrice ? parseFloat(totalPrice) : null,
         deposit: deposit ? parseFloat(deposit) : null,
+        invoiced: false,
+        assignee: assignee ? (assignee as Assignee) : null,
       });
       setDueDate(todayStr);
       setPriority('Low');
@@ -60,6 +64,7 @@ export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps)
       setAssetUrl('');
       setTotalPrice('');
       setDeposit('');
+      setAssignee('');
       onClose();
     }
   };
@@ -77,6 +82,7 @@ export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps)
     setAssetUrl('');
     setTotalPrice('');
     setDeposit('');
+    setAssignee('');
     onClose();
   };
 
@@ -264,6 +270,23 @@ export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps)
                 min="0"
               />
             </div>
+          </div>
+          
+          <div>
+            <label htmlFor="assignee" className="block text-sm font-medium text-slate-300 mb-1">
+              Assignee
+            </label>
+            <select
+              id="assignee"
+              value={assignee}
+              onChange={(e) => setAssignee(e.target.value)}
+              className="w-full px-3 py-2 bg-slate-800 border border-slate-600 text-slate-100 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
+            >
+              <option value="">Select assignee...</option>
+              {assigneeOptions.map(person => (
+                <option key={person} value={person}>{person}</option>
+              ))}
+            </select>
           </div>
           
           <div className="flex space-x-3 pt-4">

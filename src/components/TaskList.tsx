@@ -8,9 +8,10 @@ interface TaskListProps {
   tasks: Task[];
   onDeleteTask: (id: string) => void;
   onEditTask: (id: string, updates: Partial<Task>) => void;
+  onToggleInvoiced?: (id: string) => void;
 }
 
-export default function TaskList({ tasks, onDeleteTask, onEditTask }: TaskListProps) {
+export default function TaskList({ tasks, onDeleteTask, onEditTask, onToggleInvoiced }: TaskListProps) {
   // Move all hooks to the top before any conditional returns
   const year = new Date().getFullYear();
   const months = Array.from({ length: 12 }, (_, i) => {
@@ -137,7 +138,7 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask }: TaskListPr
       </div>
 
       {/* Header row */}
-      <div className="grid grid-cols-[200px_120px_100px_120px_100px_100px_100px_160px_100px_100px_100px_80px] items-center gap-0 px-3 py-1.5 text-[11px] font-semibold text-slate-300 tracking-wide bg-slate-900 border-b border-slate-700 divide-x divide-slate-700">
+      <div className="grid grid-cols-[180px_100px_80px_100px_80px_80px_80px_140px_80px_80px_80px_100px_120px] items-center gap-0 px-3 py-1.5 text-[11px] font-semibold text-slate-300 tracking-wide bg-slate-900 border-b border-slate-700 divide-x divide-slate-700">
         <div className="text-left px-2 py-1 overflow-hidden truncate">Name</div>
         <div className="text-left px-2 py-1 overflow-hidden truncate">Group</div>
         <div className="text-left px-2 py-1 overflow-hidden truncate">Web</div>
@@ -149,18 +150,20 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask }: TaskListPr
         <div className="text-left px-2 py-1 overflow-hidden truncate">Priority</div>
         <div className="text-left px-2 py-1 overflow-hidden truncate">Cost</div>
         <div className="text-left px-2 py-1 overflow-hidden truncate">Deposit</div>
-        <div className="text-left px-2 py-1 overflow-hidden truncate">Actions</div>
+        <div className="text-left px-2 py-1 overflow-hidden truncate">Assignee</div>
+        <div className="text-left px-2 py-1 overflow-hidden truncate">Invoice</div>
       </div>
 
       {/* Filtered Data rows */}
       <div className="divide-y divide-slate-700">
         {filteredTasks.map(task => (
-          <TaskItem
-            key={task.id}
-            task={task}
-            onDeleteTask={onDeleteTask}
-            onEditTask={onEditTask}
-          />
+            <TaskItem
+              key={task.id}
+              task={task}
+              onDeleteTask={onDeleteTask}
+              onEditTask={onEditTask}
+              onToggleInvoiced={onToggleInvoiced}
+            />
         ))}
       </div>
     </div>

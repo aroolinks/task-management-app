@@ -1,12 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { Task, Priority, Status, CMS } from '@/types/task';
+import { Task, Priority, Status, CMS, Assignee } from '@/types/task';
 
 interface TaskItemProps {
   task: Task;
   onDeleteTask: (id: string) => void;
   onEditTask: (id: string, updates: Partial<Task>) => void;
+  onToggleInvoiced?: (id: string) => void;
   autoEdit?: boolean;
 }
 
@@ -14,6 +15,7 @@ const priorities: Priority[] = ['Low', 'Medium', 'High', 'Urgent'];
 const statuses: Status[] = ['InProcess', 'Waiting for Quote', 'Completed'];
 const cmsOptions: CMS[] = ['Wordpress', 'Shopify', 'Designing', 'SEO', 'Marketing'];
 const groupOptions: string[] = ['Casey', 'Jack', 'Upwork', 'Personal'];
+const assigneeOptions: string[] = ['Haroon', 'Sameed', 'Bilal', 'Abubakar', 'Awais'];
 
 const getPriorityColor = (priority: Priority) => {
   switch (priority) {
@@ -34,7 +36,7 @@ const getStatusColor = (status: Status) => {
   }
 };
 
-export default function TaskItem({ task, onDeleteTask, onEditTask, autoEdit = false }: TaskItemProps) {
+export default function TaskItem({ task, onDeleteTask, onEditTask, onToggleInvoiced, autoEdit = false }: TaskItemProps) {
   const [isEditing, setIsEditing] = useState(autoEdit);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editData, setEditData] = useState({
@@ -48,7 +50,8 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, autoEdit = fa
     figmaUrl: task.figmaUrl,
     assetUrl: task.assetUrl,
     totalPrice: task.totalPrice?.toString() || '',
-    deposit: task.deposit?.toString() || ''
+    deposit: task.deposit?.toString() || '',
+    assignee: task.assignee
   });
 
   const handleSave = () => {
@@ -64,6 +67,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, autoEdit = fa
       assetUrl: editData.assetUrl.trim(),
       totalPrice: editData.totalPrice ? parseFloat(editData.totalPrice) : null,
       deposit: editData.deposit ? parseFloat(editData.deposit) : null,
+      assignee: editData.assignee || null,
       updatedAt: new Date()
     };
     
@@ -108,6 +112,9 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, autoEdit = fa
       case 'deposit':
         updates.deposit = value ? parseFloat(String(value)) : null;
         break;
+      case 'assignee':
+        updates.assignee = value ? (String(value) as Assignee) : null;
+        break;
     }
     
     onEditTask(task.id, updates);
@@ -129,7 +136,8 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, autoEdit = fa
         figmaUrl: task.figmaUrl,
         assetUrl: task.assetUrl,
         totalPrice: task.totalPrice?.toString() || '',
-        deposit: task.deposit?.toString() || ''
+        deposit: task.deposit?.toString() || '',
+        assignee: task.assignee
       });
     }
   };
@@ -239,7 +247,8 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, autoEdit = fa
       figmaUrl: task.figmaUrl,
       assetUrl: task.assetUrl,
       totalPrice: task.totalPrice?.toString() || '',
-      deposit: task.deposit?.toString() || ''
+      deposit: task.deposit?.toString() || '',
+      assignee: task.assignee
     });
     setIsEditing(false);
   };
@@ -260,7 +269,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, autoEdit = fa
   };
 
   return (
-    <div className={`grid grid-cols-[200px_120px_100px_120px_100px_100px_100px_160px_100px_100px_100px_80px] items-center gap-0 px-3 py-1.5 text-[11px] ${task.status === 'Completed' ? 'text-slate-400' : 'text-slate-100'} divide-x divide-slate-700 ${getRowBgColor()}`}>
+    <div className={`grid grid-cols-[180px_100px_80px_100px_80px_80px_80px_140px_80px_80px_80px_100px_120px] items-center gap-0 px-3 py-1.5 text-[11px] ${task.status === 'Completed' ? 'text-slate-400' : 'text-slate-100'} divide-x divide-slate-700 ${getRowBgColor()}`}>
 
       {/* Client Name */}
       <div className="px-2 py-1 text-left overflow-hidden">
@@ -442,7 +451,12 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, autoEdit = fa
         )}
       </div>
 
-      {/* Actions */}
+      {/* Assignee */}
+      <div className="px-2 py-1 text-left overflow-hidden">
+        {renderEditableField('assignee', 'Assignee', task.assignee, 'select', assigneeOptions)}
+      </div>
+
+      {/* Invoice */}
       <div className="flex items-center justify-start gap-2 px-2 py-1 overflow-hidden">
         {isEditing ? (
           <>
@@ -451,7 +465,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, autoEdit = fa
               className="text-green-400 hover:text-green-300 transition-colors duration-200"
               aria-label="Save changes"
             >
-<svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </button>
@@ -460,19 +474,26 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, autoEdit = fa
               className="text-slate-300 hover:text-slate-200 transition-colors duration-200"
               aria-label="Cancel editing"
             >
-<svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </>
         ) : (
           <>
+            <input
+              type="checkbox"
+              checked={task.invoiced || false}
+              onChange={() => onToggleInvoiced && onToggleInvoiced(task.id)}
+              className="h-4 w-4 text-blue-400 focus:ring-blue-500 border-slate-600 bg-slate-800 rounded"
+              title="Mark as invoiced"
+            />
             <button
               onClick={() => onDeleteTask(task.id)}
               className="text-red-400 hover:text-red-300 transition-colors duration-200"
               aria-label="Delete task"
             >
-<svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
             </button>
