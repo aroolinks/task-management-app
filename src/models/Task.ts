@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 export interface ITask {
   _id: string;
   clientName: string;
+  clientGroup: string;
   completed: boolean;
   priority: 'Low' | 'Medium' | 'High' | 'Urgent';
   status: 'Completed' | 'InProcess' | 'Waiting for Quote';
@@ -23,6 +24,11 @@ const TaskSchema = new mongoose.Schema<ITask>(
       type: String,
       required: [true, 'Please provide a client name for this task.'],
       maxlength: [200, 'Client name cannot be more than 200 characters'],
+    },
+    clientGroup: {
+      type: String,
+      required: [true, 'Please provide a client group for this task.'],
+      maxlength: [100, 'Client group cannot be more than 100 characters'],
     },
     completed: {
       type: Boolean,

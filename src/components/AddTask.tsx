@@ -21,6 +21,7 @@ export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps)
   // New field states
   const [status, setStatus] = useState<Status>('Waiting for Quote');
   const [clientName, setClientName] = useState('');
+  const [clientGroup, setClientGroup] = useState('');
   const [cms, setCms] = useState<CMS | null>(null);
   const [webUrl, setWebUrl] = useState('');
   const [figmaUrl, setFigmaUrl] = useState('');
@@ -30,7 +31,7 @@ export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (clientName.trim()) { // Use clientName as the required field instead
+    if (clientName.trim() && clientGroup.trim()) { // Check both required fields
       onAddTask({
         dueDate: dueDate ? new Date(dueDate) : null,
         priority,
@@ -38,6 +39,7 @@ export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps)
         // New fields
         status,
         clientName: clientName.trim(),
+        clientGroup: clientGroup.trim(),
         cms,
         webUrl: webUrl.trim(),
         figmaUrl: figmaUrl.trim(),
@@ -50,6 +52,7 @@ export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps)
       // Reset new fields
       setStatus('Waiting for Quote');
       setClientName('');
+      setClientGroup('');
       setCms(null);
       setWebUrl('');
       setFigmaUrl('');
@@ -66,6 +69,7 @@ export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps)
     // Reset new fields
     setStatus('Waiting for Quote');
     setClientName('');
+    setClientGroup('');
     setCms(null);
     setWebUrl('');
     setFigmaUrl('');
@@ -83,19 +87,36 @@ export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps)
         <h2 className="text-xl font-semibold mb-4 text-slate-100">Add New Task</h2>
         
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="clientName" className="block text-sm font-medium text-slate-300 mb-1">
-              Client Name *
-            </label>
-            <input
-              type="text"
-              id="clientName"
-              value={clientName}
-              onChange={(e) => setClientName(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-800 border border-slate-600 text-slate-100 placeholder-slate-400 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
-              placeholder="Enter client name..."
-              required
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="clientName" className="block text-sm font-medium text-slate-300 mb-1">
+                Client Name *
+              </label>
+              <input
+                type="text"
+                id="clientName"
+                value={clientName}
+                onChange={(e) => setClientName(e.target.value)}
+                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 text-slate-100 placeholder-slate-400 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
+                placeholder="Enter client name..."
+                required
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="clientGroup" className="block text-sm font-medium text-slate-300 mb-1">
+                Client Group *
+              </label>
+              <input
+                type="text"
+                id="clientGroup"
+                value={clientGroup}
+                onChange={(e) => setClientGroup(e.target.value)}
+                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 text-slate-100 placeholder-slate-400 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
+                placeholder="Enter client group..."
+                required
+              />
+            </div>
           </div>
           
           <div>

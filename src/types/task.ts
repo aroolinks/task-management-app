@@ -12,6 +12,7 @@ export interface Task {
   // New fields
   status: Status;
   clientName: string;
+  clientGroup: string; // New field for grouping projects by client sections
   cms: CMS | null;
   webUrl: string;
   figmaUrl: string;
