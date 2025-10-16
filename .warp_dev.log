@@ -645,3 +645,5 @@ Require stack:
 <w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/Users/haroonkiani/task-management-app/.next/cache/webpack/client-development-fallback/1.pack.gz_' -> '/Users/haroonkiani/task-management-app/.next/cache/webpack/client-development-fallback/1.pack.gz'
 <w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/Users/haroonkiani/task-management-app/.next/cache/webpack/client-development-fallback/1.pack.gz_' -> '/Users/haroonkiani/task-management-app/.next/cache/webpack/client-development-fallback/1.pack.gz'
 <w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/Users/haroonkiani/task-management-app/.next/cache/webpack/client-development-fallback/1.pack.gz_' -> '/Users/haroonkiani/task-management-app/.next/cache/webpack/client-development-fallback/1.pack.gz'
+ ✓ Compiled in 440ms (416 modules)
+ ✓ Compiled in 257ms (416 modules)
