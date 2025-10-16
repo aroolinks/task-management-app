@@ -17,7 +17,7 @@ const cmsOptions: CMS[] = ['Wordpress', 'Shopify', 'Designing' , 'SEO' , 'Market
 const todayStr = new Date().toISOString().split('T')[0];
 
 export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps) {
-  const { assignees, loading: assigneesLoading, addAssignee, refreshAssignees } = useAssignees();
+  const { assignees, loading: assigneesLoading, addAssignee } = useAssignees();
   const { groups, loading: groupsLoading } = useGroups();
   
   const [dueDate, setDueDate] = useState(todayStr);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Task, Priority, Status, CMS } from '@/types/task';
 import { useAssignees } from '@/contexts/AssigneeContext';
 import { useGroups } from '@/contexts/GroupContext';
@@ -18,27 +18,9 @@ const priorities: Priority[] = ['Low', 'Medium', 'High', 'Urgent'];
 const statuses: Status[] = ['InProcess', 'Waiting for Quote', 'Completed'];
 const cmsOptions: CMS[] = ['Wordpress', 'Shopify', 'Designing', 'SEO', 'Marketing'];
 
-const getPriorityColor = (priority: Priority) => {
-  switch (priority) {
-    case 'Low': return 'bg-blue-700 text-blue-100 border-blue-600';
-    case 'Medium': return 'bg-yellow-700 text-yellow-100 border-yellow-600';
-    case 'High': return 'bg-orange-700 text-orange-100 border-orange-600';
-    case 'Urgent': return 'bg-red-700 text-red-100 border-red-600';
-    default: return 'bg-slate-700 text-slate-200 border-slate-600';
-  }
-};
-
-const getStatusColor = (status: Status) => {
-  switch (status) {
-    case 'Completed': return 'bg-green-700 text-green-100 border-green-600';
-    case 'InProcess': return 'bg-amber-700 text-amber-100 border-amber-600';
-    case 'Waiting for Quote': return 'bg-slate-700 text-slate-200 border-slate-600';
-    default: return 'bg-slate-700 text-slate-200 border-slate-600';
-  }
-};
 
 export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = false, showDeposit = false, autoEdit = false }: TaskItemProps) {
-  const { assignees, addAssignee } = useAssignees();
+  const { assignees } = useAssignees();
   const { groups } = useGroups();
   const [isEditing, setIsEditing] = useState(autoEdit);
   const [editingField, setEditingField] = useState<string | null>(null);

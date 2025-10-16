@@ -8,7 +8,7 @@ export async function GET() {
     
     // Get all unique assignees from tasks, excluding null/empty values
     const assignees = await Task.distinct('assignee', { 
-      assignee: { $ne: null, $ne: '' } 
+      assignee: { $nin: [null, ''] } 
     });
     
     // Sort alphabetically

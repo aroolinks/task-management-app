@@ -30,7 +30,7 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
       if (result.success && Array.isArray(result.data)) {
         // Extract group names from the API response
         const groupNames = result.data.map((g: { name: string }) => g.name);
-        setGroups(groupNames.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' })));
+        setGroups(groupNames.sort((a: string, b: string) => a.localeCompare(b, undefined, { sensitivity: 'base' })));
         setError(null);
       } else {
         throw new Error(result.error || 'Failed to fetch groups');
@@ -50,7 +50,7 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
     const trimmed = newGroup.trim();
     if (trimmed && !groups.some(g => g.toLowerCase() === trimmed.toLowerCase())) {
       // Immediately update local state for better UX
-      setGroups(prev => [...prev, trimmed].sort((a, b) => 
+      setGroups(prev => [...prev, trimmed].sort((a: string, b: string) => 
         a.localeCompare(b, undefined, { sensitivity: 'base' })
       ));
     }

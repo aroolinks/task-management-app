@@ -18,7 +18,7 @@ interface UiGroup { id?: string; name: string }
 export default function Home() {
   const { tasks, loading, error, createTask, updateTask, deleteTask } = useTasks();
   const { assignees, addAssignee, refreshAssignees } = useAssignees();
-  const { groups: contextGroups, addGroup, refreshGroups } = useGroups();
+  const { groups: contextGroups, addGroup } = useGroups();
   const [isAddTaskVisible, setIsAddTaskVisible] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
 
