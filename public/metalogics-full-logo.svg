@@ -1,0 +1,23 @@
+<svg width="800" height="160" viewBox="0 0 800 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- M Symbol -->
+  <g>
+    <!-- First M stroke -->
+    <path d="M20 30 L30 30 L30 120 L40 120 L40 30 L60 30 L80 90 L100 30 L120 30 L120 120 L130 120 L130 30 L140 30 L140 130 L125 130 L95 60 L80 100 L65 60 L35 130 L20 130 Z" fill="#1E40AF" stroke="#1E40AF" stroke-width="2"/>
+    <!-- Stylized lines -->
+    <path d="M25 35 Q45 55 65 35 Q85 55 105 35 Q125 55 145 35" stroke="#3B82F6" stroke-width="3" fill="none"/>
+    <path d="M25 45 Q45 65 65 45 Q85 65 105 45 Q125 65 145 45" stroke="#60A5FA" stroke-width="2" fill="none"/>
+  </g>
+  
+  <!-- METALOGICS Text -->
+  <g>
+    <text x="180" y="85" font-family="Arial Black, Arial, sans-serif" font-size="48" font-weight="900" fill="#1E40AF" letter-spacing="2px">METALOGICS</text>
+  </g>
+  
+  <!-- Tagline -->
+  <g>
+    <text x="180" y="115" font-family="Arial, sans-serif" font-size="16" font-weight="600" fill="#3B82F6" letter-spacing="1px">WEB DEVELOPMENT | SEO | GRAPHIC DESIGNING</text>
+  </g>
+  
+  <!-- Decorative elements -->
+  <rect x="175" y="95" width="450" height="2" fill="#60A5FA" opacity="0.5"/>
+</svg>

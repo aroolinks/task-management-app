@@ -137,7 +137,7 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
 
 
       {/* Header row */}
-      <div className="grid grid-cols-[180px_100px_80px_100px_80px_80px_80px_140px_90px_90px_80px_100px_120px] items-center gap-0 px-3 py-1.5 text-[11px] font-semibold text-slate-300 tracking-wide bg-slate-900 border-b border-slate-700 divide-x divide-slate-700">
+      <div className="grid grid-cols-[180px_100px_80px_100px_80px_80px_120px_180px_90px_90px_80px_100px_120px] items-center gap-0 px-3 py-1.5 text-[9px] font-semibold text-slate-300 tracking-wide bg-slate-900 border-b border-slate-700 divide-x divide-slate-700">
         <div className="text-left px-2 py-1 overflow-hidden truncate">Name</div>
         <div className="text-left px-2 py-1 overflow-hidden truncate">Group</div>
         <div className="text-left px-2 py-1 overflow-hidden truncate">Web</div>

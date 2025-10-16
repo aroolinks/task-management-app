@@ -254,7 +254,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
   };
 
   return (
-    <div className={`grid grid-cols-[180px_100px_80px_100px_80px_80px_80px_140px_90px_90px_80px_100px_120px] items-center gap-0 px-3 py-2 text-sm ${task.status === 'Completed' ? 'text-slate-400' : 'text-slate-100'} divide-x divide-slate-700 ${getRowBgColor()}`}>
+    <div className={`grid grid-cols-[180px_100px_80px_100px_80px_80px_120px_180px_90px_90px_80px_100px_120px] items-center gap-0 px-3 py-2 text-xs ${task.status === 'Completed' ? 'text-slate-400' : 'text-slate-100'} divide-x divide-slate-700 ${getRowBgColor()}`}>
 
       {/* Client Name */}
       <div className="px-2 py-1.5 text-left overflow-hidden">

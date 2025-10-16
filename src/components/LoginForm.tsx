@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import Logo from '@/components/Logo';
+import Image from 'next/image';
 
 export default function LoginForm() {
   const { login, loading } = useAuth();
@@ -48,13 +48,15 @@ export default function LoginForm() {
           {/* Logo and Header */}
           <div className="text-center mb-8">
             <div className="flex justify-center mb-6">
-              <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl shadow-lg">
-                <Logo size="md" className="text-white" />
-              </div>
+              <Image 
+                src="/logo.png" 
+                alt="Metalogics - Web Development, SEO, Graphic Designing" 
+                width={400}
+                height={80}
+                className="h-20 w-auto max-w-full rounded-xl "
+                priority
+              />
             </div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent mb-2">
-              Welcome Back
-            </h1>
             <p className="text-slate-400">Sign in to manage your tasks</p>
           </div>
           
