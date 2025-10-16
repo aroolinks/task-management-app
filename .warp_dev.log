@@ -624,3 +624,24 @@ Require stack:
  ✓ Compiled in 214ms (872 modules)
  ✓ Compiled in 213ms (872 modules)
 <w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/Users/haroonkiani/task-management-app/.next/cache/webpack/server-development/0.pack.gz_' -> '/Users/haroonkiani/task-management-app/.next/cache/webpack/server-development/0.pack.gz'
+ ✓ Compiled in 249ms (413 modules)
+ ✓ Compiled in 99ms (413 modules)
+ ✓ Compiled in 252ms (858 modules)
+ ✓ Compiled in 103ms (413 modules)
+ ✓ Compiled in 280ms (858 modules)
+ ✓ Compiled in 154ms (413 modules)
+ ✓ Compiled in 188ms (858 modules)
+ ✓ Compiled in 79ms (413 modules)
+ ✓ Compiled in 82ms (413 modules)
+ ✓ Compiled in 70ms (413 modules)
+ ✓ Compiled in 196ms (875 modules)
+ ✓ Compiled in 89ms (414 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/Users/haroonkiani/task-management-app/.next/cache/webpack/client-development/0.pack.gz_' -> '/Users/haroonkiani/task-management-app/.next/cache/webpack/client-development/0.pack.gz'
+ ✓ Compiled in 135ms (414 modules)
+ ✓ Compiled in 340ms (880 modules)
+ ✓ Compiled in 333ms (880 modules)
+ ✓ Compiled in 542ms (880 modules)
+ ✓ Compiled in 275ms (880 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/Users/haroonkiani/task-management-app/.next/cache/webpack/client-development-fallback/1.pack.gz_' -> '/Users/haroonkiani/task-management-app/.next/cache/webpack/client-development-fallback/1.pack.gz'
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/Users/haroonkiani/task-management-app/.next/cache/webpack/client-development-fallback/1.pack.gz_' -> '/Users/haroonkiani/task-management-app/.next/cache/webpack/client-development-fallback/1.pack.gz'
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/Users/haroonkiani/task-management-app/.next/cache/webpack/client-development-fallback/1.pack.gz_' -> '/Users/haroonkiani/task-management-app/.next/cache/webpack/client-development-fallback/1.pack.gz'
