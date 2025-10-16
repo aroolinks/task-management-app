@@ -652,3 +652,5 @@ Require stack:
  ✓ Compiled in 271ms (880 modules)
  ✓ Compiled in 136ms (880 modules)
  ✓ Compiled in 163ms (880 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: incorrect header check
+ ✓ Compiled in 640ms (880 modules)

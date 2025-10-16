@@ -366,27 +366,16 @@ export default function TaskApp() {
                 </button>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-1">
                 {Object.entries(assigneesWithTasks).map(([assignee, assignedTasks]) => (
-                  <div key={assignee} className="bg-slate-700/50 rounded-md p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-medium text-slate-200 text-sm">{assignee}</h3>
-                      <span className="text-xs bg-slate-600 px-2 py-1 rounded text-slate-300">
-                        {assignedTasks.length} tasks
-                      </span>
-                    </div>
-                    <div className="space-y-1">
-                      {assignedTasks.slice(0, 3).map(task => (
-                        <div key={task.id} className="text-xs text-slate-400 truncate">
-                          • {task.clientName} ({task.clientGroup})
-                        </div>
-                      ))}
-                      {assignedTasks.length > 3 && (
-                        <div className="text-xs text-slate-500">
-                          +{assignedTasks.length - 3} more tasks...
-                        </div>
-                      )}
-                    </div>
+                  <div
+                    key={assignee}
+                    className="w-full text-left px-3 py-2 rounded-md transition-colors text-slate-400 hover:bg-slate-700/50 hover:text-slate-300"
+                  >
+                    <span>{assignee}</span>
+                    <span className="float-right text-xs bg-slate-600 px-2 py-1 rounded">
+                      {assignedTasks.length}
+                    </span>
                   </div>
                 ))}
                 {Object.keys(assigneesWithTasks).length === 0 && (
