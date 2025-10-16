@@ -29,52 +29,18 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
     return tasks.filter(t => t.dueDate instanceof Date && t.dueDate.getFullYear() === y && (t.dueDate.getMonth() + 1) === m);
   }, [tasks, selectedMonth]);
 
-  // Define available groups
-  const availableGroups = ['Casey', 'Jack', 'Upwork', 'Personal'];
   
-  // Get assignees that have tasks assigned
-  const assigneesWithTasks = useMemo(() => {
-    const assignees: { [key: string]: Task[] } = {};
-    visibleTasks.forEach(task => {
-      if (task.assignee) {
-        if (!assignees[task.assignee]) {
-          assignees[task.assignee] = [];
-        }
-        assignees[task.assignee].push(task);
-      }
-    });
-    return assignees;
-  }, [visibleTasks]);
-  const [selectedGroupState, setSelectedGroupState] = useState<string>('all');
-  const effectiveSelectedGroup = selectedGroupProp ?? selectedGroupState;
+  const effectiveSelectedGroup = selectedGroupProp ?? 'all';
   const [showEarnings, setShowEarnings] = useState<boolean>(false);
   const [showCost, setShowCost] = useState<boolean>(false);
   const [showDeposit, setShowDeposit] = useState<boolean>(false);
-  const [selectedAssignee, setSelectedAssignee] = useState<string>('all');
 
-  // Group tasks by clientGroup
-  const groupedTasks = useMemo(() => {
-    const groups: { [key: string]: Task[] } = {};
-    visibleTasks.forEach(task => {
-      const groupName = task.clientGroup || 'Ungrouped';
-      if (!groups[groupName]) {
-        groups[groupName] = [];
-      }
-      groups[groupName].push(task);
-    });
-    return groups;
-  }, [visibleTasks]);
 
-  // Filter tasks by selected group and assignee
+  // Filter tasks by selected group only
   const filteredTasks = useMemo(() => {
     let tasks = visibleTasks;
     
-    // Filter by assignee first
-    if (selectedAssignee !== 'all') {
-      tasks = tasks.filter(task => task.assignee === selectedAssignee);
-    }
-    
-    // Then filter by group
+    // Filter by group
     if (effectiveSelectedGroup !== 'all') {
       tasks = tasks.filter(task => {
         const taskGroup = task.clientGroup || 'Ungrouped';
@@ -83,7 +49,7 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
     }
     
     return tasks;
-  }, [visibleTasks, effectiveSelectedGroup, selectedAssignee]);
+  }, [visibleTasks, effectiveSelectedGroup]);
 
   const handleGenerateInvoice = () => {
     try {
@@ -169,57 +135,6 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
         </div>
       </div>
 
-      {/* Assignee tabs */}
-      <div className="flex items-center gap-1 px-3 py-2 bg-slate-800 border-b border-slate-700 overflow-x-auto">
-        <span className="text-xs font-semibold text-slate-400 mr-2">ASSIGNEE:</span>
-        <button
-          className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${selectedAssignee === 'all' ? 'bg-green-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
-          onClick={() => setSelectedAssignee('all')}
-        >
-          All Assignees
-        </button>
-        {Object.entries(assigneesWithTasks).map(([assignee, assigneeTasks]) => (
-          <button
-            key={assignee}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${selectedAssignee === assignee ? 'bg-green-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
-            onClick={() => setSelectedAssignee(assignee)}
-          >
-            {assignee} ({assigneeTasks.length})
-          </button>
-        ))}
-      </div>
-
-      {/* Group tabs (hidden when controlled by sidebar) */}
-      {!selectedGroupProp && (
-        <div className="flex items-center gap-1 px-3 py-2 bg-slate-800 border-b border-slate-700 overflow-x-auto">
-          <button
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${effectiveSelectedGroup === 'all' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
-            onClick={() => setSelectedGroupState('all')}
-          >
-            All Groups
-          </button>
-          {availableGroups.map(group => {
-            const groupTasks = groupedTasks[group] || [];
-            return (
-              <button
-                key={group}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${effectiveSelectedGroup === group ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
-                onClick={() => setSelectedGroupState(group)}
-              >
-                {group} {groupTasks.length > 0 && `(${groupTasks.length})`}
-              </button>
-            );
-          })}
-          {groupedTasks['Ungrouped'] && (
-            <button
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${effectiveSelectedGroup === 'Ungrouped' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
-              onClick={() => setSelectedGroupState('Ungrouped')}
-            >
-              Ungrouped ({groupedTasks['Ungrouped'].length})
-            </button>
-          )}
-        </div>
-      )}
 
       {/* Header row */}
       <div className="grid grid-cols-[180px_100px_80px_100px_80px_80px_80px_140px_90px_90px_80px_100px_120px] items-center gap-0 px-3 py-1.5 text-[11px] font-semibold text-slate-300 tracking-wide bg-slate-900 border-b border-slate-700 divide-x divide-slate-700">

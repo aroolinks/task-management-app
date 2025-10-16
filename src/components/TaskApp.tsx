@@ -227,6 +227,20 @@ export default function TaskApp() {
     return counts;
   }, [groupedTasks]);
 
+  // Get assignees with their assigned tasks
+  const assigneesWithTasks = useMemo(() => {
+    const assigneeMap: { [key: string]: Task[] } = {};
+    tasks.forEach(task => {
+      if (task.assignee) {
+        if (!assigneeMap[task.assignee]) {
+          assigneeMap[task.assignee] = [];
+        }
+        assigneeMap[task.assignee].push(task);
+      }
+    });
+    return assigneeMap;
+  }, [tasks]);
+
   const filteredTasks = groupedTasks[selectedGroup] || [];
 
   if (loading && tasks.length === 0) {
@@ -339,10 +353,10 @@ export default function TaskApp() {
               )}
             </div>
 
-            {/* Assignees Management */}
+            {/* Assignees with Tasks */}
             <div className="p-4 border-t border-slate-700">
               <div className="flex items-center justify-between mb-3">
-                <h2 className="font-semibold text-slate-200">Assignees</h2>
+                <h2 className="font-semibold text-slate-200">Team Assignments</h2>
                 <button
                   onClick={() => setShowAssigneeForm(true)}
                   className="text-slate-400 hover:text-slate-300 text-xl"
@@ -352,18 +366,32 @@ export default function TaskApp() {
                 </button>
               </div>
 
-              <div className="space-y-1">
-                {assignees.slice(0, 10).map(assignee => (
-                  <div
-                    key={assignee}
-                    className="px-3 py-1 text-slate-400 text-sm"
-                  >
-                    {assignee}
+              <div className="space-y-3">
+                {Object.entries(assigneesWithTasks).map(([assignee, assignedTasks]) => (
+                  <div key={assignee} className="bg-slate-700/50 rounded-md p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-medium text-slate-200 text-sm">{assignee}</h3>
+                      <span className="text-xs bg-slate-600 px-2 py-1 rounded text-slate-300">
+                        {assignedTasks.length} tasks
+                      </span>
+                    </div>
+                    <div className="space-y-1">
+                      {assignedTasks.slice(0, 3).map(task => (
+                        <div key={task.id} className="text-xs text-slate-400 truncate">
+                          • {task.clientName} ({task.clientGroup})
+                        </div>
+                      ))}
+                      {assignedTasks.length > 3 && (
+                        <div className="text-xs text-slate-500">
+                          +{assignedTasks.length - 3} more tasks...
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ))}
-                {assignees.length > 10 && (
-                  <div className="px-3 py-1 text-slate-500 text-xs">
-                    +{assignees.length - 10} more...
+                {Object.keys(assigneesWithTasks).length === 0 && (
+                  <div className="text-slate-500 text-sm text-center py-4">
+                    No assignments yet
                   </div>
                 )}
               </div>
