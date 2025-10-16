@@ -27,7 +27,7 @@ export async function GET() {
       users = await User.find({}, { username: 1, createdAt: 1 }).limit(5);
       
     } catch (dbError) {
-      dbStatus = `Error: ${dbError.message}`;
+      dbStatus = `Error: ${dbError instanceof Error ? dbError.message : String(dbError)}`;
     }
 
     return NextResponse.json({
@@ -48,7 +48,7 @@ export async function GET() {
   } catch (error) {
     return NextResponse.json({
       success: false,
-      error: error.message,
+      error: error instanceof Error ? error.message : String(error),
       timestamp: new Date().toISOString()
     }, { status: 500 });
   }
