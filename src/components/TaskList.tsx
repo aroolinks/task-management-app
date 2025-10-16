@@ -9,9 +9,10 @@ interface TaskListProps {
   tasks: Task[];
   onDeleteTask: (id: string) => void;
   onEditTask: (id: string, updates: Partial<Task>) => void;
+  selectedGroup?: string; // externally controlled group (from sidebar)
 }
 
-export default function TaskList({ tasks, onDeleteTask, onEditTask }: TaskListProps) {
+export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGroup: selectedGroupProp }: TaskListProps) {
   // Move all hooks to the top before any conditional returns
   const year = new Date().getFullYear();
   const months = Array.from({ length: 12 }, (_, i) => {
@@ -44,7 +45,8 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask }: TaskListPr
     });
     return assignees;
   }, [visibleTasks]);
-  const [selectedGroup, setSelectedGroup] = useState<string>('all');
+  const [selectedGroupState, setSelectedGroupState] = useState<string>('all');
+  const effectiveSelectedGroup = selectedGroupProp ?? selectedGroupState;
   const [showEarnings, setShowEarnings] = useState<boolean>(false);
   const [showCost, setShowCost] = useState<boolean>(false);
   const [showDeposit, setShowDeposit] = useState<boolean>(false);
@@ -73,22 +75,22 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask }: TaskListPr
     }
     
     // Then filter by group
-    if (selectedGroup !== 'all') {
+    if (effectiveSelectedGroup !== 'all') {
       tasks = tasks.filter(task => {
         const taskGroup = task.clientGroup || 'Ungrouped';
-        return taskGroup === selectedGroup;
+        return taskGroup === effectiveSelectedGroup;
       });
     }
     
     return tasks;
-  }, [visibleTasks, selectedGroup, selectedAssignee]);
+  }, [visibleTasks, effectiveSelectedGroup, selectedAssignee]);
 
   const handleGenerateInvoice = () => {
     try {
-      if (selectedGroup === 'all') {
+      if (effectiveSelectedGroup === 'all') {
         generateAllTasksInvoice(visibleTasks);
       } else {
-        generateGroupInvoice(visibleTasks, selectedGroup);
+        generateGroupInvoice(visibleTasks, effectiveSelectedGroup);
       }
     } catch (error) {
       console.error('Error generating invoice:', error);
@@ -187,38 +189,40 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask }: TaskListPr
         ))}
       </div>
 
-      {/* Group tabs */}
-      <div className="flex items-center gap-1 px-3 py-2 bg-slate-750 border-b border-slate-700 overflow-x-auto">
-        <button
-          className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${selectedGroup === 'all' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
-          onClick={() => setSelectedGroup('all')}
-        >
-          All Groups
-        </button>
-        {availableGroups.map(group => {
-          const groupTasks = groupedTasks[group] || [];
-          return (
-            <button
-              key={group}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${selectedGroup === group ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
-              onClick={() => setSelectedGroup(group)}
-            >
-              {group} {groupTasks.length > 0 && `(${groupTasks.length})`}
-            </button>
-          );
-        })}
-        {groupedTasks['Ungrouped'] && (
+      {/* Group tabs (hidden when controlled by sidebar) */}
+      {!selectedGroupProp && (
+        <div className="flex items-center gap-1 px-3 py-2 bg-slate-800 border-b border-slate-700 overflow-x-auto">
           <button
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${selectedGroup === 'Ungrouped' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
-            onClick={() => setSelectedGroup('Ungrouped')}
+            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${effectiveSelectedGroup === 'all' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+            onClick={() => setSelectedGroupState('all')}
           >
-            Ungrouped ({groupedTasks['Ungrouped'].length})
+            All Groups
           </button>
-        )}
-      </div>
+          {availableGroups.map(group => {
+            const groupTasks = groupedTasks[group] || [];
+            return (
+              <button
+                key={group}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${effectiveSelectedGroup === group ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+                onClick={() => setSelectedGroupState(group)}
+              >
+                {group} {groupTasks.length > 0 && `(${groupTasks.length})`}
+              </button>
+            );
+          })}
+          {groupedTasks['Ungrouped'] && (
+            <button
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${effectiveSelectedGroup === 'Ungrouped' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+              onClick={() => setSelectedGroupState('Ungrouped')}
+            >
+              Ungrouped ({groupedTasks['Ungrouped'].length})
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Header row */}
-      <div className="grid grid-cols-[180px_100px_80px_100px_80px_80px_80px_140px_80px_80px_80px_100px_120px] items-center gap-0 px-3 py-1.5 text-[11px] font-semibold text-slate-300 tracking-wide bg-slate-900 border-b border-slate-700 divide-x divide-slate-700">
+      <div className="grid grid-cols-[180px_100px_80px_100px_80px_80px_80px_140px_90px_90px_80px_100px_120px] items-center gap-0 px-3 py-1.5 text-[11px] font-semibold text-slate-300 tracking-wide bg-slate-900 border-b border-slate-700 divide-x divide-slate-700">
         <div className="text-left px-2 py-1 overflow-hidden truncate">Name</div>
         <div className="text-left px-2 py-1 overflow-hidden truncate">Group</div>
         <div className="text-left px-2 py-1 overflow-hidden truncate">Web</div>

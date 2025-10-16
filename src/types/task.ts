@@ -1,6 +1,6 @@
 export type Priority = 'Low' | 'Medium' | 'High' | 'Urgent';
 export type Status = 'Completed' | 'InProcess' | 'Waiting for Quote';
-export type CMS = 'Wordpress' | 'Shopify' | 'Jov Des' | 'Designing' | 'SEO' | 'Marketing';
+export type CMS = 'Wordpress' | 'Shopify' | 'Designing' | 'SEO' | 'Marketing';
 export type Assignee = 'Haroon' | 'Sameed' | 'Bilal' | 'Abubakar' | 'Awais';
 
 export interface Task {

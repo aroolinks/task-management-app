@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Task, TaskInput } from '@/types/task';
 
 interface MongoTask extends Omit<Task, 'id'> {
@@ -117,7 +117,7 @@ export function useTasks() {
   };
 
   // Fetch all tasks
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -181,7 +181,7 @@ export function useTasks() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Create a new task
   const createTask = async (taskInput: TaskInput): Promise<boolean> => {
@@ -300,7 +300,7 @@ export function useTasks() {
   // Load tasks on mount
   useEffect(() => {
     fetchTasks();
-  }, []);
+  }, [fetchTasks]);
 
   return {
     tasks,

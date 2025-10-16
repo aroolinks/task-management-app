@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { TaskInput, Priority, Status, CMS } from '@/types/task';
+import { useAssignees } from '@/contexts/AssigneeContext';
+import { useGroups } from '@/contexts/GroupContext';
 
 interface AddTaskProps {
   onAddTask: (task: TaskInput) => void;
@@ -12,11 +14,12 @@ interface AddTaskProps {
 const priorities: Priority[] = ['Low', 'Medium', 'High', 'Urgent'];
 const statuses: Status[] = ['InProcess', 'Waiting for Quote', 'Completed'];
 const cmsOptions: CMS[] = ['Wordpress', 'Shopify', 'Designing' , 'SEO' , 'Marketing'];
-const groupOptions: string[] = ['Casey', 'Jack', 'Upwork', 'Personal'];
-const assigneeOptions: string[] = ['Haroon', 'Sameed', 'Bilal', 'Abubakar', 'Awais'];
 const todayStr = new Date().toISOString().split('T')[0];
 
 export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps) {
+  const { assignees, loading: assigneesLoading, addAssignee, refreshAssignees } = useAssignees();
+  const { groups, loading: groupsLoading } = useGroups();
+  
   const [dueDate, setDueDate] = useState(todayStr);
   const [priority, setPriority] = useState<Priority>('Low');
   
@@ -37,6 +40,13 @@ export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps)
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (clientName.trim() && clientGroup) { // Check both required fields
+      const finalAssignee = showCustomAssignee ? (customAssignee.trim() || null) : (assignee || null);
+      
+      // Add custom assignee to the list if it's new
+      if (showCustomAssignee && customAssignee.trim()) {
+        addAssignee(customAssignee.trim());
+      }
+      
       onAddTask({
         dueDate: dueDate ? new Date(dueDate) : null,
         priority,
@@ -52,7 +62,7 @@ export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps)
         totalPrice: totalPrice ? parseFloat(totalPrice) : null,
         deposit: deposit ? parseFloat(deposit) : null,
         invoiced: false,
-        assignee: showCustomAssignee ? (customAssignee.trim() || null) : (assignee || null),
+        assignee: finalAssignee,
       });
       setDueDate(todayStr);
       setPriority('Low');
@@ -126,9 +136,10 @@ export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps)
                 onChange={(e) => setClientGroup(e.target.value)}
                 className="w-full px-3 py-2 bg-slate-800 border border-slate-600 text-slate-100 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
                 required
+                disabled={groupsLoading}
               >
-                <option value="">Select a group...</option>
-                {groupOptions.map(group => (
+                <option value="">{groupsLoading ? 'Loading groups...' : 'Select a group...'}</option>
+                {groups.map(group => (
                   <option key={group} value={group}>{group}</option>
                 ))}
               </select>
@@ -297,12 +308,13 @@ export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps)
                   }
                 }}
                 className="w-full px-3 py-2 bg-slate-800 border border-slate-600 text-slate-100 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
+                disabled={assigneesLoading}
               >
-                <option value="">Select assignee...</option>
-                {assigneeOptions.map(person => (
+                <option value="">{assigneesLoading ? 'Loading assignees...' : 'Select assignee...'}</option>
+                {assignees.map(person => (
                   <option key={person} value={person}>{person}</option>
                 ))}
-                <option value="custom">+ Add Custom Assignee</option>
+                <option value="custom">+ Add New Assignee</option>
               </select>
               
               {showCustomAssignee && (
@@ -310,8 +322,9 @@ export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps)
                   type="text"
                   value={customAssignee}
                   onChange={(e) => setCustomAssignee(e.target.value)}
-                  placeholder="Enter custom assignee name..."
+                  placeholder="Enter new assignee name..."
                   className="w-full px-3 py-2 bg-slate-800 border border-slate-600 text-slate-100 placeholder-slate-400 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
+                  autoFocus
                 />
               )}
             </div>
