@@ -23,6 +23,7 @@ export default function TaskApp() {
   const { groups: contextGroups, addGroup } = useGroups();
   const [isAddTaskVisible, setIsAddTaskVisible] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
+  const [selectedAssignee, setSelectedAssignee] = useState<string>('all');
 
   // Sidebar project groups (server-persisted with local fallback)
   const [groups, setGroups] = useState<UiGroup[]>(Array.from(DEFAULT_GROUPS).map(name => ({ name })));
@@ -241,7 +242,17 @@ export default function TaskApp() {
     return assigneeMap;
   }, [tasks]);
 
-  const filteredTasks = groupedTasks[selectedGroup] || [];
+  // Filter tasks by both group and assignee
+  const filteredTasks = useMemo(() => {
+    let tasks = groupedTasks[selectedGroup] || [];
+    
+    // Filter by assignee if not 'all'
+    if (selectedAssignee !== 'all') {
+      tasks = tasks.filter(task => task.assignee === selectedAssignee);
+    }
+    
+    return tasks;
+  }, [groupedTasks, selectedGroup, selectedAssignee]);
 
   if (loading && tasks.length === 0) {
     return (
@@ -259,14 +270,8 @@ export default function TaskApp() {
           {/* Header */}
           <div className="p-4 border-b border-slate-700">
             <Logo />
-            <div className="mt-4 flex items-center justify-between">
+            <div className="mt-4">
               <span className="text-sm text-slate-400">Welcome, {user?.username}</span>
-              <button
-                onClick={handleLogout}
-                className="text-xs text-slate-400 hover:text-slate-300 underline"
-              >
-                Logout
-              </button>
             </div>
           </div>
 
@@ -286,7 +291,10 @@ export default function TaskApp() {
 
               {/* All Tasks */}
               <button
-                onClick={() => setSelectedGroup('all')}
+                onClick={() => {
+                  setSelectedGroup('all');
+                  setSelectedAssignee('all');
+                }}
                 className={`w-full text-left px-3 py-2 rounded-md mb-1 transition-colors ${
                   selectedGroup === 'all'
                     ? 'bg-slate-700 text-slate-100'
@@ -303,7 +311,10 @@ export default function TaskApp() {
               {groups.map(group => (
                 <button
                   key={group.id || group.name}
-                  onClick={() => setSelectedGroup(group.name)}
+                  onClick={() => {
+                    setSelectedGroup(group.name);
+                    setSelectedAssignee('all');
+                  }}
                   className={`w-full text-left px-3 py-2 rounded-md mb-1 transition-colors ${
                     selectedGroup === group.name
                       ? 'bg-slate-700 text-slate-100'
@@ -366,17 +377,38 @@ export default function TaskApp() {
                 </button>
               </div>
 
+              {/* All Assignees Button */}
+              <button
+                onClick={() => setSelectedAssignee('all')}
+                className={`w-full text-left px-3 py-2 rounded-md mb-1 transition-colors ${
+                  selectedAssignee === 'all'
+                    ? 'bg-slate-700 text-slate-100'
+                    : 'text-slate-400 hover:bg-slate-700/50 hover:text-slate-300'
+                }`}
+              >
+                <span>All Assignees</span>
+                <span className="float-right text-xs bg-slate-600 px-2 py-1 rounded">
+                  {tasks.length}
+                </span>
+              </button>
+
+              {/* Individual Assignees */}
               <div className="space-y-1">
                 {Object.entries(assigneesWithTasks).map(([assignee, assignedTasks]) => (
-                  <div
+                  <button
                     key={assignee}
-                    className="w-full text-left px-3 py-2 rounded-md transition-colors text-slate-400 hover:bg-slate-700/50 hover:text-slate-300"
+                    onClick={() => setSelectedAssignee(assignee)}
+                    className={`w-full text-left px-3 py-2 rounded-md transition-colors ${
+                      selectedAssignee === assignee
+                        ? 'bg-slate-700 text-slate-100'
+                        : 'text-slate-400 hover:bg-slate-700/50 hover:text-slate-300'
+                    }`}
                   >
                     <span>{assignee}</span>
                     <span className="float-right text-xs bg-slate-600 px-2 py-1 rounded">
                       {assignedTasks.length}
                     </span>
-                  </div>
+                  </button>
                 ))}
                 {Object.keys(assigneesWithTasks).length === 0 && (
                   <div className="text-slate-500 text-sm text-center py-4">
@@ -430,16 +462,27 @@ export default function TaskApp() {
             <div className="flex items-center justify-between">
               <h1 className="text-2xl font-bold">
                 {selectedGroup === 'all' ? 'All Tasks' : selectedGroup}
+                {selectedAssignee !== 'all' && (
+                  <span className="text-lg font-normal text-blue-400"> → {selectedAssignee}</span>
+                )}
                 <span className="ml-2 text-lg font-normal text-slate-400">
                   ({filteredTasks.length})
                 </span>
               </h1>
-              <button
-                onClick={() => setIsAddTaskVisible(true)}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium"
-              >
-                Add Task
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleLogout}
+                  className="px-3 py-2 text-slate-400 hover:text-slate-300 border border-slate-600 hover:border-slate-500 rounded-md text-sm transition-colors"
+                >
+                  Logout
+                </button>
+                <button
+                  onClick={() => setIsAddTaskVisible(true)}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium"
+                >
+                  Add Task
+                </button>
+              </div>
             </div>
           </div>
 
