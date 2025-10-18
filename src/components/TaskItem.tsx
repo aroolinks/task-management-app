@@ -10,16 +10,15 @@ interface TaskItemProps {
   onDeleteTask: (id: string) => void;
   onEditTask: (id: string, updates: Partial<Task>) => void;
   showCost?: boolean;
-  showDeposit?: boolean;
   autoEdit?: boolean;
 }
 
 const priorities: Priority[] = ['Low', 'Medium', 'High', 'Urgent'];
-const statuses: Status[] = ['InProcess', 'Waiting for Quote', 'Completed'];
+const statuses: Status[] = ['InProcess', 'Completed'];
 const cmsOptions: CMS[] = ['Wordpress', 'Shopify', 'Designing', 'SEO', 'Marketing'];
 
 
-export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = false, showDeposit = false, autoEdit = false }: TaskItemProps) {
+export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = false, autoEdit = false }: TaskItemProps) {
   const { assignees } = useAssignees();
   const { groups } = useGroups();
   const [isEditing, setIsEditing] = useState(autoEdit);
@@ -35,7 +34,6 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
     figmaUrl: task.figmaUrl,
     assetUrl: task.assetUrl,
     totalPrice: task.totalPrice?.toString() || '',
-    deposit: task.deposit?.toString() || '',
     assignee: task.assignee
   });
 
@@ -51,7 +49,6 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
       figmaUrl: editData.figmaUrl.trim(),
       assetUrl: editData.assetUrl.trim(),
       totalPrice: editData.totalPrice ? parseFloat(editData.totalPrice) : null,
-      deposit: editData.deposit ? parseFloat(editData.deposit) : null,
       assignee: editData.assignee || null,
       updatedAt: new Date()
     };
@@ -94,9 +91,6 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
       case 'totalPrice':
         updates.totalPrice = value ? parseFloat(String(value)) : null;
         break;
-      case 'deposit':
-        updates.deposit = value ? parseFloat(String(value)) : null;
-        break;
       case 'assignee':
         updates.assignee = value ? String(value) : null;
         break;
@@ -121,7 +115,6 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
         figmaUrl: task.figmaUrl,
         assetUrl: task.assetUrl,
         totalPrice: task.totalPrice?.toString() || '',
-        deposit: task.deposit?.toString() || '',
         assignee: task.assignee
       });
     }
@@ -167,7 +160,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
             value={editData[field as keyof typeof editData] as string || ''}
             onChange={(e) => handleInlineEdit(field, e.target.value || null)}
             onBlur={() => setEditingField(null)}
-            className="bg-slate-800 border border-slate-600 text-slate-100 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-500"
+            className="bg-slate-800 border border-slate-600 text-slate-100 rounded px-2 py-1.5 text-[12px] focus:outline-none focus:ring-2 focus:ring-slate-500"
             autoFocus
           >
             <option value="">Select {label}...</option>
@@ -232,7 +225,6 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
       figmaUrl: task.figmaUrl,
       assetUrl: task.assetUrl,
       totalPrice: task.totalPrice?.toString() || '',
-      deposit: task.deposit?.toString() || '',
       assignee: task.assignee
     });
     setIsEditing(false);
@@ -254,7 +246,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
   };
 
   return (
-    <div className={`grid grid-cols-[180px_100px_80px_100px_80px_80px_120px_180px_90px_90px_80px_100px_120px] items-center gap-0 px-3 py-2 text-xs ${task.status === 'Completed' ? 'text-slate-400' : 'text-slate-100'} divide-x divide-slate-700 ${getRowBgColor()}`}>
+    <div className={`grid grid-cols-[180px_100px_100px_100px_100px_100px_120px_100px_100px_80px_70px_70px_100px_120px] items-center gap-0 px-3 text-[11px] h-[50px] ${task.status === 'Completed' ? 'text-slate-400' : 'text-slate-100'} divide-x divide-slate-700 ${getRowBgColor()}`}>
 
       {/* Client Name */}
       <div className="px-2 py-1.5 text-left overflow-hidden">
@@ -265,7 +257,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
             onChange={(e) => setEditData({ ...editData, clientName: e.target.value })}
             onBlur={() => handleInlineEdit('clientName', editData.clientName)}
             onKeyPress={(e) => handleKeyPress(e, 'clientName')}
-            className="w-full px-2 py-1.5 text-sm bg-slate-800 border border-slate-600 text-slate-100 rounded focus:outline-none focus:ring-2 focus:ring-slate-500"
+            className="w-full px-2 py-1.5 text-[12px] bg-slate-800 border border-slate-600 text-slate-100 rounded focus:outline-none focus:ring-2 focus:ring-slate-500"
             autoFocus
           />
         ) : (
@@ -286,7 +278,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
             value={editData.clientGroup || ''}
             onChange={(e) => handleInlineEdit('clientGroup', e.target.value || null)}
             onBlur={() => setEditingField(null)}
-            className="w-full px-2 py-1.5 text-sm bg-slate-800 border border-slate-600 text-slate-100 rounded focus:outline-none focus:ring-2 focus:ring-slate-500"
+            className="w-full px-2 py-1.5 text-[12px] bg-slate-800 border border-slate-600 text-slate-100 rounded focus:outline-none focus:ring-2 focus:ring-slate-500"
             autoFocus
           >
             <option value="">No Group</option>
@@ -363,7 +355,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
             value={editData.status}
             onChange={(e) => handleInlineEdit('status', e.target.value)}
             onBlur={() => setEditingField(null)}
-            className="px-3 py-2 text-sm font-medium rounded-full border border-slate-600 bg-slate-800 text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-500"
+            className="px-3 py-2 text-[12px] font-medium rounded-full border border-slate-600 bg-slate-800 text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-500"
             autoFocus
           >
             {statuses.map(s => (
@@ -388,7 +380,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
             value={editData.priority}
             onChange={(e) => handleInlineEdit('priority', e.target.value)}
             onBlur={() => setEditingField(null)}
-            className="px-3 py-2 text-sm font-medium rounded-full border border-slate-600 bg-slate-800 text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-500"
+            className="px-3 py-2 text-[12px] font-medium rounded-full border border-slate-600 bg-slate-800 text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-500"
             autoFocus
           >
             {priorities.map(p => (
@@ -421,19 +413,30 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
         )}
       </div>
 
-      {/* Deposit */}
+      {/* Invoice */}
       <div className="px-2 py-1.5 text-left overflow-hidden">
-        {editingField === 'deposit' ? (
-          renderEditableField('deposit', 'Deposit', task.deposit?.toString() || '', 'number')
-        ) : (
-          <span 
-            className={`cursor-pointer hover:bg-slate-700/40 px-2 py-1.5 rounded transition-colors ${task.status === 'Completed' ? 'text-slate-400' : 'text-slate-100'}`}
-            onClick={() => handleFieldClick('deposit')}
-            title="Click to edit"
-          >
-            {showDeposit ? (task.deposit ? `£${task.deposit.toFixed(2)}` : 'N/A') : '••••'}
-          </span>
-        )}
+        <label className="inline-flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={Boolean(task.invoiced)}
+            onChange={(e) => onEditTask(task.id, { invoiced: e.target.checked, updatedAt: new Date() })}
+            className="h-4 w-4 accent-blue-600"
+          />
+          <span className="sr-only">Invoiced</span>
+        </label>
+      </div>
+
+      {/* Paid */}
+      <div className="px-2 py-1.5 text-left overflow-hidden">
+        <label className="inline-flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={Boolean(task.paid)}
+            onChange={(e) => onEditTask(task.id, { paid: e.target.checked, updatedAt: new Date() })}
+            className="h-4 w-4 accent-green-600"
+          />
+          <span className="sr-only">Paid</span>
+        </label>
       </div>
 
       {/* Assignee */}

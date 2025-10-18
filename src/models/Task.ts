@@ -15,6 +15,7 @@ export interface ITask {
   deposit?: number | null;
   dueDate?: Date | null;
   invoiced: boolean;
+  paid: boolean;
   assignee?: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -76,6 +77,10 @@ const TaskSchema = new mongoose.Schema<ITask>(
       default: null,
     },
     invoiced: {
+      type: Boolean,
+      default: false,
+    },
+    paid: {
       type: Boolean,
       default: false,
     },

@@ -21,6 +21,7 @@ export interface Task {
   totalPrice: number | null;
   deposit: number | null;
   invoiced: boolean; // New field for tracking invoice status
+  paid: boolean; // New field for tracking payment status
   assignee: string | null; // New field for task assignment (allows custom names)
 }
 

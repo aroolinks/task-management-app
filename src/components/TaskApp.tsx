@@ -8,7 +8,6 @@ import { useGroups } from '@/contexts/GroupContext';
 import { useAuth } from '@/contexts/AuthContext';
 import TaskList from '@/components/TaskList';
 import Logo from '@/components/Logo';
-import AddTask from '@/components/AddTask';
 
 // Default sidebar groups
 const DEFAULT_GROUPS: readonly string[] = ['Casey', 'Jack', 'Upwork', 'Personal'] as const;
@@ -21,7 +20,7 @@ export default function TaskApp() {
   const { tasks, loading, error, createTask, updateTask, deleteTask } = useTasks();
   const { assignees, addAssignee, refreshAssignees } = useAssignees();
   const { groups: contextGroups, addGroup } = useGroups();
-  const [isAddTaskVisible, setIsAddTaskVisible] = useState(false);
+  const [autoEditTaskId, setAutoEditTaskId] = useState<string | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
   const [selectedAssignee, setSelectedAssignee] = useState<string>('all');
 
@@ -176,11 +175,27 @@ export default function TaskApp() {
     setShowGroupForm(false);
   };
 
-  const handleAddTask = async (taskInput: TaskInput) => {
-    const success = await createTask(taskInput);
-    if (success) {
-      setIsAddTaskVisible(false);
-      // Refresh assignees list in case a new assignee was added
+  const handleAddInlineTask = async () => {
+    const payload: TaskInput = {
+      clientName: 'New Task',
+      clientGroup: selectedGroup !== 'all' ? selectedGroup : 'Unassigned',
+      completed: false,
+      priority: 'Low',
+      status: 'InProcess',
+      cms: null,
+      webUrl: '',
+      figmaUrl: '',
+      assetUrl: '',
+      totalPrice: null,
+      deposit: null,
+      dueDate: null,
+      invoiced: false,
+      paid: false,
+      assignee: null,
+    };
+    const created = await createTask(payload);
+    if (created) {
+      setAutoEditTaskId(created.id);
       refreshAssignees();
     }
   };
@@ -477,7 +492,7 @@ export default function TaskApp() {
                   Logout
                 </button>
                 <button
-                  onClick={() => setIsAddTaskVisible(true)}
+                  onClick={handleAddInlineTask}
                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium"
                 >
                   Add Task
@@ -499,17 +514,12 @@ export default function TaskApp() {
               onDeleteTask={handleDeleteTask}
               onEditTask={handleEditTask}
               selectedGroup={selectedGroup === 'all' ? undefined : selectedGroup}
+              autoEditTaskId={autoEditTaskId || undefined}
             />
           </div>
         </div>
       </div>
 
-      {/* Add Task Modal */}
-      <AddTask
-        isVisible={isAddTaskVisible}
-        onClose={() => setIsAddTaskVisible(false)}
-        onAddTask={handleAddTask}
-      />
     </div>
   );
 }

@@ -10,9 +10,10 @@ interface TaskListProps {
   onDeleteTask: (id: string) => void;
   onEditTask: (id: string, updates: Partial<Task>) => void;
   selectedGroup?: string; // externally controlled group (from sidebar)
+  autoEditTaskId?: string;
 }
 
-export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGroup: selectedGroupProp }: TaskListProps) {
+export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGroup: selectedGroupProp, autoEditTaskId }: TaskListProps) {
   // Move all hooks to the top before any conditional returns
   const year = new Date().getFullYear();
   const months = Array.from({ length: 12 }, (_, i) => {
@@ -33,7 +34,6 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
   const effectiveSelectedGroup = selectedGroupProp ?? 'all';
   const [showEarnings, setShowEarnings] = useState<boolean>(false);
   const [showCost, setShowCost] = useState<boolean>(false);
-  const [showDeposit, setShowDeposit] = useState<boolean>(false);
 
 
   // Filter tasks by selected group only
@@ -91,9 +91,9 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
     <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
       {/* Month tabs and summary */}
       <div className="flex items-center justify-between px-3 py-2 bg-slate-800 border-b border-slate-700">
-        <div className="flex items-center gap-1 overflow-x-auto">
+        <div className="flex items-center gap-0 overflow-x-auto divide-x divide-slate-600">
           <button
-            className={`px-2 py-1 rounded text-[11px] ${selectedMonth === 'all' ? 'bg-slate-700 text-slate-100' : 'hover:bg-slate-700/50 text-slate-300'}`}
+            className={`px-2 py-1 rounded text-[14px] ${selectedMonth === 'all' ? 'bg-slate-700 text-slate-100' : 'hover:bg-slate-700/50 text-slate-300'}`}
             onClick={() => setSelectedMonth('all')}
           >
             All
@@ -101,7 +101,7 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
           {months.map(m => (
             <button
               key={m.value}
-              className={`px-2 py-1 rounded text-[11px] ${selectedMonth === m.value ? 'bg-slate-700 text-slate-100' : 'hover:bg-slate-700/50 text-slate-300'}`}
+              className={`px-2 py-1 rounded text-[14px] ${selectedMonth === m.value ? 'bg-slate-700 text-slate-100' : 'hover:bg-slate-700/50 text-slate-300'}`}
               onClick={() => setSelectedMonth(m.value)}
               title={`${m.label} ${m.year}`}
             >
@@ -137,7 +137,7 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
 
 
       {/* Header row */}
-      <div className="grid grid-cols-[180px_100px_80px_100px_80px_80px_120px_180px_90px_90px_80px_100px_120px] items-center gap-0 px-3 py-1.5 text-[9px] font-semibold text-slate-300 tracking-wide bg-slate-900 border-b border-slate-700 divide-x divide-slate-700">
+      <div className="grid grid-cols-[180px_100px_100px_100px_100px_100px_120px_100px_100px_80px_70px_70px_100px_120px] items-center gap-0 px-3 py-1.5 text-[11px] font-semibold text-slate-300 tracking-wide bg-slate-900 border-b border-slate-700 divide-x divide-slate-700">
         <div className="text-left px-2 py-1 overflow-hidden truncate">Name</div>
         <div className="text-left px-2 py-1 overflow-hidden truncate">Group</div>
         <div className="text-left px-2 py-1 overflow-hidden truncate">Web</div>
@@ -163,22 +163,8 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
             </svg>
           </button>
         </div>
-        <div className="text-left px-2 py-1 overflow-hidden truncate flex items-center gap-1">
-          <span>Deposit</span>
-          <button
-            onClick={() => setShowDeposit(!showDeposit)}
-            className="text-slate-400 hover:text-slate-200 transition-colors"
-            title={showDeposit ? 'Hide deposit' : 'Show deposit'}
-          >
-            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              {showDeposit ? (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-              ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
-              )}
-            </svg>
-          </button>
-        </div>
+        <div className="text-left px-2 py-1 overflow-hidden truncate">Invoice</div>
+        <div className="text-left px-2 py-1 overflow-hidden truncate">Paid</div>
         <div className="text-left px-2 py-1 overflow-hidden truncate">Assignee</div>
         <div className="text-left px-2 py-1 overflow-hidden truncate">Actions</div>
       </div>
@@ -192,7 +178,7 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
               onDeleteTask={onDeleteTask}
               onEditTask={onEditTask}
               showCost={showCost}
-              showDeposit={showDeposit}
+              autoEdit={task.id === autoEditTaskId}
             />
         ))}
       </div>

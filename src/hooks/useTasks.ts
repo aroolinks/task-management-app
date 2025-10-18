@@ -184,7 +184,7 @@ export function useTasks() {
   }, []);
 
   // Create a new task
-  const createTask = async (taskInput: TaskInput): Promise<boolean> => {
+const createTask = async (taskInput: TaskInput): Promise<Task | null> => {
     try {
       setError(null);
       const response = await fetch('/api/tasks', {
@@ -207,15 +207,15 @@ export function useTasks() {
           dueDate: (mongoTask as unknown as { dueDate?: string | null }).dueDate ? new Date((mongoTask as unknown as { dueDate: string }).dueDate) : null,
         } as Task;
         setTasks(prev => [...prev, newTask]);
-        return true;
+        return newTask;
       } else {
         setError(result.error || 'Failed to create task');
-        return false;
+        return null;
       }
     } catch (err) {
       setError('Network error occurred');
       console.error('Error creating task:', err);
-      return false;
+      return null;
     }
   };
 
