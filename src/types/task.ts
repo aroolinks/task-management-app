@@ -22,7 +22,7 @@ export interface Task {
   deposit: number | null;
   invoiced: boolean; // New field for tracking invoice status
   paid: boolean; // New field for tracking payment status
-  assignee: string | null; // New field for task assignment (allows custom names)
+  assignees: string[]; // Support multiple team members per task
 }
 
 export type TaskInput = Omit<Task, 'id' | 'createdAt' | 'updatedAt'>;

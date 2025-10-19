@@ -191,7 +191,7 @@ export default function TaskApp() {
       dueDate: null,
       invoiced: false,
       paid: false,
-      assignee: null,
+      assignees: [],
     };
     const created = await createTask(payload);
     if (created) {
@@ -210,7 +210,7 @@ export default function TaskApp() {
     const { id: taskId, createdAt, updatedAt, ...apiUpdates } = updates;
     await updateTask(id, apiUpdates);
     // Refresh assignees in case assignee was updated
-    if (updates.assignee !== undefined) {
+    if (updates.assignees !== undefined) {
       refreshAssignees();
     }
   }, [updateTask, refreshAssignees]);
@@ -247,11 +247,11 @@ export default function TaskApp() {
   const assigneesWithTasks = useMemo(() => {
     const assigneeMap: { [key: string]: Task[] } = {};
     tasks.forEach(task => {
-      if (task.assignee) {
-        if (!assigneeMap[task.assignee]) {
-          assigneeMap[task.assignee] = [];
-        }
-        assigneeMap[task.assignee].push(task);
+      if (task.assignees && task.assignees.length) {
+        task.assignees.forEach(name => {
+          if (!assigneeMap[name]) assigneeMap[name] = [];
+          assigneeMap[name].push(task);
+        });
       }
     });
     return assigneeMap;
@@ -263,7 +263,7 @@ export default function TaskApp() {
     
     // Filter by assignee if not 'all'
     if (selectedAssignee !== 'all') {
-      tasks = tasks.filter(task => task.assignee === selectedAssignee);
+      tasks = tasks.filter(task => (task.assignees || []).includes(selectedAssignee));
     }
     
     return tasks;

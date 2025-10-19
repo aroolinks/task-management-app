@@ -49,6 +49,7 @@ export function useTasks() {
       assetUrl: string;
       totalPrice: number | string | null;
       deposit: number | string | null;
+      assignee?: string;
     }>;
 
     const PRIORITIES: readonly Task['priority'][] = ['Low','Medium','High','Urgent'] as const;
@@ -93,6 +94,7 @@ export function useTasks() {
           assetUrl,
           totalPrice,
           deposit,
+          assignees: item.assignee ? [String(item.assignee)] : [],
         } as const;
 
         const res = await fetch('/api/tasks', {
@@ -140,13 +142,22 @@ export function useTasks() {
       
       if (result.success && Array.isArray(result.data)) {
         // Transform MongoDB _id to id and normalize date fields
-        const transformedTasks = (result.data as MongoTask[]).map((task) => ({
-          ...task,
-          id: task._id,
-          createdAt: new Date(task.createdAt as unknown as string),
-          updatedAt: new Date(task.updatedAt as unknown as string),
-          dueDate: task.dueDate ? new Date(task.dueDate as unknown as string) : null,
-        }));
+        const transformedTasks = (result.data as MongoTask[]).map((task) => {
+          const anyTask = task as unknown as Record<string, unknown>;
+          const assignees = Array.isArray((anyTask as { assignees?: unknown }).assignees)
+            ? (anyTask.assignees as string[])
+            : (typeof (anyTask as { assignee?: unknown }).assignee === 'string' && (anyTask as { assignee: string }).assignee)
+              ? [String((anyTask as { assignee: string }).assignee)]
+              : [];
+          return {
+            ...task,
+            assignees,
+            id: task._id,
+            createdAt: new Date(task.createdAt as unknown as string),
+            updatedAt: new Date(task.updatedAt as unknown as string),
+            dueDate: task.dueDate ? new Date(task.dueDate as unknown as string) : null,
+          };
+        });
         setTasks(transformedTasks as unknown as Task[]);
         console.log('Tasks loaded:', transformedTasks.length); // Debug log
 
@@ -235,8 +246,15 @@ const createTask = async (taskInput: TaskInput): Promise<Task | null> => {
       
       if (result.success && result.data) {
         const mongoTask = result.data as MongoTask;
+        const anyTask = mongoTask as unknown as Record<string, unknown>;
+        const assignees = Array.isArray((anyTask as { assignees?: unknown }).assignees)
+          ? (anyTask.assignees as string[])
+          : (typeof (anyTask as { assignee?: unknown }).assignee === 'string' && (anyTask as { assignee: string }).assignee)
+            ? [String((anyTask as { assignee: string }).assignee)]
+            : [];
         const updatedTask: Task = {
           ...(mongoTask as unknown as Omit<Task, 'id'>),
+          assignees,
           id: mongoTask._id,
           createdAt: new Date((mongoTask as unknown as { createdAt: string }).createdAt),
           updatedAt: new Date((mongoTask as unknown as { updatedAt: string }).updatedAt),

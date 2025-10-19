@@ -165,7 +165,7 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
         </div>
         <div className="text-left px-2 py-1 overflow-hidden truncate">Invoice</div>
         <div className="text-left px-2 py-1 overflow-hidden truncate">Paid</div>
-        <div className="text-left px-2 py-1 overflow-hidden truncate">Assignee</div>
+        <div className="text-left px-2 py-1 overflow-hidden truncate">Assignees</div>
         <div className="text-left px-2 py-1 overflow-hidden truncate">Actions</div>
       </div>
 

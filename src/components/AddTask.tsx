@@ -33,18 +33,18 @@ export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps)
   const [assetUrl, setAssetUrl] = useState('');
   const [totalPrice, setTotalPrice] = useState('');
   const [deposit, setDeposit] = useState('');
-  const [assignee, setAssignee] = useState('');
+  const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
   const [customAssignee, setCustomAssignee] = useState('');
   const [showCustomAssignee, setShowCustomAssignee] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (clientName.trim() && clientGroup) { // Check both required fields
-      const finalAssignee = showCustomAssignee ? (customAssignee.trim() || null) : (assignee || null);
-      
-      // Add custom assignee to the list if it's new
-      if (showCustomAssignee && customAssignee.trim()) {
-        addAssignee(customAssignee.trim());
+      const finalAssignees: string[] = [...selectedAssignees];
+      const custom = customAssignee.trim();
+      if (showCustomAssignee && custom) {
+        finalAssignees.push(custom);
+        addAssignee(custom);
       }
       
       onAddTask({
@@ -63,7 +63,7 @@ export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps)
         deposit: deposit ? parseFloat(deposit) : null,
         invoiced: false,
         paid: false,
-        assignee: finalAssignee,
+        assignees: finalAssignees,
       });
       setDueDate(todayStr);
       setPriority('Low');
@@ -77,7 +77,7 @@ export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps)
       setAssetUrl('');
       setTotalPrice('');
       setDeposit('');
-      setAssignee('');
+      setSelectedAssignees([]);
       setCustomAssignee('');
       setShowCustomAssignee(false);
       onClose();
@@ -97,7 +97,7 @@ export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps)
     setAssetUrl('');
     setTotalPrice('');
     setDeposit('');
-    setAssignee('');
+    setSelectedAssignees([]);
     setCustomAssignee('');
     setShowCustomAssignee(false);
     onClose();
@@ -291,40 +291,37 @@ export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps)
           </div>
           
           <div>
-            <label htmlFor="assignee" className="block text-sm font-medium text-slate-300 mb-1">
-              Assignee
+            <label htmlFor="assignees" className="block text-sm font-medium text-slate-300 mb-1">
+              Assignees (Cmd/Ctrl+Click to select multiple)
             </label>
             <div className="space-y-2">
               <select
-                id="assignee"
-                value={showCustomAssignee ? 'custom' : assignee}
+                id="assignees"
+                multiple
+                value={selectedAssignees}
                 onChange={(e) => {
-                  if (e.target.value === 'custom') {
-                    setShowCustomAssignee(true);
-                    setAssignee('');
-                  } else {
-                    setShowCustomAssignee(false);
-                    setAssignee(e.target.value);
-                    setCustomAssignee('');
-                  }
+                  const values = Array.from(e.currentTarget.selectedOptions).map(o => o.value);
+                  const hasCustom = values.includes('custom');
+                  setShowCustomAssignee(hasCustom);
+                  setSelectedAssignees(hasCustom ? values.filter(v => v !== 'custom') : values);
+                  if (!hasCustom) setCustomAssignee('');
                 }}
-                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 text-slate-100 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
+                className="w-full px-3 py-2 bg-slate-800 border border-slate-600 text-slate-100 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500 text-[12px]"
                 disabled={assigneesLoading}
+                size={Math.min(assignees.length + 1, 6)}
               >
-                <option value="">{assigneesLoading ? 'Loading assignees...' : 'Select assignee...'}</option>
                 {assignees.map(person => (
                   <option key={person} value={person}>{person}</option>
                 ))}
                 <option value="custom">+ Add New Assignee</option>
               </select>
-              
               {showCustomAssignee && (
                 <input
                   type="text"
                   value={customAssignee}
                   onChange={(e) => setCustomAssignee(e.target.value)}
                   placeholder="Enter new assignee name..."
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-600 text-slate-100 placeholder-slate-400 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
+                  className="w-full px-3 py-2 bg-slate-800 border border-slate-600 text-slate-100 placeholder-slate-400 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500 text-[12px]"
                   autoFocus
                 />
               )}

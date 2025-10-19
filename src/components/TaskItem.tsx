@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Task, Priority, Status, CMS } from '@/types/task';
 import { useAssignees } from '@/contexts/AssigneeContext';
 import { useGroups } from '@/contexts/GroupContext';
+import AssigneesModal from './AssigneesModal';
 
 interface TaskItemProps {
   task: Task;
@@ -23,6 +24,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
   const { groups } = useGroups();
   const [isEditing, setIsEditing] = useState(autoEdit);
   const [editingField, setEditingField] = useState<string | null>(null);
+  const [showAssignModal, setShowAssignModal] = useState(false);
   const [editData, setEditData] = useState({
     dueDate: task.dueDate instanceof Date ? task.dueDate.toISOString().split('T')[0] : '',
     priority: task.priority,
@@ -34,7 +36,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
     figmaUrl: task.figmaUrl,
     assetUrl: task.assetUrl,
     totalPrice: task.totalPrice?.toString() || '',
-    assignee: task.assignee
+    assignees: task.assignees || [] as string[]
   });
 
   const handleSave = () => {
@@ -49,7 +51,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
       figmaUrl: editData.figmaUrl.trim(),
       assetUrl: editData.assetUrl.trim(),
       totalPrice: editData.totalPrice ? parseFloat(editData.totalPrice) : null,
-      assignee: editData.assignee || null,
+      assignees: Array.isArray(editData.assignees) ? editData.assignees : [],
       updatedAt: new Date()
     };
     
@@ -91,9 +93,6 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
       case 'totalPrice':
         updates.totalPrice = value ? parseFloat(String(value)) : null;
         break;
-      case 'assignee':
-        updates.assignee = value ? String(value) : null;
-        break;
     }
     
     onEditTask(task.id, updates);
@@ -115,14 +114,16 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
         figmaUrl: task.figmaUrl,
         assetUrl: task.assetUrl,
         totalPrice: task.totalPrice?.toString() || '',
-        assignee: task.assignee
+        assignees: task.assignees || []
       });
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent, field: string) => {
     if (e.key === 'Enter') {
-      handleInlineEdit(field, editData[field as keyof typeof editData]);
+      const raw = editData[field as keyof typeof editData] as unknown;
+      const value: string | number | null = Array.isArray(raw) ? null : (raw as string | number | null);
+      handleInlineEdit(field, value);
     } else if (e.key === 'Escape') {
       setEditingField(null);
     }
@@ -176,7 +177,11 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
           type={type}
           value={editData[field as keyof typeof editData] as string || ''}
           onChange={(e) => setEditData({ ...editData, [field]: e.target.value })}
-          onBlur={() => handleInlineEdit(field, editData[field as keyof typeof editData])}
+          onBlur={() => {
+            const raw = editData[field as keyof typeof editData] as unknown;
+            const v: string | number | null = Array.isArray(raw) ? null : (raw as string | number | null);
+            handleInlineEdit(field, v);
+          }}
           onKeyPress={(e) => handleKeyPress(e, field)}
           className={`bg-slate-800 border border-slate-600 text-slate-100 rounded px-2 ${type === 'date' ? 'py-1.5 text-sm' : 'py-1.5 text-sm'} focus:outline-none focus:ring-2 focus:ring-slate-500 min-w-0 w-full`}
           autoFocus
@@ -225,7 +230,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
       figmaUrl: task.figmaUrl,
       assetUrl: task.assetUrl,
       totalPrice: task.totalPrice?.toString() || '',
-      assignee: task.assignee
+      assignees: task.assignees || []
     });
     setIsEditing(false);
   };
@@ -439,13 +444,49 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
         </label>
       </div>
 
-      {/* Assignee */}
+      {/* Assignees */}
       <div className="px-2 py-1.5 text-left overflow-hidden">
-        {renderEditableField('assignee', 'Assignee', task.assignee, 'select', assignees)}
+        {editingField === 'assignees' ? (
+          <select
+            multiple
+            value={editData.assignees as string[]}
+            onChange={(e) => {
+              const values = Array.from(e.currentTarget.selectedOptions).map(o => o.value);
+              onEditTask(task.id, { assignees: values, updatedAt: new Date() });
+              setEditingField(null);
+            }}
+            onBlur={() => setEditingField(null)}
+            className="w-full px-2 py-1.5 text-[12px] bg-slate-800 border border-slate-600 text-slate-100 rounded focus:outline-none focus:ring-2 focus:ring-slate-500"
+            size={Math.min(assignees.length || 1, 4)}
+            autoFocus
+          >
+            {assignees.map(person => (
+              <option key={person} value={person}>{person}</option>
+            ))}
+          </select>
+        ) : (
+          <span
+            className={`cursor-pointer hover:bg-slate-700/40 px-2 py-1.5 rounded transition-colors ${task.status === 'Completed' ? 'text-slate-400' : 'text-slate-100'}`}
+            onClick={() => handleFieldClick('assignees')}
+            title="Click to edit assignees"
+          >
+            {(task.assignees && task.assignees.length) ? task.assignees.join(', ') : 'Unassigned'}
+          </span>
+        )}
       </div>
 
       {/* Actions */}
       <div className="flex items-center justify-start gap-2 px-2 py-1.5 overflow-hidden">
+        <button
+          onClick={() => setShowAssignModal(true)}
+          className="text-slate-300 hover:text-slate-100 transition-colors duration-200"
+          aria-label="Assign team members"
+          title="Assign team members"
+        >
+          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a4 4 0 00-3-3.87M9 20v-2a4 4 0 013-3.87M15 11a4 4 0 10-8 0 4 4 0 008 0z" />
+          </svg>
+        </button>
         {isEditing ? (
           <>
             <button
@@ -481,6 +522,14 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
           </>
         )}
       </div>
+
+      <AssigneesModal
+        open={showAssignModal}
+        options={assignees}
+        initial={task.assignees || []}
+        onClose={() => setShowAssignModal(false)}
+        onSave={(vals) => { onEditTask(task.id, { assignees: vals, updatedAt: new Date() }); setShowAssignModal(false); }}
+      />
     </div>
   );
 }

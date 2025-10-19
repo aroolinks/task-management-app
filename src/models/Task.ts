@@ -16,7 +16,7 @@ export interface ITask {
   dueDate?: Date | null;
   invoiced: boolean;
   paid: boolean;
-  assignee?: string | null;
+  assignees?: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -84,9 +84,9 @@ const TaskSchema = new mongoose.Schema<ITask>(
       type: Boolean,
       default: false,
     },
-    assignee: {
-      type: String,
-      default: null,
+    assignees: {
+      type: [String],
+      default: [],
     },
   },
   {
