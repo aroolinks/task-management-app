@@ -22,10 +22,10 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
     const label = d.toLocaleString(undefined, { month: 'short' });
     return { value, label, year: d.getFullYear() };
   });
-  const [selectedMonth, setSelectedMonth] = useState<string>('all');
+  const currentMonthValue = `${year}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+  const [selectedMonth, setSelectedMonth] = useState<string>(currentMonthValue);
 
   const visibleTasks = useMemo(() => {
-    if (selectedMonth === 'all') return tasks;
     const [y, m] = selectedMonth.split('-').map(Number);
     return tasks.filter(t => t.dueDate instanceof Date && t.dueDate.getFullYear() === y && (t.dueDate.getMonth() + 1) === m);
   }, [tasks, selectedMonth]);
@@ -34,6 +34,7 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
   const effectiveSelectedGroup = selectedGroupProp ?? 'all';
   const [showEarnings, setShowEarnings] = useState<boolean>(false);
   const [showCost, setShowCost] = useState<boolean>(false);
+  const [statusTab, setStatusTab] = useState<'inprocess' | 'completed'>('inprocess');
 
 
   // Filter tasks by selected group only
@@ -50,6 +51,11 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
     
     return tasks;
   }, [visibleTasks, effectiveSelectedGroup]);
+
+  // Apply status tab filter (completed vs rest)
+  const statusFilteredTasks = useMemo(() => {
+    return filteredTasks.filter(t => (statusTab === 'completed' ? t.status === 'Completed' : t.status !== 'Completed'));
+  }, [filteredTasks, statusTab]);
 
   const handleGenerateInvoice = () => {
     try {
@@ -68,8 +74,9 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
     return visibleTasks.reduce((sum, t) => sum + (t.totalPrice || 0), 0);
   }, [visibleTasks]);
 
+
   const completedMonth = useMemo(() => visibleTasks.filter(t => t.status === 'Completed').length, [visibleTasks]);
-  const inProcessMonth = useMemo(() => visibleTasks.filter(t => t.status === 'InProcess').length, [visibleTasks]);
+  const inProcessMonth = useMemo(() => visibleTasks.filter(t => t.status !== 'Completed').length, [visibleTasks]);
   const totalMonth = completedMonth + inProcessMonth;
 
   // Early return after all hooks are called
@@ -92,12 +99,6 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
       {/* Month tabs and summary */}
       <div className="flex items-center justify-between px-3 py-2 bg-slate-800 border-b border-slate-700">
         <div className="flex items-center gap-0 overflow-x-auto divide-x divide-slate-600">
-          <button
-            className={`px-2 py-1 rounded text-[14px] ${selectedMonth === 'all' ? 'bg-slate-700 text-slate-100' : 'hover:bg-slate-700/50 text-slate-300'}`}
-            onClick={() => setSelectedMonth('all')}
-          >
-            All
-          </button>
           {months.map(m => (
             <button
               key={m.value}
@@ -108,11 +109,34 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
               {m.label}
             </button>
           ))}
+          <div className="ml-2 inline-flex rounded-md overflow-hidden border border-slate-600 bg-slate-700/50">
+            <button
+              className={`px-3 py-1 text-[12px] font-medium flex items-center gap-1 ${statusTab === 'inprocess' ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-700/50'}`}
+              onClick={() => setStatusTab('inprocess')}
+              title="Show in-process projects"
+            >
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6l3 3" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4a8 8 0 110 16 8 8 0 010-16z" />
+              </svg>
+              In process
+            </button>
+            <button
+              className={`px-3 py-1 text-[12px] font-medium flex items-center gap-1 ${statusTab === 'completed' ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-700/50'}`}
+              onClick={() => setStatusTab('completed')}
+              title="Show completed projects"
+            >
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              Completed
+            </button>
+          </div>
         </div>
         <div className="text-xs font-medium text-slate-300 flex items-center gap-2">
-          <span className="px-1.5 py-0.5 rounded bg-slate-700 text-slate-200">All: {totalMonth}</span>
+          <span className="px-1.5 py-0.5 rounded bg-slate-700 text-slate-200">Total: {totalMonth}</span>
           <span className="px-1.5 py-0.5 rounded bg-slate-700 text-slate-200">Completed: {completedMonth}</span>
-          <span className="px-1.5 py-0.5 rounded bg-slate-700 text-slate-200">In progress: {inProcessMonth}</span>
+          <span className="px-1.5 py-0.5 rounded bg-slate-700 text-slate-200">In process: {inProcessMonth}</span>
           <div className="flex items-center gap-1">
             <button
               onClick={() => setShowEarnings(!showEarnings)}
@@ -137,16 +161,14 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
 
 
       {/* Header row */}
-      <div className="grid grid-cols-[180px_100px_100px_100px_100px_100px_120px_100px_100px_80px_70px_70px_100px_120px] items-center gap-0 px-3 py-1.5 text-[11px] font-semibold text-slate-300 tracking-wide bg-slate-900 border-b border-slate-700 divide-x divide-slate-700">
+      <div className="grid grid-cols-[180px_100px_100px_100px_100px_120px_130px_80px_120px_100px_120px] items-center gap-0 px-3 py-1.5 text-[11px] font-semibold text-slate-300 tracking-wide bg-slate-900 border-b border-slate-700 divide-x divide-slate-700">
         <div className="text-left px-2 py-1 overflow-hidden truncate">Name</div>
         <div className="text-left px-2 py-1 overflow-hidden truncate">Group</div>
         <div className="text-left px-2 py-1 overflow-hidden truncate">Web</div>
         <div className="text-left px-2 py-1 overflow-hidden truncate">Job Desc</div>
-        <div className="text-left px-2 py-1 overflow-hidden truncate">Figma</div>
-        <div className="text-left px-2 py-1 overflow-hidden truncate">Asset</div>
+        <div className="text-left px-2 py-1 overflow-hidden truncate">Assets</div>
         <div className="text-left px-2 py-1 overflow-hidden truncate">Due</div>
         <div className="text-left px-2 py-1 overflow-hidden truncate">Status</div>
-        <div className="text-left px-2 py-1 overflow-hidden truncate">Priority</div>
         <div className="text-left px-2 py-1 overflow-hidden truncate flex items-center gap-1">
           <span>Cost</span>
           <button
@@ -163,15 +185,14 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
             </svg>
           </button>
         </div>
-        <div className="text-left px-2 py-1 overflow-hidden truncate">Invoice</div>
-        <div className="text-left px-2 py-1 overflow-hidden truncate">Paid</div>
+        <div className="text-left px-2 py-1 overflow-hidden truncate">Billing</div>
         <div className="text-left px-2 py-1 overflow-hidden truncate">Assignees</div>
         <div className="text-left px-2 py-1 overflow-hidden truncate">Actions</div>
       </div>
 
       {/* Filtered Data rows */}
       <div className="divide-y divide-slate-700">
-        {filteredTasks.map(task => (
+        {statusFilteredTasks.map(task => (
             <TaskItem
               key={task.id}
               task={task}

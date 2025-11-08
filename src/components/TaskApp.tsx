@@ -23,6 +23,8 @@ export default function TaskApp() {
   const [autoEditTaskId, setAutoEditTaskId] = useState<string | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
   const [selectedAssignee, setSelectedAssignee] = useState<string>('all');
+  const year = new Date().getFullYear();
+  const [showYearEarnings, setShowYearEarnings] = useState(false);
 
   // Sidebar project groups (server-persisted with local fallback)
   const [groups, setGroups] = useState<UiGroup[]>(Array.from(DEFAULT_GROUPS).map(name => ({ name })));
@@ -188,7 +190,7 @@ export default function TaskApp() {
       assetUrl: '',
       totalPrice: null,
       deposit: null,
-      dueDate: null,
+      dueDate: new Date(),
       invoiced: false,
       paid: false,
       assignees: [],
@@ -268,6 +270,14 @@ export default function TaskApp() {
     
     return tasks;
   }, [groupedTasks, selectedGroup, selectedAssignee]);
+
+  const yearTotalEarnings = useMemo(() => {
+    return tasks.reduce((sum, t) =>
+      (t.dueDate instanceof Date && t.dueDate.getFullYear() === year)
+        ? sum + (t.totalPrice || 0)
+        : sum
+    , 0);
+  }, [tasks, year]);
 
   if (loading && tasks.length === 0) {
     return (
@@ -483,6 +493,13 @@ export default function TaskApp() {
                 <span className="ml-2 text-lg font-normal text-slate-400">
                   ({filteredTasks.length})
                 </span>
+                <button
+                  onClick={() => setShowYearEarnings(!showYearEarnings)}
+                  className="ml-3 px-2 py-0.5 text-xs rounded bg-slate-700 text-slate-200 hover:bg-slate-600 border border-slate-600 align-middle"
+                  title={showYearEarnings ? 'Hide yearly earnings' : 'Show yearly earnings'}
+                >
+                  Year: {showYearEarnings ? `£${yearTotalEarnings.toFixed(2)}` : '••••'}
+                </button>
               </h1>
               <div className="flex items-center gap-3">
                 <button

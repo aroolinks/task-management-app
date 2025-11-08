@@ -251,7 +251,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
   };
 
   return (
-    <div className={`grid grid-cols-[180px_100px_100px_100px_100px_100px_120px_100px_100px_80px_70px_70px_100px_120px] items-center gap-0 px-3 text-[11px] h-[50px] ${task.status === 'Completed' ? 'text-slate-400' : 'text-slate-100'} divide-x divide-slate-700 ${getRowBgColor()}`}>
+    <div className={`grid grid-cols-[180px_100px_100px_100px_100px_120px_130px_80px_120px_100px_120px] items-center gap-0 px-3 text-[11px] h-[50px] ${task.status === 'Completed' ? 'text-slate-400' : 'text-slate-100'} divide-x divide-slate-700 ${getRowBgColor()}`}>
 
       {/* Client Name */}
       <div className="px-2 py-1.5 text-left overflow-hidden">
@@ -324,28 +324,31 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
         {renderEditableField('cms', 'Job Desc', task.cms, 'select', cmsOptions)}
       </div>
 
-      {/* Figma */}
-      <div className="flex items-center gap-2 px-2 py-1.5 text-left overflow-hidden">
-        {renderEditableField('figmaUrl', 'Figma URL', task.figmaUrl, 'url')}
-        {task.figmaUrl && editingField !== 'figmaUrl' && (
-          <a href={task.figmaUrl} target="_blank" rel="noopener noreferrer" className="text-white hover:text-slate-200 text-sm shrink-0">
-            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
-          </a>
-        )}
-      </div>
 
-      {/* Asset */}
-      <div className="flex items-center gap-2 px-2 py-1.5 text-left overflow-hidden">
-        {renderEditableField('assetUrl', 'Asset URL', task.assetUrl, 'url')}
-        {task.assetUrl && editingField !== 'assetUrl' && (
-          <a href={task.assetUrl} target="_blank" rel="noopener noreferrer" className="text-white hover:text-slate-200 text-sm shrink-0">
-            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
-          </a>
-        )}
+      {/* Assets (Figma + Asset) stacked */}
+      <div className="px-2 py-1.5 text-left overflow-hidden">
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            {renderEditableField('figmaUrl', 'Figma URL', task.figmaUrl, 'url')}
+            {task.figmaUrl && editingField !== 'figmaUrl' && (
+              <a href={task.figmaUrl} target="_blank" rel="noopener noreferrer" className="text-white hover:text-slate-200 text-sm shrink-0" title="Open Figma">
+                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </a>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {renderEditableField('assetUrl', 'Asset URL', task.assetUrl, 'url')}
+            {task.assetUrl && editingField !== 'assetUrl' && (
+              <a href={task.assetUrl} target="_blank" rel="noopener noreferrer" className="text-white hover:text-slate-200 text-sm shrink-0" title="Open Asset">
+                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </a>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Due */}
@@ -356,17 +359,37 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
       {/* Status */}
       <div className="px-2 py-2 text-left overflow-hidden">
         {editingField === 'status' ? (
-          <select
-            value={editData.status}
-            onChange={(e) => handleInlineEdit('status', e.target.value)}
-            onBlur={() => setEditingField(null)}
-            className="px-3 py-2 text-[12px] font-medium rounded-full border border-slate-600 bg-slate-800 text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-500"
-            autoFocus
-          >
-            {statuses.map(s => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
+          <div role="radiogroup" className="flex flex-col gap-1 bg-slate-800 px-1.5 py-1 rounded-md border border-slate-600 w-max">
+            <label className={`px-1.5 py-0.5 text-[11px] font-medium flex items-center gap-1 cursor-pointer rounded ${editData.status === 'InProcess' ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-700/50'}`}
+            >
+              <input
+                type="radio"
+                name={`status-${task.id}`}
+                className="sr-only"
+                checked={editData.status === 'InProcess'}
+                onChange={() => handleInlineEdit('status', 'InProcess')}
+              />
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6l3 3" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4a8 8 0 110 16 8 8 0 010-16z" />
+              </svg>
+              In process
+            </label>
+            <label className={`px-1.5 py-0.5 text-[11px] font-medium flex items-center gap-1 cursor-pointer rounded ${editData.status === 'Completed' ? 'bg-blue-600 text-white' : 'text-slate-300 hover:bg-slate-700/50'}`}
+            >
+              <input
+                type="radio"
+                name={`status-${task.id}`}
+                className="sr-only"
+                checked={editData.status === 'Completed'}
+                onChange={() => handleInlineEdit('status', 'Completed')}
+              />
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              Completed
+            </label>
+          </div>
         ) : (
           <span 
             className={`inline-flex px-3 py-2 text-sm cursor-pointer hover:bg-slate-700/40 rounded transition-colors ${task.status === 'Completed' ? 'text-slate-400' : 'text-slate-100'}`}
@@ -378,30 +401,6 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
         )}
       </div>
 
-      {/* Priority */}
-      <div className="px-2 py-2 text-left overflow-hidden">
-        {editingField === 'priority' ? (
-          <select
-            value={editData.priority}
-            onChange={(e) => handleInlineEdit('priority', e.target.value)}
-            onBlur={() => setEditingField(null)}
-            className="px-3 py-2 text-[12px] font-medium rounded-full border border-slate-600 bg-slate-800 text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-500"
-            autoFocus
-          >
-            {priorities.map(p => (
-              <option key={p} value={p}>{p}</option>
-            ))}
-          </select>
-        ) : (
-          <span 
-            className={`inline-flex px-3 py-2 text-sm cursor-pointer hover:bg-slate-700/40 rounded transition-colors ${task.status === 'Completed' ? 'text-slate-400' : 'text-slate-100'}`}
-            onClick={() => handleFieldClick('priority')}
-            title="Click to change priority"
-          >
-            {task.priority}
-          </span>
-        )}
-      </div>
 
       {/* Total Cost */}
       <div className="px-2 py-1.5 text-left overflow-hidden">
@@ -418,30 +417,28 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
         )}
       </div>
 
-      {/* Invoice */}
+      {/* Billing: Invoice + Paid */}
       <div className="px-2 py-1.5 text-left overflow-hidden">
-        <label className="inline-flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={Boolean(task.invoiced)}
-            onChange={(e) => onEditTask(task.id, { invoiced: e.target.checked, updatedAt: new Date() })}
-            className="h-4 w-4 accent-blue-600"
-          />
-          <span className="sr-only">Invoiced</span>
-        </label>
-      </div>
-
-      {/* Paid */}
-      <div className="px-2 py-1.5 text-left overflow-hidden">
-        <label className="inline-flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={Boolean(task.paid)}
-            onChange={(e) => onEditTask(task.id, { paid: e.target.checked, updatedAt: new Date() })}
-            className="h-4 w-4 accent-green-600"
-          />
-          <span className="sr-only">Paid</span>
-        </label>
+        <div className="flex flex-col items-start gap-1">
+          <label className="inline-flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={Boolean(task.invoiced)}
+              onChange={(e) => onEditTask(task.id, { invoiced: e.target.checked, updatedAt: new Date() })}
+              className="h-4 w-4 accent-blue-600"
+            />
+            <span className="text-slate-300 text-[11px]">Inv</span>
+          </label>
+          <label className="inline-flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={Boolean(task.paid)}
+              onChange={(e) => onEditTask(task.id, { paid: e.target.checked, updatedAt: new Date() })}
+              className="h-4 w-4 accent-green-600"
+            />
+            <span className="text-slate-300 text-[11px]">Paid</span>
+          </label>
+        </div>
       </div>
 
       {/* Assignees */}
