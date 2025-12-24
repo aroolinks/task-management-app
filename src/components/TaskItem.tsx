@@ -14,8 +14,6 @@ interface TaskItemProps {
   autoEdit?: boolean;
 }
 
-const priorities: Priority[] = ['Low', 'Medium', 'High', 'Urgent'];
-const statuses: Status[] = ['InProcess', 'Completed'];
 const cmsOptions: CMS[] = ['Wordpress', 'Shopify', 'Designing', 'SEO', 'Marketing'];
 
 

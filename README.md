@@ -10,6 +10,8 @@ A modern task management application built with Next.js 15, React 19, TypeScript
 - 🔧 CMS categorization (WordPress, Shopify, Designing, SEO, Marketing)
 - 💰 Price and deposit tracking
 - 📅 Due date management
+- 🔐 User authentication with JWT
+- 👥 User and group management
 - 🎨 Modern UI with Tailwind CSS
 
 ## Tech Stack
@@ -18,6 +20,7 @@ A modern task management application built with Next.js 15, React 19, TypeScript
 - **Frontend**: React 19, TypeScript
 - **Styling**: Tailwind CSS 4
 - **Database**: MongoDB with Mongoose
+- **Authentication**: JWT with jose library
 - **Deployment**: Vercel
 - **Linting**: ESLint
 

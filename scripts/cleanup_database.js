@@ -1,11 +1,28 @@
 #!/usr/bin/env node
 
 const mongoose = require('mongoose');
-const dotenv = require('dotenv');
-const { join } = require('path');
+const fs = require('fs');
+const path = require('path');
+
+function loadEnvFile() {
+  const envPath = path.join(__dirname, '../.env.local');
+  if (fs.existsSync(envPath)) {
+    const content = fs.readFileSync(envPath, 'utf8');
+    const lines = content.split(/\r?\n/);
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+      const [key, ...valueParts] = trimmed.split('=');
+      if (key && valueParts.length > 0) {
+        const value = valueParts.join('=').replace(/^["']|["']$/g, '');
+        process.env[key] = value;
+      }
+    }
+  }
+}
 
 // Load environment variables
-dotenv.config({ path: join(__dirname, '../.env.local') });
+loadEnvFile();
 
 async function main() {
   try {
