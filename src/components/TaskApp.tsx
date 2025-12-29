@@ -18,7 +18,7 @@ interface UiGroup { id?: string; name: string }
 export default function TaskApp() {
   const { user, logout } = useAuth();
   const { tasks, loading, error, createTask, updateTask, deleteTask } = useTasks();
-  const { assignees, addAssignee, refreshAssignees } = useAssignees();
+  const { assignees, addAssignee, removeAssignee, refreshAssignees } = useAssignees();
   const { groups: contextGroups, addGroup } = useGroups();
   const [autoEditTaskId, setAutoEditTaskId] = useState<string | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
@@ -179,8 +179,8 @@ export default function TaskApp() {
 
   const handleAddInlineTask = async () => {
     const payload: TaskInput = {
-      clientName: 'New Task',
-      clientGroup: selectedGroup !== 'all' ? selectedGroup : 'Unassigned',
+      clientName: '',
+      clientGroup: selectedGroup !== 'all' ? selectedGroup : 'Personal',
       completed: false,
       priority: 'Low',
       status: 'InProcess',
@@ -288,15 +288,26 @@ export default function TaskApp() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100">
-      <div className="flex">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+      {/* Background pattern */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(148,163,184,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.02)_1px,transparent_1px)] bg-[size:32px_32px]"></div>
+      
+      <div className="flex relative">
         {/* Sidebar */}
-        <div className="w-72 bg-slate-800 border-r border-slate-700 flex flex-col">
+        <div className="w-64 bg-slate-900/80 backdrop-blur-xl border-r border-slate-700/50 flex flex-col min-h-screen">
           {/* Header */}
-          <div className="p-4 border-b border-slate-700">
+          <div className="p-4 border-b border-slate-700/50">
             <Logo />
-            <div className="mt-4">
-              <span className="text-sm text-slate-400">Welcome, {user?.username}</span>
+            <div className="mt-3 flex items-center gap-2">
+              <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-xs font-semibold">
+                  {user?.username?.charAt(0).toUpperCase()}
+                </span>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-slate-200">Welcome back</p>
+                <p className="text-xs text-slate-400">{user?.username}</p>
+              </div>
             </div>
           </div>
 
@@ -304,13 +315,20 @@ export default function TaskApp() {
           <div className="flex-1 overflow-y-auto">
             <div className="p-4">
               <div className="flex items-center justify-between mb-3">
-                <h2 className="font-semibold text-slate-200">Project Groups</h2>
+                <h2 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
+                  <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14-7l2 2-2 2M5 13l-2-2 2-2m8 8v-8a4 4 0 00-8 0v8a4 4 0 008 0z" />
+                  </svg>
+                  Project Groups
+                </h2>
                 <button
                   onClick={() => setShowGroupForm(true)}
-                  className="text-slate-400 hover:text-slate-300 text-xl"
+                  className="w-6 h-6 bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600/50 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-300 transition-all duration-200 btn-hover"
                   title="Add new group"
                 >
-                  +
+                  <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
                 </button>
               </div>
 
@@ -320,48 +338,68 @@ export default function TaskApp() {
                   setSelectedGroup('all');
                   setSelectedAssignee('all');
                 }}
-                className={`w-full text-left px-3 py-2 rounded-md mb-1 transition-colors ${
+                className={`w-full text-left px-3 py-2 rounded-lg mb-1 transition-all duration-200 group ${
                   selectedGroup === 'all'
-                    ? 'bg-slate-700 text-slate-100'
-                    : 'text-slate-400 hover:bg-slate-700/50 hover:text-slate-300'
+                    ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-slate-100 border border-blue-500/30'
+                    : 'text-slate-400 hover:bg-slate-700/30 hover:text-slate-300 border border-transparent'
                 }`}
               >
-                <span>All Tasks</span>
-                <span className="float-right text-xs bg-slate-600 px-2 py-1 rounded">
-                  {groupCounts['all'] || 0}
-                </span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-1.5 h-1.5 rounded-full ${selectedGroup === 'all' ? 'bg-blue-400' : 'bg-slate-500'}`}></div>
+                    <span className="text-sm font-medium">All Tasks</span>
+                  </div>
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${
+                    selectedGroup === 'all' 
+                      ? 'bg-blue-500/20 text-blue-300' 
+                      : 'bg-slate-600/50 text-slate-400'
+                  }`}>
+                    {groupCounts['all'] || 0}
+                  </span>
+                </div>
               </button>
 
               {/* Project Groups */}
-              {groups.map(group => (
-                <button
-                  key={group.id || group.name}
-                  onClick={() => {
-                    setSelectedGroup(group.name);
-                    setSelectedAssignee('all');
-                  }}
-                  className={`w-full text-left px-3 py-2 rounded-md mb-1 transition-colors ${
-                    selectedGroup === group.name
-                      ? 'bg-slate-700 text-slate-100'
-                      : 'text-slate-400 hover:bg-slate-700/50 hover:text-slate-300'
-                  }`}
-                >
-                  <span>{group.name}</span>
-                  <span className="float-right text-xs bg-slate-600 px-2 py-1 rounded">
-                    {groupCounts[group.name] || 0}
-                  </span>
-                </button>
-              ))}
+              <div className="space-y-1">
+                {groups.map(group => (
+                  <button
+                    key={group.id || group.name}
+                    onClick={() => {
+                      setSelectedGroup(group.name);
+                      setSelectedAssignee('all');
+                    }}
+                    className={`w-full text-left px-3 py-2 rounded-lg transition-all duration-200 group ${
+                      selectedGroup === group.name
+                        ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-slate-100 border border-blue-500/30'
+                        : 'text-slate-400 hover:bg-slate-700/30 hover:text-slate-300 border border-transparent'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-1.5 h-1.5 rounded-full ${selectedGroup === group.name ? 'bg-blue-400' : 'bg-slate-500'}`}></div>
+                        <span className="text-sm font-medium truncate">{group.name}</span>
+                      </div>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${
+                        selectedGroup === group.name 
+                          ? 'bg-blue-500/20 text-blue-300' 
+                          : 'bg-slate-600/50 text-slate-400'
+                      }`}>
+                        {groupCounts[group.name] || 0}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
 
               {/* Add Group Form */}
               {showGroupForm && (
-                <div className="mt-3 p-3 bg-slate-700 rounded-md">
+                <div className="mt-3 p-3 bg-slate-800/50 border border-slate-700/50 rounded-lg backdrop-blur-sm">
                   <input
                     type="text"
                     value={newGroupName}
                     onChange={(e) => setNewGroupName(e.target.value)}
                     placeholder="Group name"
-                    className="w-full px-2 py-1 bg-slate-800 border border-slate-600 text-slate-100 rounded-md text-sm"
+                    className="w-full px-2 py-1.5 bg-slate-700/50 border border-slate-600/50 text-slate-100 placeholder-slate-400 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200"
                     autoFocus
                   />
                   {groupError && (
@@ -370,7 +408,7 @@ export default function TaskApp() {
                   <div className="flex gap-2 mt-2">
                     <button
                       onClick={handleAddProjectGroup}
-                      className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm"
+                      className="flex-1 px-2 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium transition-all duration-200 btn-hover"
                     >
                       Add
                     </button>
@@ -380,7 +418,7 @@ export default function TaskApp() {
                         setNewGroupName('');
                         setGroupError(null);
                       }}
-                      className="px-3 py-1 bg-slate-600 hover:bg-slate-500 text-white rounded-md text-sm"
+                      className="flex-1 px-2 py-1.5 bg-slate-600/50 hover:bg-slate-500/50 text-slate-300 rounded text-sm font-medium transition-all duration-200"
                     >
                       Cancel
                     </button>
@@ -390,78 +428,148 @@ export default function TaskApp() {
             </div>
 
             {/* Assignees with Tasks */}
-            <div className="p-4 border-t border-slate-700">
+            <div className="p-4 border-t border-slate-700/50">
               <div className="flex items-center justify-between mb-3">
-                <h2 className="font-semibold text-slate-200">Team Assignments</h2>
+                <h2 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
+                  <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  Team Assignments
+                </h2>
                 <button
                   onClick={() => setShowAssigneeForm(true)}
-                  className="text-slate-400 hover:text-slate-300 text-xl"
+                  className="w-6 h-6 bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600/50 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-300 transition-all duration-200 btn-hover"
                   title="Add new assignee"
                 >
-                  +
+                  <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
                 </button>
               </div>
 
               {/* All Assignees Button */}
               <button
                 onClick={() => setSelectedAssignee('all')}
-                className={`w-full text-left px-3 py-2 rounded-md mb-1 transition-colors ${
+                className={`w-full text-left px-3 py-2 rounded-lg mb-1 transition-all duration-200 ${
                   selectedAssignee === 'all'
-                    ? 'bg-slate-700 text-slate-100'
-                    : 'text-slate-400 hover:bg-slate-700/50 hover:text-slate-300'
+                    ? 'bg-gradient-to-r from-emerald-500/20 to-teal-500/20 text-slate-100 border border-emerald-500/30'
+                    : 'text-slate-400 hover:bg-slate-700/30 hover:text-slate-300 border border-transparent'
                 }`}
               >
-                <span>All Assignees</span>
-                <span className="float-right text-xs bg-slate-600 px-2 py-1 rounded">
-                  {tasks.length}
-                </span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-1.5 h-1.5 rounded-full ${selectedAssignee === 'all' ? 'bg-emerald-400' : 'bg-slate-500'}`}></div>
+                    <span className="text-sm font-medium">All Assignees</span>
+                  </div>
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${
+                    selectedAssignee === 'all' 
+                      ? 'bg-emerald-500/20 text-emerald-300' 
+                      : 'bg-slate-600/50 text-slate-400'
+                  }`}>
+                    {tasks.length}
+                  </span>
+                </div>
               </button>
 
               {/* Individual Assignees */}
               <div className="space-y-1">
-                {Object.entries(assigneesWithTasks).map(([assignee, assignedTasks]) => (
-                  <button
-                    key={assignee}
-                    onClick={() => setSelectedAssignee(assignee)}
-                    className={`w-full text-left px-3 py-2 rounded-md transition-colors ${
-                      selectedAssignee === assignee
-                        ? 'bg-slate-700 text-slate-100'
-                        : 'text-slate-400 hover:bg-slate-700/50 hover:text-slate-300'
-                    }`}
-                  >
-                    <span>{assignee}</span>
-                    <span className="float-right text-xs bg-slate-600 px-2 py-1 rounded">
-                      {assignedTasks.length}
-                    </span>
-                  </button>
-                ))}
-                {Object.keys(assigneesWithTasks).length === 0 && (
-                  <div className="text-slate-500 text-sm text-center py-4">
-                    No assignments yet
+                {assignees.map(assignee => {
+                  const assignedTasks = assigneesWithTasks[assignee] || [];
+                  const taskCount = assignedTasks.length;
+                  return (
+                    <div
+                      key={assignee}
+                      className={`flex items-center justify-between px-3 py-2 rounded-lg transition-all duration-200 group ${
+                        selectedAssignee === assignee
+                          ? 'bg-gradient-to-r from-emerald-500/20 to-teal-500/20 text-slate-100 border border-emerald-500/30'
+                          : 'text-slate-400 hover:bg-slate-700/30 hover:text-slate-300 border border-transparent'
+                      }`}
+                    >
+                      <button
+                        onClick={() => setSelectedAssignee(assignee)}
+                        className="flex items-center gap-2 flex-1"
+                      >
+                        <div className={`w-1.5 h-1.5 rounded-full ${selectedAssignee === assignee ? 'bg-emerald-400' : 'bg-slate-500'}`}></div>
+                        <span className="text-sm font-medium truncate">{assignee}</span>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${
+                          selectedAssignee === assignee 
+                            ? 'bg-emerald-500/20 text-emerald-300' 
+                            : taskCount > 0 
+                              ? 'bg-blue-500/20 text-blue-400'
+                              : 'bg-slate-600/50 text-slate-500'
+                        }`}>
+                          {taskCount}
+                        </span>
+                      </button>
+                      
+                      {/* Delete Assignee Button */}
+                      <button
+                        onClick={() => {
+                          if (window.confirm(`Remove "${assignee}" from the team?${taskCount > 0 ? ` This will unassign them from ${taskCount} task(s).` : ''}`)) {
+                            removeAssignee(assignee);
+                            if (selectedAssignee === assignee) {
+                              setSelectedAssignee('all');
+                            }
+                          }
+                        }}
+                        className="w-5 h-5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/30 rounded flex items-center justify-center text-red-400 hover:text-red-300 transition-all duration-200 opacity-0 group-hover:opacity-100"
+                        title={`Remove ${assignee} from team`}
+                      >
+                        <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  );
+                })}
+                {assignees.length === 0 && (
+                  <div className="text-slate-500 text-xs text-center py-4 bg-slate-800/30 rounded-lg border border-slate-700/30">
+                    <svg className="h-6 w-6 mx-auto mb-1 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    No team members yet
                   </div>
                 )}
               </div>
 
               {/* Add Assignee Form */}
               {showAssigneeForm && (
-                <div ref={assigneeFormRef} className="mt-3 p-3 bg-slate-700 rounded-md">
+                <div ref={assigneeFormRef} className="mt-4 p-4 bg-slate-800/50 border border-slate-700/50 rounded-xl backdrop-blur-sm shadow-lg">
+                  <div className="mb-3">
+                    <h4 className="text-sm font-semibold text-slate-200 mb-1">Add New Team Member</h4>
+                    <p className="text-xs text-slate-400">Enter the name of the new team member</p>
+                  </div>
                   <input
                     type="text"
                     value={newAssigneeName}
                     onChange={(e) => setNewAssigneeName(e.target.value)}
-                    placeholder="Assignee name"
-                    className="w-full px-2 py-1 bg-slate-800 border border-slate-600 text-slate-100 rounded-md text-sm"
+                    placeholder="Team member name..."
+                    className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600/50 text-slate-100 placeholder-slate-400 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200"
                     autoFocus
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        handleAddAssignee();
+                      } else if (e.key === 'Escape') {
+                        setShowAssigneeForm(false);
+                        setNewAssigneeName('');
+                        setAssigneeError(null);
+                      }
+                    }}
                   />
                   {assigneeError && (
-                    <p className="text-red-400 text-xs mt-1">{assigneeError}</p>
+                    <p className="text-red-400 text-xs mt-2 flex items-center gap-1">
+                      <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                      </svg>
+                      {assigneeError}
+                    </p>
                   )}
-                  <div className="flex gap-2 mt-2">
+                  <div className="flex gap-2 mt-3">
                     <button
                       onClick={handleAddAssignee}
-                      className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm"
+                      className="flex-1 px-3 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg text-sm font-medium transition-all duration-200 btn-hover shadow-lg"
                     >
-                      Add
+                      Add Member
                     </button>
                     <button
                       onClick={() => {
@@ -469,7 +577,7 @@ export default function TaskApp() {
                         setNewAssigneeName('');
                         setAssigneeError(null);
                       }}
-                      className="px-3 py-1 bg-slate-600 hover:bg-slate-500 text-white rounded-md text-sm"
+                      className="flex-1 px-3 py-2 bg-slate-600/50 hover:bg-slate-500/50 text-slate-300 rounded-lg text-sm font-medium transition-all duration-200"
                     >
                       Cancel
                     </button>
@@ -483,35 +591,45 @@ export default function TaskApp() {
         {/* Main Content */}
         <div className="flex-1 flex flex-col">
           {/* Header */}
-          <div className="bg-slate-800 border-b border-slate-700 px-6 py-4">
+          <div className="bg-slate-900/50 backdrop-blur-xl border-b border-slate-700/50 px-6 py-4">
             <div className="flex items-center justify-between">
-              <h1 className="text-2xl font-bold">
-                {selectedGroup === 'all' ? 'All Tasks' : selectedGroup}
-                {selectedAssignee !== 'all' && (
-                  <span className="text-lg font-normal text-blue-400"> → {selectedAssignee}</span>
-                )}
-                <span className="ml-2 text-lg font-normal text-slate-400">
-                  ({filteredTasks.length})
-                </span>
-                <button
-                  onClick={() => setShowYearEarnings(!showYearEarnings)}
-                  className="ml-3 px-2 py-0.5 text-xs rounded bg-slate-700 text-slate-200 hover:bg-slate-600 border border-slate-600 align-middle"
-                  title={showYearEarnings ? 'Hide yearly earnings' : 'Show yearly earnings'}
-                >
-                  Year: {showYearEarnings ? `£${yearTotalEarnings.toFixed(2)}` : '••••'}
-                </button>
-              </h1>
+              <div className="flex items-center gap-3">
+                <h1 className="text-xl font-bold text-white">
+                  {selectedGroup === 'all' ? 'All Tasks' : selectedGroup}
+                  {selectedAssignee !== 'all' && (
+                    <span className="text-lg font-normal text-blue-400 ml-2">→ {selectedAssignee}</span>
+                  )}
+                </h1>
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-1 text-xs font-medium bg-slate-700/50 text-slate-300 rounded-full border border-slate-600/50">
+                    {filteredTasks.length} tasks
+                  </span>
+                  <button
+                    onClick={() => setShowYearEarnings(!showYearEarnings)}
+                    className="px-2 py-1 text-xs font-medium bg-slate-700/50 hover:bg-slate-600/50 text-slate-300 hover:text-slate-200 rounded-full border border-slate-600/50 transition-all duration-200"
+                    title={showYearEarnings ? 'Hide yearly earnings' : 'Show yearly earnings'}
+                  >
+                    {year}: {showYearEarnings ? `£${yearTotalEarnings.toFixed(2)}` : '••••'}
+                  </button>
+                </div>
+              </div>
               <div className="flex items-center gap-3">
                 <button
                   onClick={handleLogout}
-                  className="px-3 py-2 text-slate-400 hover:text-slate-300 border border-slate-600 hover:border-slate-500 rounded-md text-sm transition-colors"
+                  className="px-3 py-1.5 text-slate-400 hover:text-slate-300 border border-slate-600/50 hover:border-slate-500/50 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-1"
                 >
+                  <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
                   Logout
                 </button>
                 <button
                   onClick={handleAddInlineTask}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium"
+                  className="px-4 py-1.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-medium transition-all duration-200 btn-hover flex items-center gap-1 shadow-lg text-sm"
                 >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
                   Add Task
                 </button>
               </div>
@@ -521,8 +639,13 @@ export default function TaskApp() {
           {/* Content */}
           <div className="flex-1 p-6">
             {error ? (
-              <div className="text-red-400 mb-4 p-3 bg-red-900/20 border border-red-800 rounded-md">
-                Error: {error}
+              <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg backdrop-blur-sm">
+                <div className="flex items-center gap-2">
+                  <svg className="h-4 w-4 text-red-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                  <p className="text-red-300 text-sm font-medium">Error: {error}</p>
+                </div>
               </div>
             ) : null}
 
@@ -536,7 +659,6 @@ export default function TaskApp() {
           </div>
         </div>
       </div>
-
     </div>
   );
 }

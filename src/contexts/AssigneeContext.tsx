@@ -7,6 +7,7 @@ interface AssigneeContextType {
   loading: boolean;
   error: string | null;
   addAssignee: (assignee: string) => void;
+  removeAssignee: (assignee: string) => void;
   refreshAssignees: () => void;
 }
 
@@ -44,15 +45,64 @@ export function AssigneeProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const addAssignee = useCallback((newAssignee: string) => {
+  const addAssignee = useCallback(async (newAssignee: string) => {
     const trimmed = newAssignee.trim();
-    if (trimmed && !assignees.some(a => a.toLowerCase() === trimmed.toLowerCase())) {
-      // Immediately update local state for better UX
-      setAssignees(prev => [...prev, trimmed].sort((a, b) => 
-        a.localeCompare(b, undefined, { sensitivity: 'base' })
-      ));
+    if (!trimmed || assignees.some(a => a.toLowerCase() === trimmed.toLowerCase())) {
+      return;
+    }
+
+    // Immediately update local state for better UX
+    setAssignees(prev => [...prev, trimmed].sort((a, b) => 
+      a.localeCompare(b, undefined, { sensitivity: 'base' })
+    ));
+
+    // Persist to database
+    try {
+      const response = await fetch('/api/assignees', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: trimmed })
+      });
+
+      if (!response.ok) {
+        // If API call fails, revert the local state
+        setAssignees(prev => prev.filter(a => a !== trimmed));
+        const result = await response.json();
+        console.error('Failed to add assignee:', result.error);
+      }
+    } catch (error) {
+      // If API call fails, revert the local state
+      setAssignees(prev => prev.filter(a => a !== trimmed));
+      console.error('Error adding assignee:', error);
     }
   }, [assignees]);
+
+  const removeAssignee = useCallback(async (assigneeToRemove: string) => {
+    // Immediately update local state for better UX
+    setAssignees(prev => prev.filter(a => a !== assigneeToRemove));
+
+    // Persist to database
+    try {
+      const response = await fetch(`/api/assignees?name=${encodeURIComponent(assigneeToRemove)}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        // If API call fails, revert the local state
+        setAssignees(prev => [...prev, assigneeToRemove].sort((a, b) => 
+          a.localeCompare(b, undefined, { sensitivity: 'base' })
+        ));
+        const result = await response.json();
+        console.error('Failed to remove assignee:', result.error);
+      }
+    } catch (error) {
+      // If API call fails, revert the local state
+      setAssignees(prev => [...prev, assigneeToRemove].sort((a, b) => 
+        a.localeCompare(b, undefined, { sensitivity: 'base' })
+      ));
+      console.error('Error removing assignee:', error);
+    }
+  }, []);
 
   const refreshAssignees = useCallback(() => {
     fetchAssignees();
@@ -67,6 +117,7 @@ export function AssigneeProvider({ children }: { children: React.ReactNode }) {
     loading,
     error,
     addAssignee,
+    removeAssignee,
     refreshAssignees
   };
 
