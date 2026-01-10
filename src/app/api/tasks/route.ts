@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Task from '@/models/Task';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     console.log('🔄 API: Attempting to connect to MongoDB...');
     console.log('🌍 Environment:', process.env.NODE_ENV);
@@ -11,8 +11,30 @@ export async function GET() {
     await dbConnect();
     console.log('✅ API: MongoDB connected successfully');
     
-    const tasks = await Task.find({}).sort({ createdAt: -1 });
-    console.log('📋 API: Found', tasks.length, 'tasks');
+    // Get year parameter from URL
+    const { searchParams } = new URL(request.url);
+    const yearParam = searchParams.get('year');
+    
+    let query = {};
+    
+    // If year is specified, filter tasks by year
+    if (yearParam) {
+      const year = parseInt(yearParam);
+      if (!isNaN(year)) {
+        const startOfYear = new Date(year, 0, 1); // January 1st of the year
+        const endOfYear = new Date(year + 1, 0, 1); // January 1st of next year
+        
+        query = {
+          dueDate: {
+            $gte: startOfYear,
+            $lt: endOfYear
+          }
+        };
+      }
+    }
+    
+    const tasks = await Task.find(query).sort({ createdAt: -1 });
+    console.log('📋 API: Found', tasks.length, 'tasks', yearParam ? `for year ${yearParam}` : '');
     
     return NextResponse.json({ success: true, data: tasks });
   } catch (error) {

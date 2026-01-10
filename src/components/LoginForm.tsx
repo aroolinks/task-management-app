@@ -35,23 +35,10 @@ export default function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-4 relative overflow-hidden">
-      {/* Animated background elements */}
-      <div className="absolute inset-0">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-blue-500/3 to-purple-500/3 rounded-full blur-3xl"></div>
-      </div>
-
-      {/* Grid pattern overlay */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(148,163,184,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.03)_1px,transparent_1px)] bg-[size:32px_32px]"></div>
-
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="relative max-w-md w-full">
         {/* Login Card */}
-        <div className="card-shadow bg-slate-900/80 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-8 relative">
-          {/* Subtle gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-br from-slate-800/20 to-transparent rounded-3xl pointer-events-none"></div>
-
+        <div className="bg-white border border-gray-200 rounded-lg p-8 shadow-sm">
           <div className="relative">
             {/* Logo and Header */}
             <div className="text-center mb-8">
@@ -62,16 +49,15 @@ export default function LoginForm() {
                     alt="Metalogics"
                     width={64}
                     height={64}
-                    className="h-16 w-16 rounded-2xl shadow-lg"
+                    className="h-16 w-16 rounded-lg"
                     priority
                   />
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-2xl"></div>
                 </div>
               </div>
-              <h1 className="text-2xl font-bold text-white mb-2">
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">
                 Welcome Back
               </h1>
-              <p className="text-slate-400">
+              <p className="text-gray-600">
                 Sign in to your task management dashboard
               </p>
             </div>
@@ -81,7 +67,7 @@ export default function LoginForm() {
                 <div>
                   <label
                     htmlFor="username"
-                    className="block text-sm font-semibold text-slate-300 mb-3"
+                    className="block text-sm font-semibold text-gray-700 mb-3"
                   >
                     Username
                   </label>
@@ -92,14 +78,14 @@ export default function LoginForm() {
                       id="username"
                       value={formData.username}
                       onChange={handleChange}
-                      className="w-full px-4 py-4 bg-slate-800/50 border border-slate-600/50 text-slate-100 placeholder-slate-400 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 group-hover:border-slate-500/50"
+                      className="w-full px-4 py-4 bg-white border border-gray-300 text-gray-900 placeholder-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                       placeholder="Enter your username"
                       disabled={loading}
                       required
                     />
                     <div className="absolute inset-y-0 right-0 flex items-center pr-4">
                       <svg
-                        className="h-5 w-5 text-slate-400 group-hover:text-slate-300 transition-colors"
+                        className="h-5 w-5 text-gray-400"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -118,7 +104,7 @@ export default function LoginForm() {
                 <div>
                   <label
                     htmlFor="password"
-                    className="block text-sm font-semibold text-slate-300 mb-3"
+                    className="block text-sm font-semibold text-gray-700 mb-3"
                   >
                     Password
                   </label>
@@ -129,14 +115,14 @@ export default function LoginForm() {
                       id="password"
                       value={formData.password}
                       onChange={handleChange}
-                      className="w-full px-4 py-4 bg-slate-800/50 border border-slate-600/50 text-slate-100 placeholder-slate-400 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 group-hover:border-slate-500/50"
+                      className="w-full px-4 py-4 bg-white border border-gray-300 text-gray-900 placeholder-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                       placeholder="Enter your password"
                       disabled={loading}
                       required
                     />
                     <div className="absolute inset-y-0 right-0 flex items-center pr-4">
                       <svg
-                        className="h-5 w-5 text-slate-400 group-hover:text-slate-300 transition-colors"
+                        className="h-5 w-5 text-gray-400"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -154,11 +140,11 @@ export default function LoginForm() {
               </div>
 
               {error && (
-                <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 backdrop-blur-sm">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                   <div className="flex items-center gap-3">
                     <div className="flex-shrink-0">
                       <svg
-                        className="h-5 w-5 text-red-400"
+                        className="h-5 w-5 text-red-600"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -171,7 +157,7 @@ export default function LoginForm() {
                         />
                       </svg>
                     </div>
-                    <p className="text-red-300 text-sm font-medium">{error}</p>
+                    <p className="text-red-800 text-sm font-medium">{error}</p>
                   </div>
                 </div>
               )}
@@ -179,9 +165,8 @@ export default function LoginForm() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:from-slate-600 disabled:to-slate-700 disabled:cursor-not-allowed text-white font-semibold rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:ring-offset-2 focus:ring-offset-slate-900 transition-all duration-300 shadow-lg hover:shadow-xl btn-hover disabled:transform-none relative overflow-hidden group"
+                className="w-full py-4 px-6 bg-gray-900 hover:bg-gray-800 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors relative overflow-hidden"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <div className="relative flex items-center justify-center gap-3">
                   {loading ? (
                     <>
@@ -212,10 +197,10 @@ export default function LoginForm() {
 
             {/* Footer */}
             <div className="mt-8 text-center">
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-gray-500">
                 Secure access to your task management dashboard
               </p>
-              <div className="mt-4 flex items-center justify-center gap-2 text-xs text-slate-600">
+              <div className="mt-4 flex items-center justify-center gap-2 text-xs text-gray-400">
                 <svg
                   className="h-4 w-4"
                   fill="none"

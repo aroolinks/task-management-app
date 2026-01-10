@@ -17,6 +17,7 @@ export interface ITask {
   invoiced: boolean;
   paid: boolean;
   assignees?: string[];
+  notes?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -87,6 +88,11 @@ const TaskSchema = new mongoose.Schema<ITask>(
     assignees: {
       type: [String],
       default: [],
+    },
+    notes: {
+      type: String,
+      default: '',
+      maxlength: [2000, 'Notes cannot be more than 2000 characters'],
     },
   },
   {

@@ -5,6 +5,7 @@ import { Task, Priority, Status, CMS } from '@/types/task';
 import { useAssignees } from '@/contexts/AssigneeContext';
 import { useGroups } from '@/contexts/GroupContext';
 import AssigneesModal from './AssigneesModal';
+import NotesModal from './NotesModal';
 
 interface TaskItemProps {
   task: Task;
@@ -23,6 +24,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
   const [isEditing, setIsEditing] = useState(autoEdit);
   const [editingField, setEditingField] = useState<string | null>(autoEdit ? 'clientName' : null);
   const [showAssignModal, setShowAssignModal] = useState(false);
+  const [showNotesModal, setShowNotesModal] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [editData, setEditData] = useState({
     dueDate: task.dueDate instanceof Date ? task.dueDate.toISOString().split('T')[0] : '',
@@ -35,7 +37,8 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
     figmaUrl: task.figmaUrl,
     assetUrl: task.assetUrl,
     totalPrice: task.totalPrice?.toString() || '',
-    assignees: task.assignees || [] as string[]
+    assignees: task.assignees || [] as string[],
+    notes: task.notes || ''
   });
 
   const handleSave = () => {
@@ -51,6 +54,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
       assetUrl: editData.assetUrl.trim(),
       totalPrice: editData.totalPrice ? parseFloat(editData.totalPrice) : null,
       assignees: Array.isArray(editData.assignees) ? editData.assignees : [],
+      notes: editData.notes || '',
       updatedAt: new Date()
     };
     
@@ -95,6 +99,9 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
       case 'totalPrice':
         updates.totalPrice = value ? parseFloat(String(value)) : null;
         break;
+      case 'notes':
+        updates.notes = value ? String(value) : '';
+        break;
     }
     
     onEditTask(task.id, updates);
@@ -121,7 +128,8 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
         figmaUrl: task.figmaUrl,
         assetUrl: task.assetUrl,
         totalPrice: task.totalPrice?.toString() || '',
-        assignees: task.assignees || []
+        assignees: task.assignees || [],
+        notes: task.notes || ''
       });
     }
   };
@@ -168,7 +176,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
             value={editData[field as keyof typeof editData] as string || ''}
             onChange={(e) => handleInlineEdit(field, e.target.value || null)}
             onBlur={() => setEditingField(null)}
-            className="bg-slate-800/50 border border-slate-600/50 text-slate-100 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200 backdrop-blur-sm"
+            className="bg-white border border-gray-300 text-gray-900 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
             autoFocus
           >
             <option value="">Select {label}...</option>
@@ -190,7 +198,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
             handleInlineEdit(field, v);
           }}
           onKeyPress={(e) => handleKeyPress(e, field)}
-          className={`bg-slate-800/50 border border-slate-600/50 text-slate-100 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200 min-w-0 w-full backdrop-blur-sm`}
+          className={`bg-white border border-gray-300 text-gray-900 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors min-w-0 w-full`}
           autoFocus
           step={type === 'number' ? '0.01' : undefined}
           min={type === 'number' ? '0' : undefined}
@@ -201,7 +209,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
     if (type === 'url') {
       return (
         <span 
-        className={`inline-flex items-center gap-1 cursor-pointer hover:bg-slate-700/40 px-2 py-1 rounded transition-colors ${task.status === 'Completed' ? 'text-blue-400' : 'text-blue-300'} max-w-[160px] truncate`}
+        className={`inline-flex items-center gap-1 cursor-pointer hover:bg-gray-100 px-2 py-1 rounded transition-colors ${task.status === 'Completed' ? 'text-blue-600' : 'text-blue-700'} max-w-[160px] truncate`}
           onClick={() => handleFieldClick(field)}
           title="Click to edit"
         >
@@ -216,7 +224,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
 
     return (
       <span 
-        className={`cursor-pointer hover:bg-slate-700/40 px-2 py-1.5 rounded transition-colors ${task.status === 'Completed' ? 'text-slate-400' : 'text-slate-100'}`}
+        className={`cursor-pointer hover:bg-gray-100 px-2 py-1.5 rounded transition-colors ${task.status === 'Completed' ? 'text-gray-500' : 'text-gray-900'}`}
         onClick={() => handleFieldClick(field)}
         title="Click to edit"
       >
@@ -237,7 +245,8 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
       figmaUrl: task.figmaUrl,
       assetUrl: task.assetUrl,
       totalPrice: task.totalPrice?.toString() || '',
-      assignees: task.assignees || []
+      assignees: task.assignees || [],
+      notes: task.notes || ''
     });
     setIsEditing(false);
   };
@@ -250,10 +259,10 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
   // Get row background color based on status
   const getRowBgColor = () => {
     switch (task.status) {
-      case 'Completed': return 'bg-emerald-500/5 hover:bg-emerald-500/10 border-l-4 border-l-emerald-500/50';
-      case 'InProcess': return 'bg-amber-500/5 hover:bg-amber-500/10 border-l-4 border-l-amber-500/50';
-      case 'Waiting for Quote': return 'bg-slate-500/5 hover:bg-slate-500/10 border-l-4 border-l-slate-500/50';
-      default: return 'bg-transparent hover:bg-slate-700/20 border-l-4 border-l-transparent';
+      case 'Completed': return 'bg-green-50 border-l-4 border-l-green-200';
+      case 'InProcess': return 'bg-blue-50 border-l-4 border-l-blue-200';
+      case 'Waiting for Quote': return 'bg-gray-50 border-l-4 border-l-gray-200';
+      default: return 'bg-white border-l-4 border-l-transparent';
     }
   };
 
@@ -261,7 +270,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
     switch (status) {
       case 'Completed':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800 border border-green-200">
             <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
@@ -270,7 +279,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
         );
       case 'InProcess':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
             <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -279,7 +288,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
         );
       case 'Waiting for Quote':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-slate-500/10 text-slate-400 border border-slate-500/20">
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">
             <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -288,7 +297,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-slate-500/10 text-slate-400 border border-slate-500/20">
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">
             {status}
           </span>
         );
@@ -296,7 +305,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
   };
 
   return (
-    <div className={`grid grid-cols-[160px_90px_120px_90px_120px_100px_110px_90px_120px_110px_120px] items-center gap-0 px-4 text-xs min-h-[48px] ${task.status === 'Completed' ? 'text-slate-400' : 'text-slate-100'} divide-x divide-slate-700/30 ${getRowBgColor()} transition-all duration-200`}>
+    <div className={`grid grid-cols-[160px_90px_120px_90px_120px_100px_110px_90px_120px_120px] items-center gap-0 px-4 text-xs min-h-[48px] ${task.status === 'Completed' ? 'text-gray-500' : 'text-gray-900'} ${getRowBgColor()} transition-colors hover:bg-gray-50`}>
 
       {/* Client Name */}
       <div className="px-2 py-1.5 text-left overflow-hidden">
@@ -310,15 +319,15 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
             }}
             onBlur={() => handleInlineEdit('clientName', editData.clientName)}
             onKeyPress={(e) => handleKeyPress(e, 'clientName')}
-            className="w-full px-2 py-1.5 text-xs bg-slate-800/50 border border-blue-500/50 text-slate-100 rounded focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all duration-200 backdrop-blur-sm"
+            className="w-full px-2 py-1.5 text-xs bg-white border border-blue-500 text-gray-900 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
             placeholder="Enter client name..."
             autoFocus
           />
         ) : (
           <span
-            className={`truncate block cursor-pointer hover:bg-slate-700/40 px-2 py-1.5 rounded transition-colors ${
-              task.status === 'Completed' ? 'text-slate-400' : 
-              (!task.clientName || task.clientName.trim() === '') ? 'text-blue-400 italic' : 'text-slate-100'
+            className={`truncate block cursor-pointer hover:bg-gray-100 px-2 py-1.5 rounded transition-colors ${
+              task.status === 'Completed' ? 'text-gray-500' : 
+              (!task.clientName || task.clientName.trim() === '') ? 'text-blue-600 italic' : 'text-gray-900'
             }`}
             onClick={() => handleFieldClick('clientName')}
             title="Click to edit client name"
@@ -335,7 +344,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
             value={editData.clientGroup || ''}
             onChange={(e) => handleInlineEdit('clientGroup', e.target.value || null)}
             onBlur={() => setEditingField(null)}
-            className="w-full px-2 py-1.5 text-[12px] bg-slate-800 border border-slate-600 text-slate-100 rounded focus:outline-none focus:ring-2 focus:ring-slate-500"
+            className="w-full px-2 py-1.5 text-[12px] bg-white border border-gray-300 text-gray-900 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             autoFocus
           >
             <option value="">No Group</option>
@@ -345,11 +354,11 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
           </select>
         ) : (
           <span
-            className={`flex items-center gap-1 cursor-pointer hover:bg-slate-700/40 px-2 py-1.5 rounded transition-colors ${task.status === 'Completed' ? 'text-slate-400' : 'text-slate-200'}`}
+            className={`flex items-center gap-1 cursor-pointer hover:bg-gray-100 px-2 py-1.5 rounded transition-colors ${task.status === 'Completed' ? 'text-gray-500' : 'text-gray-900'}`}
             onClick={() => handleFieldClick('clientGroup')}
             title="Click to change group (will move task to different tab)"
           >
-            <svg className="h-3 w-3 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="h-3 w-3 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
             </svg>
             <span className="truncate">
@@ -363,7 +372,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
       <div className="flex items-center gap-2 px-2 py-1.5 text-left overflow-hidden">
         {renderEditableField('webUrl', 'Web URL', task.webUrl, 'url')}
         {task.webUrl && editingField !== 'webUrl' && (
-          <a href={task.webUrl} target="_blank" rel="noopener noreferrer" className="text-white hover:text-slate-200 text-sm shrink-0">
+          <a href={task.webUrl} target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-gray-800 text-sm shrink-0">
             <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
             </svg>
@@ -383,7 +392,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
           <div className="flex items-center gap-2">
             {renderEditableField('figmaUrl', 'Figma URL', task.figmaUrl, 'url')}
             {task.figmaUrl && editingField !== 'figmaUrl' && (
-              <a href={task.figmaUrl} target="_blank" rel="noopener noreferrer" className="text-white hover:text-slate-200 text-sm shrink-0" title="Open Figma">
+              <a href={task.figmaUrl} target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-gray-800 text-sm shrink-0" title="Open Figma">
                 <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                 </svg>
@@ -393,7 +402,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
           <div className="flex items-center gap-2">
             {renderEditableField('assetUrl', 'Asset URL', task.assetUrl, 'url')}
             {task.assetUrl && editingField !== 'assetUrl' && (
-              <a href={task.assetUrl} target="_blank" rel="noopener noreferrer" className="text-white hover:text-slate-200 text-sm shrink-0" title="Open Asset">
+              <a href={task.assetUrl} target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-gray-800 text-sm shrink-0" title="Open Asset">
                 <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                 </svg>
@@ -411,8 +420,8 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
       {/* Status */}
       <div className="px-2 py-2 text-left overflow-hidden">
         {editingField === 'status' ? (
-          <div role="radiogroup" className="flex flex-col gap-1 bg-slate-800/50 px-2 py-1.5 rounded-lg border border-slate-600/50 w-max backdrop-blur-sm">
-            <label className={`px-2 py-1 text-xs font-medium flex items-center gap-1.5 cursor-pointer rounded transition-all duration-200 ${editData.status === 'InProcess' ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-300 border border-amber-500/30' : 'text-slate-400 hover:bg-slate-700/50 hover:text-slate-300 border border-transparent'}`}
+          <div role="radiogroup" className="flex flex-col gap-1 bg-white px-2 py-1.5 rounded border border-gray-300 w-max">
+            <label className={`px-2 py-1 text-xs font-medium flex items-center gap-1.5 cursor-pointer rounded transition-colors ${editData.status === 'InProcess' ? 'bg-blue-100 text-blue-800 border border-blue-200' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 border border-transparent'}`}
             >
               <input
                 type="radio"
@@ -426,7 +435,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
               </svg>
               Active
             </label>
-            <label className={`px-2 py-1 text-xs font-medium flex items-center gap-1.5 cursor-pointer rounded transition-all duration-200 ${editData.status === 'Completed' ? 'bg-gradient-to-r from-emerald-500/20 to-green-500/20 text-emerald-300 border border-emerald-500/30' : 'text-slate-400 hover:bg-slate-700/50 hover:text-slate-300 border border-transparent'}`}
+            <label className={`px-2 py-1 text-xs font-medium flex items-center gap-1.5 cursor-pointer rounded transition-colors ${editData.status === 'Completed' ? 'bg-green-100 text-green-800 border border-green-200' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 border border-transparent'}`}
             >
               <input
                 type="radio"
@@ -443,7 +452,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
           </div>
         ) : (
           <div 
-            className="cursor-pointer hover:bg-slate-700/30 px-1 py-0.5 rounded transition-all duration-200"
+            className="cursor-pointer hover:bg-gray-100 px-1 py-0.5 rounded transition-colors"
             onClick={() => handleFieldClick('status')}
             title="Click to change status"
           >
@@ -459,7 +468,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
           renderEditableField('totalPrice', 'Total Price', task.totalPrice?.toString() || '', 'number')
         ) : (
           <span 
-            className={`cursor-pointer hover:bg-slate-700/40 px-2 py-1.5 rounded transition-colors ${task.status === 'Completed' ? 'text-slate-400' : 'text-slate-100'}`}
+            className={`cursor-pointer hover:bg-gray-100 px-2 py-1.5 rounded transition-colors ${task.status === 'Completed' ? 'text-gray-500' : 'text-gray-900'}`}
             onClick={() => handleFieldClick('totalPrice')}
             title="Click to edit"
           >
@@ -473,18 +482,18 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
         <div className="flex flex-col gap-1.5">
           {/* Invoice Status */}
           <div 
-            className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg cursor-pointer transition-all duration-200 ${
+            className={`inline-flex items-center gap-1.5 px-2 py-1 rounded cursor-pointer transition-colors ${
               task.invoiced 
-                ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20' 
-                : 'bg-slate-700/30 text-slate-400 border border-slate-600/30 hover:bg-slate-600/30'
+                ? 'bg-blue-100 text-blue-800 border border-blue-200 hover:bg-blue-200' 
+                : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200'
             }`}
             onClick={() => onEditTask(task.id, { invoiced: !task.invoiced, updatedAt: new Date() })}
             title={task.invoiced ? 'Mark as not invoiced' : 'Mark as invoiced'}
           >
-            <div className={`w-3 h-3 rounded border transition-all duration-200 flex items-center justify-center ${
+            <div className={`w-3 h-3 rounded border transition-colors flex items-center justify-center ${
               task.invoiced 
-                ? 'bg-blue-500 border-blue-500' 
-                : 'border-slate-500 hover:border-slate-400'
+                ? 'bg-blue-600 border-blue-600' 
+                : 'border-gray-400 hover:border-gray-500'
             }`}>
               {task.invoiced && (
                 <svg className="h-2 w-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -499,10 +508,10 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
 
           {/* Payment Status */}
           <div 
-            className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg cursor-pointer transition-all duration-200 ${
+            className={`inline-flex items-center gap-1.5 px-2 py-1 rounded cursor-pointer transition-colors ${
               task.paid 
-                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20' 
-                : 'bg-slate-700/30 text-slate-400 border border-slate-600/30 hover:bg-slate-600/30'
+                ? 'bg-green-100 text-green-800 border border-green-200 hover:bg-green-200' 
+                : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-gray-200'
             }`}
             onClick={() => {
               const newPaidStatus = !task.paid;
@@ -520,10 +529,10 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
             }}
             title={task.paid ? 'Mark as unpaid' : 'Mark as paid (will complete task)'}
           >
-            <div className={`w-3 h-3 rounded border transition-all duration-200 flex items-center justify-center ${
+            <div className={`w-3 h-3 rounded border transition-colors flex items-center justify-center ${
               task.paid 
-                ? 'bg-emerald-500 border-emerald-500' 
-                : 'border-slate-500 hover:border-slate-400'
+                ? 'bg-green-600 border-green-600' 
+                : 'border-gray-400 hover:border-gray-500'
             }`}>
               {task.paid && (
                 <svg className="h-2 w-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -538,57 +547,24 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
         </div>
       </div>
 
-      {/* Assignees */}
-      <div className="px-2 py-2 text-left overflow-hidden">
-        <div className="flex items-center gap-1 flex-wrap">
-          {task.assignees && task.assignees.length > 0 ? (
-            <>
-              {task.assignees.slice(0, 3).map((assignee) => (
-                <div
-                  key={assignee}
-                  className="inline-flex items-center gap-1 px-2 py-1 bg-blue-500/10 text-blue-300 border border-blue-500/20 rounded-lg text-xs font-medium cursor-pointer hover:bg-blue-500/20 transition-all duration-200"
-                  onClick={() => setShowAssignModal(true)}
-                  title={`Assigned to ${assignee}. Click to manage assignments`}
-                >
-                  <div className="w-4 h-4 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                    {assignee.charAt(0).toUpperCase()}
-                  </div>
-                  <span className="truncate max-w-[50px]">{assignee}</span>
-                </div>
-              ))}
-              {task.assignees.length > 3 && (
-                <div
-                  className="inline-flex items-center gap-1 px-2 py-1 bg-slate-500/10 text-slate-400 border border-slate-500/20 rounded-lg text-xs font-medium cursor-pointer hover:bg-slate-500/20 transition-all duration-200"
-                  onClick={() => setShowAssignModal(true)}
-                  title={`+${task.assignees.length - 3} more assignees. Click to view all`}
-                >
-                  <div className="w-4 h-4 bg-gradient-to-br from-slate-400 to-slate-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                    +{task.assignees.length - 3}
-                  </div>
-                </div>
-              )}
-            </>
-          ) : (
-            <div
-              onClick={() => setShowAssignModal(true)}
-              className="inline-flex items-center gap-1.5 px-2 py-1 bg-slate-700/30 hover:bg-slate-600/30 border border-slate-600/30 rounded-lg text-xs text-slate-400 hover:text-slate-300 transition-all duration-200 cursor-pointer"
-              title="Click to assign team members"
-            >
-              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-              <span>Unassigned</span>
-            </div>
-          )}
-        </div>
-      </div>
-
       {/* Actions */}
       <div className="flex items-center justify-start gap-2 px-2 py-2 overflow-hidden">
+        {/* Notes Button */}
+        <button
+          onClick={() => setShowNotesModal(true)}
+          className={`w-7 h-7 ${task.notes && task.notes.trim() ? 'bg-green-100 hover:bg-green-200 border-green-200 hover:border-green-300 text-green-700 hover:text-green-800' : 'bg-gray-100 hover:bg-gray-200 border-gray-300'} border rounded flex items-center justify-center transition-colors`}
+          aria-label="View/Edit notes"
+          title={task.notes && task.notes.trim() ? "View/Edit notes (has notes)" : "Add notes"}
+        >
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          </svg>
+        </button>
+
         {/* Assign Button */}
         <button
           onClick={() => setShowAssignModal(true)}
-          className="w-7 h-7 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 hover:border-blue-500/30 rounded-lg flex items-center justify-center text-blue-400 hover:text-blue-300 transition-all duration-200 btn-hover"
+          className="w-7 h-7 bg-blue-100 hover:bg-blue-200 border border-blue-200 hover:border-blue-300 rounded flex items-center justify-center text-blue-700 hover:text-blue-800 transition-colors"
           aria-label="Manage assignments"
           title="Assign team members"
         >
@@ -599,13 +575,13 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
 
         {/* Edit/Status Indicator */}
         {hasUnsavedChanges ? (
-          <div className="w-7 h-7 bg-amber-500/10 border border-amber-500/20 rounded-lg flex items-center justify-center text-amber-400" title="Auto-saving changes...">
+          <div className="w-7 h-7 bg-yellow-100 border border-yellow-200 rounded flex items-center justify-center text-yellow-700" title="Auto-saving changes...">
             <svg className="h-3.5 w-3.5 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6l4 4" />
             </svg>
           </div>
         ) : editingField ? (
-          <div className="w-7 h-7 bg-blue-500/10 border border-blue-500/20 rounded-lg flex items-center justify-center text-blue-400" title="Editing mode - changes save automatically">
+          <div className="w-7 h-7 bg-blue-100 border border-blue-200 rounded flex items-center justify-center text-blue-700" title="Editing mode - changes save automatically">
             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
@@ -613,7 +589,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
         ) : (
           <button
             onClick={() => setIsEditing(!isEditing)}
-            className="w-7 h-7 bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600/50 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-300 transition-all duration-200 btn-hover"
+            className="w-7 h-7 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded flex items-center justify-center text-gray-600 hover:text-gray-700 transition-colors"
             aria-label="Edit task"
             title="Edit task"
           >
@@ -626,7 +602,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
         {/* Delete Button */}
         <button
           onClick={() => onDeleteTask(task.id)}
-          className="w-7 h-7 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/30 rounded-lg flex items-center justify-center text-red-400 hover:text-red-300 transition-all duration-200 btn-hover"
+          className="w-7 h-7 bg-red-100 hover:bg-red-200 border border-red-200 hover:border-red-300 rounded flex items-center justify-center text-red-700 hover:text-red-800 transition-colors"
           aria-label="Delete task"
           title="Delete task"
         >
@@ -642,6 +618,14 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
         initial={task.assignees || []}
         onClose={() => setShowAssignModal(false)}
         onSave={(vals) => { onEditTask(task.id, { assignees: vals, updatedAt: new Date() }); setShowAssignModal(false); }}
+      />
+
+      <NotesModal
+        open={showNotesModal}
+        clientName={task.clientName}
+        initialNotes={task.notes || ''}
+        onClose={() => setShowNotesModal(false)}
+        onSave={(notes) => { onEditTask(task.id, { notes, updatedAt: new Date() }); }}
       />
     </div>
   );

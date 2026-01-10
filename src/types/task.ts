@@ -23,6 +23,7 @@ export interface Task {
   invoiced: boolean; // New field for tracking invoice status
   paid: boolean; // New field for tracking payment status
   assignees: string[]; // Support multiple team members per task
+  notes: string; // New field for client notes, logins, passwords, etc.
 }
 
 export type TaskInput = Omit<Task, 'id' | 'createdAt' | 'updatedAt'>;

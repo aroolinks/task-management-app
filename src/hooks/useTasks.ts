@@ -12,7 +12,7 @@ interface TaskApiResponse {
   message?: string;
 }
 
-export function useTasks() {
+export function useTasks(year?: number) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -128,7 +128,10 @@ export function useTasks() {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
       
-      const response = await fetch('/api/tasks', {
+      // Build URL with year parameter if provided
+      const url = year ? `/api/tasks?year=${year}` : '/api/tasks';
+      
+      const response = await fetch(url, {
         signal: controller.signal
       });
       clearTimeout(timeoutId);
@@ -192,7 +195,7 @@ export function useTasks() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [year]);
 
   // Create a new task
 const createTask = async (taskInput: TaskInput): Promise<Task | null> => {
