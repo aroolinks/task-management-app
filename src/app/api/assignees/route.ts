@@ -12,12 +12,18 @@ export async function GET() {
     const assigneeNames = assignees.map(a => a.name);
     
     // Also get any assignees from tasks that might not be in the Assignee collection yet
-    const taskAssignees = await Task.distinct('assignee', { 
-      assignee: { $nin: [null, ''] } 
-    });
+    // Use aggregate to flatten the assignees array and get distinct values
+    const taskAssignees = await Task.aggregate([
+      { $unwind: '$assignees' },
+      { $match: { assignees: { $nin: [null, ''] } } },
+      { $group: { _id: '$assignees' } },
+      { $project: { _id: 0, name: '$_id' } }
+    ]);
+    
+    const taskAssigneeNames = taskAssignees.map(item => item.name);
     
     // Merge and deduplicate
-    const allAssignees = Array.from(new Set([...assigneeNames, ...taskAssignees]));
+    const allAssignees = Array.from(new Set([...assigneeNames, ...taskAssigneeNames]));
     
     // Sort alphabetically
     const sortedAssignees = allAssignees.sort((a: string, b: string) => 
@@ -97,12 +103,15 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
+    console.log('🗑️ DELETE API called');
     await dbConnect();
     
     const { searchParams } = new URL(request.url);
     const name = searchParams.get('name');
+    console.log('👤 Attempting to delete assignee:', name);
     
     if (!name) {
+      console.log('❌ No name provided');
       return NextResponse.json(
         { success: false, error: 'Name is required' },
         { status: 400 }
@@ -110,14 +119,16 @@ export async function DELETE(request: Request) {
     }
     
     // Remove from Assignee collection
-    await Assignee.deleteOne({ name });
+    const deleteResult = await Assignee.deleteOne({ name });
+    console.log('🗄️ Delete result:', deleteResult);
     
     // Note: We don't remove from tasks as that would unassign them from existing tasks
     // The UI should handle this by asking the user what to do with existing assignments
     
+    console.log('✅ Successfully deleted assignee');
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error deleting assignee:', error);
+    console.error('❌ Error deleting assignee:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to delete assignee' },
       { status: 500 }

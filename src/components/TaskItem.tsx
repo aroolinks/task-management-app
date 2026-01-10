@@ -5,7 +5,6 @@ import { Task, Priority, Status, CMS } from '@/types/task';
 import { useAssignees } from '@/contexts/AssigneeContext';
 import { useGroups } from '@/contexts/GroupContext';
 import AssigneesModal from './AssigneesModal';
-import NotesModal from './NotesModal';
 
 interface TaskItemProps {
   task: Task;
@@ -24,7 +23,6 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
   const [isEditing, setIsEditing] = useState(autoEdit);
   const [editingField, setEditingField] = useState<string | null>(autoEdit ? 'clientName' : null);
   const [showAssignModal, setShowAssignModal] = useState(false);
-  const [showNotesModal, setShowNotesModal] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [editData, setEditData] = useState({
     dueDate: task.dueDate instanceof Date ? task.dueDate.toISOString().split('T')[0] : '',
@@ -508,18 +506,6 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
 
       {/* Actions */}
       <div className="flex items-center justify-start gap-2 px-2 py-2 overflow-hidden">
-        {/* Notes Button */}
-        <button
-          onClick={() => setShowNotesModal(true)}
-          className={`w-7 h-7 ${task.notes && task.notes.trim() ? 'bg-green-100 hover:bg-green-200 border-green-200 hover:border-green-300 text-green-700 hover:text-green-800' : 'bg-gray-100 hover:bg-gray-200 border-gray-300'} border rounded flex items-center justify-center transition-colors`}
-          aria-label="View/Edit notes"
-          title={task.notes && task.notes.trim() ? "View/Edit notes (has notes)" : "Add notes"}
-        >
-          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-          </svg>
-        </button>
-
         {/* Assign Button */}
         <button
           onClick={() => setShowAssignModal(true)}
@@ -577,14 +563,6 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
         initial={task.assignees || []}
         onClose={() => setShowAssignModal(false)}
         onSave={(vals) => { onEditTask(task.id, { assignees: vals, updatedAt: new Date() }); setShowAssignModal(false); }}
-      />
-
-      <NotesModal
-        open={showNotesModal}
-        clientName={task.clientName}
-        initialNotes={task.notes || ''}
-        onClose={() => setShowNotesModal(false)}
-        onSave={(notes) => { onEditTask(task.id, { notes, updatedAt: new Date() }); }}
       />
     </div>
   );

@@ -107,6 +107,11 @@ export default function TaskApp() {
     } catch {}
   }, [groups]);
 
+  // Debug modal state changes
+  useEffect(() => {
+    console.log('🎭 Modal state changed - showDeleteModal:', showDeleteModal, 'assigneeToDelete:', assigneeToDelete);
+  }, [showDeleteModal, assigneeToDelete]);
+
   const handleLogout = async () => {
     await logout();
   };
@@ -131,9 +136,12 @@ export default function TaskApp() {
   };
 
   const handleRemoveAssignee = async (assigneeName: string) => {
-    console.log('Attempting to remove assignee:', assigneeName);
+    console.log('🗑️ Attempting to remove assignee:', assigneeName);
+    console.log('🔧 Setting assigneeToDelete to:', assigneeName);
+    console.log('🔧 Setting showDeleteModal to: true');
     setAssigneeToDelete(assigneeName);
     setShowDeleteModal(true);
+    console.log('🔧 Modal state should now be visible');
   };
 
   const confirmRemoveAssignee = async () => {
@@ -878,7 +886,7 @@ export default function TaskApp() {
       {/* Delete Confirmation Modal */}
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-2xl">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
                 <svg className="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -78,29 +78,37 @@ export function AssigneeProvider({ children }: { children: React.ReactNode }) {
   }, [assignees]);
 
   const removeAssignee = useCallback(async (assigneeToRemove: string) => {
+    console.log('🗑️ Starting removal process for:', assigneeToRemove);
+    
     // Immediately update local state for better UX
     setAssignees(prev => prev.filter(a => a !== assigneeToRemove));
 
     // Persist to database
     try {
+      console.log('🌐 Making DELETE request to API...');
       const response = await fetch(`/api/assignees?name=${encodeURIComponent(assigneeToRemove)}`, {
         method: 'DELETE'
       });
 
+      console.log('📡 API Response status:', response.status);
+      const result = await response.json();
+      console.log('📡 API Response data:', result);
+
       if (!response.ok) {
         // If API call fails, revert the local state
+        console.error('❌ Failed to remove assignee:', result.error);
         setAssignees(prev => [...prev, assigneeToRemove].sort((a, b) => 
           a.localeCompare(b, undefined, { sensitivity: 'base' })
         ));
-        const result = await response.json();
-        console.error('Failed to remove assignee:', result.error);
+      } else {
+        console.log('✅ Successfully removed assignee from database');
       }
     } catch (error) {
       // If API call fails, revert the local state
+      console.error('❌ Error removing assignee:', error);
       setAssignees(prev => [...prev, assigneeToRemove].sort((a, b) => 
         a.localeCompare(b, undefined, { sensitivity: 'base' })
       ));
-      console.error('Error removing assignee:', error);
     }
   }, []);
 
