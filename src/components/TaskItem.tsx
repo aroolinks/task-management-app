@@ -41,29 +41,6 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
     notes: task.notes || ''
   });
 
-  const handleSave = () => {
-    const updates: Partial<Task> = {
-      dueDate: editData.dueDate ? new Date(editData.dueDate) : null,
-      priority: editData.priority,
-      status: editData.status,
-      clientName: editData.clientName.trim(),
-      clientGroup: editData.clientGroup.trim(),
-      cms: editData.cms,
-      webUrl: editData.webUrl.trim(),
-      figmaUrl: editData.figmaUrl.trim(),
-      assetUrl: editData.assetUrl.trim(),
-      totalPrice: editData.totalPrice ? parseFloat(editData.totalPrice) : null,
-      assignees: Array.isArray(editData.assignees) ? editData.assignees : [],
-      notes: editData.notes || '',
-      updatedAt: new Date()
-    };
-    
-    onEditTask(task.id, updates);
-    setIsEditing(false);
-    setEditingField(null);
-    setHasUnsavedChanges(false);
-  };
-
   const handleAutoSave = (field: string, value: string | number | null) => {
     const updates: Partial<Task> = { updatedAt: new Date() };
     
@@ -231,24 +208,6 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
         {displayValue}
       </span>
     );
-  };
-
-  const handleCancel = () => {
-    setEditData({
-      dueDate: task.dueDate instanceof Date ? task.dueDate.toISOString().split('T')[0] : '',
-      priority: task.priority,
-      status: task.status,
-      clientName: task.clientName,
-      clientGroup: task.clientGroup,
-      cms: task.cms,
-      webUrl: task.webUrl,
-      figmaUrl: task.figmaUrl,
-      assetUrl: task.assetUrl,
-      totalPrice: task.totalPrice?.toString() || '',
-      assignees: task.assignees || [],
-      notes: task.notes || ''
-    });
-    setIsEditing(false);
   };
 
   const formatDate = (date: Date | null) => {

@@ -3,18 +3,23 @@ import dbConnect from '@/lib/mongodb';
 import Client from '@/models/Client';
 import { verifyAuth } from '@/lib/auth';
 
+interface RouteParams {
+  params: Promise<{ id: string }>;
+}
+
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: RouteParams
 ) {
   try {
+    const { id } = await params;
     const user = await verifyAuth(request);
     if (!user) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
     await dbConnect();
-    const client = await Client.findById(params.id);
+    const client = await Client.findById(id);
     
     if (!client) {
       return NextResponse.json({ 
@@ -38,9 +43,10 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: RouteParams
 ) {
   try {
+    const { id } = await params;
     const user = await verifyAuth(request);
     if (!user) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
@@ -68,7 +74,7 @@ export async function PUT(
     await dbConnect();
 
     // Check if client exists
-    const existingClient = await Client.findById(params.id);
+    const existingClient = await Client.findById(id);
     if (!existingClient) {
       return NextResponse.json({ 
         success: false, 
@@ -80,7 +86,7 @@ export async function PUT(
     if (name && name.trim().toLowerCase() !== existingClient.name.toLowerCase()) {
       const duplicateClient = await Client.findOne({ 
         name: { $regex: new RegExp(`^${name.trim()}$`, 'i') },
-        _id: { $ne: params.id }
+        _id: { $ne: id }
       });
       
       if (duplicateClient) {
@@ -91,11 +97,12 @@ export async function PUT(
       }
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateData: any = {};
     if (name !== undefined) updateData.name = name.trim();
 
     const client = await Client.findByIdAndUpdate(
-      params.id,
+      id,
       updateData,
       { new: true, runValidators: true }
     );
@@ -115,9 +122,10 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: RouteParams
 ) {
   try {
+    const { id } = await params;
     const user = await verifyAuth(request);
     if (!user) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
@@ -125,7 +133,7 @@ export async function DELETE(
 
     await dbConnect();
     
-    const client = await Client.findByIdAndDelete(params.id);
+    const client = await Client.findByIdAndDelete(id);
     
     if (!client) {
       return NextResponse.json({ 

@@ -3,9 +3,13 @@ import dbConnect from '@/lib/mongodb';
 import Client from '@/models/Client';
 import { verifyAuth } from '@/lib/auth';
 
+interface RouteParams {
+  params: Promise<{ id: string; noteId: string }>;
+}
+
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string; noteId: string }> }
+  { params }: RouteParams
 ) {
   try {
     const { id, noteId } = await params;
@@ -47,7 +51,7 @@ export async function PUT(
 
     await dbConnect();
 
-    const client = await Client.findById(params.id);
+    const client = await Client.findById(id);
     if (!client) {
       return NextResponse.json({ 
         success: false, 
@@ -66,7 +70,8 @@ export async function PUT(
       }] : [];
     }
 
-    const noteIndex = client.notes.findIndex((note: any) => note._id?.toString() === params.noteId);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const noteIndex = client.notes.findIndex((note: any) => note._id?.toString() === noteId);
     if (noteIndex === -1) {
       return NextResponse.json({ 
         success: false, 
@@ -95,7 +100,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string; noteId: string }> }
+  { params }: RouteParams
 ) {
   try {
     const { id, noteId } = await params;
@@ -125,6 +130,7 @@ export async function DELETE(
       }] : [];
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const noteIndex = client.notes.findIndex((note: any) => note._id?.toString() === noteId);
     if (noteIndex === -1) {
       return NextResponse.json({ 

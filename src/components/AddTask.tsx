@@ -65,6 +65,7 @@ export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps)
         invoiced: false,
         paid: false,
         assignees: finalAssignees,
+        notes: '',
       });
       setDueDate(todayStr);
       setPriority('Low');

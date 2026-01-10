@@ -3,9 +3,13 @@ import dbConnect from '@/lib/mongodb';
 import Client from '@/models/Client';
 import { verifyAuth } from '@/lib/auth';
 
+interface RouteParams {
+  params: Promise<{ id: string }>;
+}
+
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: RouteParams
 ) {
   try {
     const { id } = await params;

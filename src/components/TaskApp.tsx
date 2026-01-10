@@ -22,7 +22,7 @@ export default function TaskApp() {
   const { user, logout } = useAuth();
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const { tasks, loading, error, createTask, updateTask, deleteTask } = useTasks(selectedYear);
-  const { assignees, addAssignee, refreshAssignees } = useAssignees();
+  const { assignees, addAssignee, removeAssignee, refreshAssignees } = useAssignees();
   const { groups: contextGroups, addGroup } = useGroups();
   const { clients } = useClients();
   const [autoEditTaskId, setAutoEditTaskId] = useState<string | null>(null);
@@ -42,6 +42,8 @@ export default function TaskApp() {
   // Assignee management states
   const [showAssigneeForm, setShowAssigneeForm] = useState(false);
   const [newAssigneeName, setNewAssigneeName] = useState('');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [assigneeToDelete, setAssigneeToDelete] = useState<string | null>(null);
   const assigneeFormRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -126,6 +128,33 @@ export default function TaskApp() {
     addAssignee(name);
     setNewAssigneeName('');
     setShowAssigneeForm(false);
+  };
+
+  const handleRemoveAssignee = async (assigneeName: string) => {
+    console.log('Attempting to remove assignee:', assigneeName);
+    setAssigneeToDelete(assigneeName);
+    setShowDeleteModal(true);
+  };
+
+  const confirmRemoveAssignee = async () => {
+    if (!assigneeToDelete) return;
+    
+    console.log('User confirmed removal, calling removeAssignee...');
+    await removeAssignee(assigneeToDelete);
+    // If the removed assignee was selected, reset to 'all'
+    if (selectedAssignee === assigneeToDelete) {
+      setSelectedAssignee('all');
+    }
+    console.log('Assignee removal completed');
+    
+    // Close modal and reset state
+    setShowDeleteModal(false);
+    setAssigneeToDelete(null);
+  };
+
+  const cancelRemoveAssignee = () => {
+    setShowDeleteModal(false);
+    setAssigneeToDelete(null);
   };
 
   const handleAddProjectGroup = async () => {
@@ -556,25 +585,43 @@ export default function TaskApp() {
                   {assignees.map((assignee) => {
                     const assigneeTasks = assigneesWithTasks[assignee] || [];
                     return (
-                      <button
-                        key={assignee}
-                        onClick={() => {
-                          setSelectedGroup('all');
-                          setSelectedAssignee(assignee);
-                        }}
-                        className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
-                          selectedAssignee === assignee
-                            ? 'bg-gray-900 text-white'
-                            : 'text-gray-700 hover:bg-gray-100'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="truncate">{assignee}</span>
-                          <span className="text-xs px-2 py-1 bg-gray-200 text-gray-600 rounded">
-                            {assigneeTasks.length}
-                          </span>
-                        </div>
-                      </button>
+                      <div key={assignee} className="group relative">
+                        <button
+                          onClick={() => {
+                            setSelectedGroup('all');
+                            setSelectedAssignee(assignee);
+                          }}
+                          className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
+                            selectedAssignee === assignee
+                              ? 'bg-gray-900 text-white'
+                              : 'text-gray-700 hover:bg-gray-100'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="truncate pr-2">{assignee}</span>
+                            <div className="flex items-center gap-2">
+                              <span className={`text-xs px-2 py-1 bg-gray-200 text-gray-600 rounded transition-opacity ${
+                                'group-hover:opacity-0'
+                              }`}>
+                                {assigneeTasks.length}
+                              </span>
+                            </div>
+                          </div>
+                        </button>
+                        {/* Delete button - shows on hover, replaces the number */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveAssignee(assignee);
+                          }}
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 bg-red-500 hover:bg-red-600 rounded-sm flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                          title={`Remove ${assignee}`}
+                        >
+                          <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
                     );
                   })}
                 </div>
@@ -827,6 +874,45 @@ export default function TaskApp() {
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                <svg className="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Remove Team Member</h3>
+                <p className="text-sm text-gray-600">This action cannot be undone</p>
+              </div>
+            </div>
+            
+            <p className="text-gray-700 mb-6">
+              Are you sure you want to remove <strong>{assigneeToDelete}</strong> from the team? 
+              They will be removed from the database but will remain assigned to existing tasks.
+            </p>
+            
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={cancelRemoveAssignee}
+                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmRemoveAssignee}
+                className="px-4 py-2 text-white bg-red-600 hover:bg-red-700 rounded transition-colors"
+              >
+                Remove Member
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

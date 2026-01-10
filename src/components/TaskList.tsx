@@ -125,8 +125,6 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
     return selectedMonthTasks.reduce((sum, t) => sum + (t.totalPrice || 0), 0);
   }, [selectedMonthTasks]);
 
-  const completedTasks = useMemo(() => selectedMonthTasks.filter(t => t.status === 'Completed').length, [selectedMonthTasks]);
-  const inProcessTasks = useMemo(() => selectedMonthTasks.filter(t => t.status !== 'Completed').length, [selectedMonthTasks]);
   const totalTasks = selectedMonthTasks.length;
 
   // Early return after all hooks are called
@@ -141,7 +139,7 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
           </div>
         </div>
         <h3 className="text-gray-900 text-lg font-semibold mb-2">No projects yet</h3>
-        <p className="text-gray-600 mb-4 max-w-sm mx-auto text-sm">Get started by creating your first project. Click the "Add Task" button above to begin organizing your work.</p>
+        <p className="text-gray-600 mb-4 max-w-sm mx-auto text-sm">Get started by creating your first project. Click the &quot;Add Task&quot; button above to begin organizing your work.</p>
         <div className="flex items-center justify-center gap-1.5 text-xs text-gray-500">
           <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -219,8 +217,15 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
               onClick={() => setStatusTab('inprocess')}
               title="Show in-process projects"
             >
-              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6l3 3" />
+              <svg 
+                className="h-3 w-3" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke={statusTab === 'inprocess' ? 'white' : '#6b7280'}
+                strokeWidth={2}
+              >
+                <circle cx="12" cy="12" r="10" />
+                <circle cx="12" cy="12" r="3" fill={statusTab === 'inprocess' ? 'white' : '#6b7280'} />
               </svg>
               In Process
             </button>
@@ -233,8 +238,14 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
               onClick={() => setStatusTab('completed')}
               title="Show completed projects"
             >
-              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              <svg 
+                className="h-3 w-3" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke={statusTab === 'completed' ? 'white' : '#6b7280'}
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
               Completed
             </button>
