@@ -6,11 +6,12 @@ import { useTasks } from '@/hooks/useTasks';
 import { useAssignees } from '@/contexts/AssigneeContext';
 import { useGroups } from '@/contexts/GroupContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { useClients, Client } from '@/hooks/useClients';
+import { useClients, Client } from '@/contexts/ClientContext';
 import TaskList from '@/components/TaskList';
 import ClientsList from '@/components/ClientsList';
 import ClientTab from '@/components/ClientTab';
 import Logo from '@/components/Logo';
+import UserManagement from '@/components/UserManagement';
 
 // Default sidebar groups
 const DEFAULT_GROUPS: readonly string[] = ['Casey', 'Jack', 'Upwork', 'Personal'] as const;
@@ -24,12 +25,12 @@ export default function TaskApp() {
   const { tasks, loading, error, createTask, updateTask, deleteTask } = useTasks(selectedYear);
   const { assignees, addAssignee, removeAssignee, refreshAssignees } = useAssignees();
   const { groups: contextGroups, addGroup } = useGroups();
-  const { clients } = useClients();
+  const { clients, refreshClients } = useClients();
   const [autoEditTaskId, setAutoEditTaskId] = useState<string | null>(null);
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
   const [selectedAssignee, setSelectedAssignee] = useState<string>('all');
   const [showYearEarnings, setShowYearEarnings] = useState(false);
-  const [activeTab, setActiveTab] = useState<'tasks' | 'clients'>('tasks');
+  const [activeTab, setActiveTab] = useState<'tasks' | 'clients' | 'users'>('tasks');
   const [openClientTabs, setOpenClientTabs] = useState<string[]>([]);
   const [activeClientTab, setActiveClientTab] = useState<string | null>(null);
 
@@ -111,6 +112,32 @@ export default function TaskApp() {
   useEffect(() => {
     console.log('🎭 Modal state changed - showDeleteModal:', showDeleteModal, 'assigneeToDelete:', assigneeToDelete);
   }, [showDeleteModal, assigneeToDelete]);
+
+  // Debug clients changes in TaskApp
+  useEffect(() => {
+    console.log('🏢 TaskApp: Clients data changed, count:', clients.length, 'clients:', clients.map(c => c.name));
+  }, [clients]);
+
+  // Set default tab based on user permissions
+  useEffect(() => {
+    if (user?.permissions) {
+      // If user can't view tasks but can view clients, default to clients
+      if (!user.permissions.canViewTasks && user.permissions.canViewClients) {
+        setActiveTab('clients');
+      }
+      // If user can't view clients but can view tasks, default to tasks
+      else if (user.permissions.canViewTasks && !user.permissions.canViewClients) {
+        setActiveTab('tasks');
+      }
+      // If user can view both, keep current tab or default to tasks
+      else if (user.permissions.canViewTasks && user.permissions.canViewClients) {
+        // Keep current tab, or default to tasks if not set
+        if (activeTab !== 'tasks' && activeTab !== 'clients' && activeTab !== 'users') {
+          setActiveTab('tasks');
+        }
+      }
+    }
+  }, [user?.permissions, activeTab]);
 
   const handleLogout = async () => {
     await logout();
@@ -253,12 +280,12 @@ export default function TaskApp() {
     setActiveClientTab(clientName);
   };
 
-  const handleClientCreated = (newClient: Client) => {
+  const handleClientCreated = async (newClient: Client) => {
     // Force a refresh of the clients data to ensure sidebar updates
-    console.log('New client created:', newClient.name);
-    // The client should already be in the state, but let's ensure the component re-renders
-    // by triggering a small state update
-    setActiveTab(prev => prev); // This will trigger a re-render
+    console.log('🔄 TaskApp: New client created, refreshing clients data:', newClient.name);
+    await refreshClients();
+    // Also trigger a small state update to force re-render
+    setActiveTab(prev => prev);
   };
 
   const handleCloseClientTab = (clientName: string) => {
@@ -373,7 +400,7 @@ export default function TaskApp() {
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-900">{user?.username}</p>
-                <p className="text-xs text-gray-500">Admin</p>
+                <p className="text-xs text-gray-500 capitalize">{user?.role?.replace('_', ' ')}</p>
               </div>
             </div>
           </div>
@@ -381,7 +408,7 @@ export default function TaskApp() {
           {/* Groups/Clients Section */}
           <div className="flex-1 p-6">
             {/* Show Clients when in clients tab or client tabs */}
-            {(activeTab === 'clients' || activeClientTab) ? (
+            {(activeTab === 'clients' || activeClientTab) && user?.permissions?.canViewClients ? (
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-sm font-semibold text-gray-900">Clients</h2>
@@ -402,9 +429,12 @@ export default function TaskApp() {
                 {/* All Clients */}
                 <button
                   key={`all-clients-${clients.length}-${clients.map(c => c.notes.length).join('-')}`}
-                  onClick={() => {
+                  onClick={async () => {
                     setActiveTab('clients');
                     setActiveClientTab(null);
+                    // Refresh clients data when clicking All Clients
+                    console.log('🔄 TaskApp: Clicking All Clients, refreshing data');
+                    await refreshClients();
                   }}
                   className={`w-full text-left px-3 py-2 rounded text-sm transition-colors mb-1 ${
                     activeTab === 'clients' && !activeClientTab
@@ -454,7 +484,7 @@ export default function TaskApp() {
                   })}
                 </div>
               </div>
-            ) : (
+            ) : user?.permissions?.canViewTasks ? (
               /* Show Projects when in tasks tab */
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-4">
@@ -550,10 +580,10 @@ export default function TaskApp() {
                   </div>
                 )}
               </div>
-            )}
+            ) : null}
 
-            {/* Team Section - Only show in tasks tab */}
-            {activeTab === 'tasks' && !activeClientTab && (
+            {/* Team Section - Only show in tasks tab and if user has task permissions */}
+            {activeTab === 'tasks' && !activeClientTab && user?.permissions?.canViewTasks && (
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-sm font-semibold text-gray-900">Team</h2>
@@ -684,59 +714,91 @@ export default function TaskApp() {
           {/* Tab Navigation */}
           <div className="bg-white border-b border-gray-200">
             <div className="flex overflow-x-auto">
-              <button
-                onClick={() => {
-                  setActiveTab('tasks');
-                  setActiveClientTab(null);
-                }}
-                className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                  activeTab === 'tasks' && !activeClientTab
-                    ? 'border-blue-500 text-blue-600 bg-blue-50'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                  </svg>
-                  Tasks
-                  <span className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">
-                    {filteredTasks.length}
-                  </span>
-                </div>
-              </button>
-              <button
-                onClick={() => {
-                  setActiveTab('clients');
-                  setActiveClientTab(null);
-                }}
-                className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                  activeTab === 'clients' && !activeClientTab
-                    ? 'border-blue-500 text-blue-600 bg-blue-50'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                  Clients
-                  <span className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">
-                    {clients.length}
-                  </span>
-                </div>
-              </button>
-              
-              {/* Client Tabs */}
-              {openClientTabs.map((clientName) => (
+              {/* Tasks Tab - Only show if user has task permissions */}
+              {user?.permissions?.canViewTasks && (
                 <button
+                  onClick={() => {
+                    setActiveTab('tasks');
+                    setActiveClientTab(null);
+                  }}
+                  className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                    activeTab === 'tasks' && !activeClientTab
+                      ? 'border-blue-500 text-blue-600 bg-blue-50'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    Tasks
+                    <span className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">
+                      {filteredTasks.length}
+                    </span>
+                  </div>
+                </button>
+              )}
+              
+              {/* Clients Tab - Only show if user has client permissions */}
+              {user?.permissions?.canViewClients && (
+                <button
+                  onClick={async () => {
+                    setActiveTab('clients');
+                    setActiveClientTab(null);
+                    // Refresh clients data when switching to clients tab
+                    console.log('🔄 TaskApp: Switching to clients tab, refreshing data');
+                    await refreshClients();
+                  }}
+                  className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                    activeTab === 'clients' && !activeClientTab
+                      ? 'border-blue-500 text-blue-600 bg-blue-50'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    Clients
+                    <span className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">
+                      {clients.length}
+                    </span>
+                  </div>
+                </button>
+              )}
+              
+              {/* Users Tab - Only show for admins */}
+              {(user?.role === 'admin' || user?.permissions?.canManageUsers) && (
+                <button
+                  onClick={() => {
+                    setActiveTab('users');
+                    setActiveClientTab(null);
+                  }}
+                  className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                    activeTab === 'users'
+                      ? 'border-purple-500 text-purple-600 bg-purple-50'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+                    </svg>
+                    Users
+                  </div>
+                </button>
+              )}
+              
+              {/* Client Tabs - Only show if user has client permissions */}
+              {user?.permissions?.canViewClients && openClientTabs.map((clientName) => (
+                <div
                   key={clientName}
-                  onClick={() => setActiveClientTab(clientName)}
-                  className={`px-4 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap group ${
+                  className={`px-4 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap group cursor-pointer ${
                     activeClientTab === clientName
                       ? 'border-green-500 text-green-600 bg-green-50'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
+                  onClick={() => setActiveClientTab(clientName)}
                 >
                   <div className="flex items-center gap-2">
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -756,13 +818,13 @@ export default function TaskApp() {
                       </svg>
                     </button>
                   </div>
-                </button>
+                </div>
               ))}
             </div>
           </div>
 
           {/* Tab Content */}
-          {activeClientTab ? (
+          {activeClientTab && user?.permissions?.canViewClients ? (
             /* Individual Client Tab */
             <div className="flex-1">
               <ClientTab
@@ -772,7 +834,7 @@ export default function TaskApp() {
                 onClose={() => handleCloseClientTab(activeClientTab)}
               />
             </div>
-          ) : activeTab === 'tasks' ? (
+          ) : activeTab === 'tasks' && user?.permissions?.canViewTasks ? (
             <>
               {/* Tasks Header */}
               <div className="bg-white border-b border-gray-200 px-6 py-4">
@@ -822,6 +884,8 @@ export default function TaskApp() {
                     <button
                       onClick={() => handleAddInlineTask()}
                       className="px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded text-sm transition-colors"
+                      disabled={!user?.permissions?.canEditTasks}
+                      title={!user?.permissions?.canEditTasks ? "You don't have permission to create tasks" : "Create a new task"}
                     >
                       Add Task
                     </button>
@@ -854,7 +918,9 @@ export default function TaskApp() {
                     </p>
                     <button
                       onClick={() => handleAddInlineTask()}
-                      className="px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded transition-colors"
+                      className="px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                      disabled={!user?.permissions?.canEditTasks}
+                      title={!user?.permissions?.canEditTasks ? "You don't have permission to create tasks" : "Create your first task"}
                     >
                       Create First Task
                     </button>
@@ -870,7 +936,7 @@ export default function TaskApp() {
                 )}
               </div>
             </>
-          ) : (
+          ) : activeTab === 'clients' && user?.permissions?.canViewClients ? (
             /* Clients Content */
             <div className="flex-1 bg-gray-50">
               <ClientsList
@@ -878,6 +944,26 @@ export default function TaskApp() {
                 onOpenClientTab={handleOpenClientTab}
                 onClientCreated={handleClientCreated}
               />
+            </div>
+          ) : activeTab === 'users' && (user?.role === 'admin' || user?.permissions?.canManageUsers) ? (
+            /* Users Content */
+            <div className="flex-1 bg-gray-50">
+              <UserManagement />
+            </div>
+          ) : (
+            /* No Permission Message */
+            <div className="flex-1 bg-gray-50 flex items-center justify-center">
+              <div className="text-center">
+                <div className="w-16 h-16 mx-auto mb-4 bg-gray-200 rounded-full flex items-center justify-center">
+                  <svg className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Access Restricted</h3>
+                <p className="text-gray-500">
+                  You don't have permission to access this section. Please contact your administrator.
+                </p>
+              </div>
             </div>
           )}
         </div>

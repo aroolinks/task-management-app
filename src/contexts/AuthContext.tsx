@@ -5,6 +5,15 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 interface User {
   id: string;
   username: string;
+  email: string;
+  role: 'admin' | 'team_member';
+  permissions: {
+    canViewTasks: boolean;
+    canEditTasks: boolean;
+    canViewClients: boolean;
+    canEditClients: boolean;
+    canManageUsers: boolean;
+  };
 }
 
 interface AuthContextType {

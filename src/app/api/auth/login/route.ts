@@ -13,13 +13,29 @@ export async function POST(request: NextRequest) {
     
     if (!username || !password) {
       return NextResponse.json(
-        { success: false, error: 'Username and password are required' },
+        { success: false, error: 'Username/Email and password are required' },
         { status: 400 }
       );
     }
 
-    // Find user in database
-    const user = await User.findOne({ username });
+    // Find user by username or email
+    const user = await User.findOne({
+      $or: [
+        { username: username },
+        { email: username }
+      ]
+    }).select('+email +role +permissions');
+    
+    console.log('🔍 Login: Found user:', {
+      exists: !!user,
+      username: user?.username,
+      hasEmail: !!user?.email,
+      hasRole: !!user?.role,
+      hasPermissions: !!user?.permissions,
+      email: user?.email,
+      role: user?.role,
+      permissions: user?.permissions
+    });
     
     if (!user) {
       return NextResponse.json(
@@ -37,17 +53,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create JWT token
-    const token = await new SignJWT({ userId: user._id, username: user.username })
+    // Create JWT token with role and permissions
+    const token = await new SignJWT({ 
+      userId: user._id.toString(), 
+      username: user.username,
+      email: user.email,
+      role: user.role,
+      permissions: user.permissions
+    })
       .setProtectedHeader({ alg: 'HS256' })
       .setExpirationTime('24h')
       .sign(JWT_SECRET);
+
+    console.log('🔑 Login: Creating token for user:', {
+      username: user.username,
+      email: user.email,
+      role: user.role,
+      permissions: user.permissions
+    });
 
     const response = NextResponse.json({
       success: true,
       user: {
         id: user._id,
-        username: user.username
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        permissions: user.permissions
       }
     });
 
@@ -58,6 +90,8 @@ export async function POST(request: NextRequest) {
       sameSite: 'lax',
       maxAge: 24 * 60 * 60 // 24 hours
     });
+
+    console.log('🔑 Login: Cookie set successfully');
 
     return response;
   } catch (error) {

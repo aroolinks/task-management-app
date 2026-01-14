@@ -41,6 +41,13 @@ export function useClients() {
       });
       
       if (!response.ok) {
+        // If 403 (Forbidden), user doesn't have permission
+        if (response.status === 403) {
+          console.log('User does not have permission to view clients');
+          setClients([]);
+          setLoading(false);
+          return;
+        }
         throw new Error('Failed to fetch clients');
       }
       
@@ -110,7 +117,12 @@ export function useClients() {
           updatedAt: new Date(data.data.updatedAt),
         };
         
-        setClients(prev => [...prev, newClient].sort((a, b) => a.name.localeCompare(b.name)));
+        console.log('👤 Creating new client:', newClient);
+        setClients(prev => {
+          const updated = [...prev, newClient].sort((a, b) => a.name.localeCompare(b.name));
+          console.log('👤 Updated clients state:', updated);
+          return updated;
+        });
         return newClient;
       }
       
@@ -226,13 +238,16 @@ export function useClients() {
         };
         
         // Update the client in the local state
-        setClients(prev => 
-          prev.map(client => 
+        console.log('📝 Adding note to client:', clientId, 'Note:', newNote);
+        setClients(prev => {
+          const updated = prev.map(client => 
             client.id === clientId 
               ? { ...client, notes: [...client.notes, newNote] }
               : client
-          )
-        );
+          );
+          console.log('📝 Updated clients state:', updated);
+          return updated;
+        });
         
         return newNote;
       }
@@ -305,10 +320,23 @@ export function useClients() {
         method: 'DELETE',
       });
       
-      const data = await response.json();
-      
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to delete note');
+        // Try to parse error message if available
+        try {
+          const data = await response.json();
+          throw new Error(data.error || 'Failed to delete note');
+        } catch {
+          throw new Error('Failed to delete note');
+        }
+      }
+      
+      // Try to parse JSON response, but handle empty responses
+      let data;
+      try {
+        data = await response.json();
+      } catch {
+        // If JSON parsing fails, assume success if status is ok
+        data = { success: true };
       }
       
       if (data.success) {

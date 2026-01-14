@@ -20,7 +20,10 @@ export async function GET(request: NextRequest) {
       success: true,
       user: {
         id: payload.userId,
-        username: payload.username
+        username: payload.username,
+        email: payload.email,
+        role: payload.role,
+        permissions: payload.permissions
       }
     });
   } catch (error) {

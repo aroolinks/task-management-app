@@ -1,9 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Task from '@/models/Task';
+import { verifyAuth } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
+    const user = await verifyAuth(request);
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check if user can view tasks
+    if (!user.permissions?.canViewTasks) {
+      return NextResponse.json({ success: false, error: 'Insufficient permissions' }, { status: 403 });
+    }
+
     console.log('🔄 API: Attempting to connect to MongoDB...');
     console.log('🌍 Environment:', process.env.NODE_ENV);
     console.log('🔑 MONGODB_URI exists:', !!process.env.MONGODB_URI);
@@ -59,6 +70,16 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const user = await verifyAuth(request);
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check if user can edit tasks
+    if (!user.permissions?.canEditTasks) {
+      return NextResponse.json({ success: false, error: 'Insufficient permissions' }, { status: 403 });
+    }
+
     await dbConnect();
     const body = await request.json();
     const task = await Task.create(body);

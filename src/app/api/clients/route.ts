@@ -6,10 +6,21 @@ import { verifyAuth } from '@/lib/auth';
 export async function GET(request: NextRequest) {
   try {
     const user = await verifyAuth(request);
+    console.log('📋 Clients API: User from verifyAuth:', user);
+    
     if (!user) {
+      console.log('📋 Clients API: No user, returning 401');
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Check if user can view clients
+    console.log('📋 Clients API: Checking permissions:', user.permissions);
+    if (!user.permissions?.canViewClients) {
+      console.log('📋 Clients API: User cannot view clients, returning 403');
+      return NextResponse.json({ success: false, error: 'Insufficient permissions' }, { status: 403 });
+    }
+
+    console.log('📋 Clients API: User authorized, fetching clients');
     await dbConnect();
     
     try {
@@ -40,6 +51,11 @@ export async function POST(request: NextRequest) {
     const user = await verifyAuth(request);
     if (!user) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check if user can edit clients
+    if (!user.permissions?.canEditClients) {
+      return NextResponse.json({ success: false, error: 'Insufficient permissions' }, { status: 403 });
     }
 
     const body = await request.json();

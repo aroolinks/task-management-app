@@ -17,13 +17,13 @@ export default function LoginForm() {
     setError("");
 
     if (!formData.username || !formData.password) {
-      setError("Please enter both username and password");
+      setError("Please enter both username/email and password");
       return;
     }
 
     const success = await login(formData.username, formData.password);
     if (!success) {
-      setError("Invalid username or password");
+      setError("Invalid username/email or password");
     }
   };
 
@@ -69,7 +69,7 @@ export default function LoginForm() {
                     htmlFor="username"
                     className="block text-sm font-semibold text-gray-700 mb-3"
                   >
-                    Username
+                    Username or Email
                   </label>
                   <div className="relative group">
                     <input
@@ -79,7 +79,7 @@ export default function LoginForm() {
                       value={formData.username}
                       onChange={handleChange}
                       className="w-full px-4 py-4 bg-white border border-gray-300 text-gray-900 placeholder-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                      placeholder="Enter your username"
+                      placeholder="Enter your username or email"
                       disabled={loading}
                       required
                     />
@@ -94,7 +94,7 @@ export default function LoginForm() {
                           strokeLinecap="round"
                           strokeLinejoin="round"
                           strokeWidth={2}
-                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7 7z"
                         />
                       </svg>
                     </div>

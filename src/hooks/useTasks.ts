@@ -137,6 +137,13 @@ export function useTasks(year?: number) {
       clearTimeout(timeoutId);
       
       if (!response.ok) {
+        // If 403 (Forbidden), user doesn't have permission - return empty array silently
+        if (response.status === 403) {
+          console.log('User does not have permission to view tasks');
+          setTasks([]);
+          setLoading(false);
+          return;
+        }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       

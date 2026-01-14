@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Task } from '@/types/task';
-import { useClients, ClientNote } from '@/hooks/useClients';
+import { useClients, ClientNote } from '@/contexts/ClientContext';
 
 interface ClientTabProps {
   clientName: string;
@@ -12,7 +12,7 @@ interface ClientTabProps {
 }
 
 export default function ClientTab({ clientName, tasks, onEditTask, onClose }: ClientTabProps) {
-  const { clients, addNote, updateNote, deleteNote } = useClients();
+  const { clients, addNote, updateNote, deleteNote, refreshClients } = useClients();
   const [showAddNoteForm, setShowAddNoteForm] = useState(false);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [noteTitle, setNoteTitle] = useState('');
@@ -23,6 +23,11 @@ export default function ClientTab({ clientName, tasks, onEditTask, onClose }: Cl
   const client = useMemo(() => {
     return clients.find(c => c.name === clientName);
   }, [clients, clientName]);
+
+  // Debug: Log when client data changes
+  useEffect(() => {
+    console.log('🔍 ClientTab - client data changed:', client);
+  }, [client]);
 
   // Get all notes for this client (from tasks - legacy support)
   const taskNotes = useMemo(() => {
@@ -93,6 +98,9 @@ export default function ClientTab({ clientName, tasks, onEditTask, onClose }: Cl
       setNoteTitle('');
       setNoteContent('');
       setEditingNoteId(null);
+      // Force refresh to ensure UI updates
+      console.log('🔄 Refreshing clients after note operation');
+      await refreshClients();
     }
   };
 
@@ -100,7 +108,11 @@ export default function ClientTab({ clientName, tasks, onEditTask, onClose }: Cl
     if (!client) return;
     
     if (window.confirm('Are you sure you want to delete this note?')) {
-      await deleteNote(client.id, noteId);
+      const success = await deleteNote(client.id, noteId);
+      if (success) {
+        console.log('🔄 Refreshing clients after note deletion');
+        await refreshClients();
+      }
     }
   };
 
@@ -251,7 +263,7 @@ export default function ClientTab({ clientName, tasks, onEditTask, onClose }: Cl
               </div>
             ) : (
               client.notes.map((note) => (
-                <div key={note.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
+                <div key={`${note.id}-${note.updatedAt.getTime()}`} className="px-6 py-4 hover:bg-gray-50 transition-colors">
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-2">
