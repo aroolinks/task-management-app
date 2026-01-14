@@ -316,16 +316,24 @@ export function useClients() {
     try {
       setError(null);
       
-      const response = await fetch(`/api/clients/${clientId}/notes/${noteId}`, {
+      console.log('🗑️ deleteNote called with:', { clientId, noteId });
+      const url = `/api/clients/${clientId}/notes/${noteId}`;
+      console.log('🗑️ DELETE URL:', url);
+      
+      const response = await fetch(url, {
         method: 'DELETE',
       });
+      
+      console.log('🗑️ Response status:', response.status);
       
       if (!response.ok) {
         // Try to parse error message if available
         try {
           const data = await response.json();
+          console.log('🗑️ Error data:', data);
           throw new Error(data.error || 'Failed to delete note');
-        } catch {
+        } catch (jsonError) {
+          console.log('🗑️ JSON parse error:', jsonError);
           throw new Error('Failed to delete note');
         }
       }

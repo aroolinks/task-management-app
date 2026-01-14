@@ -16,6 +16,23 @@ export interface IClient {
   updatedAt: Date;
 }
 
+// Note subdocument schema
+const NoteSchema = new mongoose.Schema(
+  {
+    title: {
+      type: String,
+      required: true,
+    },
+    content: {
+      type: String,
+      required: true,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
 // Simple schema without complex validation
 const ClientSchema = new mongoose.Schema(
   {
@@ -25,7 +42,7 @@ const ClientSchema = new mongoose.Schema(
       unique: true,
     },
     notes: {
-      type: Array,
+      type: [NoteSchema],
       default: [],
     },
   },

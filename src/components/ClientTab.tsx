@@ -107,6 +107,14 @@ export default function ClientTab({ clientName, tasks, onEditTask, onClose }: Cl
   const handleDeleteNote = async (noteId: string) => {
     if (!client) return;
     
+    console.log('🗑️ Attempting to delete note:', { clientId: client.id, noteId });
+    
+    if (!noteId || noteId === '' || noteId === 'undefined') {
+      console.error('❌ Invalid note ID:', noteId);
+      alert('Cannot delete note: Invalid note ID');
+      return;
+    }
+    
     if (window.confirm('Are you sure you want to delete this note?')) {
       const success = await deleteNote(client.id, noteId);
       if (success) {
@@ -287,7 +295,11 @@ export default function ClientTab({ clientName, tasks, onEditTask, onClose }: Cl
                         Edit
                       </button>
                       <button
-                        onClick={() => handleDeleteNote(note.id)}
+                        onClick={() => {
+                          console.log('🗑️ Note object:', note);
+                          console.log('🗑️ Note ID:', note.id);
+                          handleDeleteNote(note.id);
+                        }}
                         className="px-3 py-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors text-sm"
                         title="Delete note"
                       >
