@@ -885,7 +885,7 @@ export default function TaskApp() {
                       onClick={() => handleAddInlineTask()}
                       className="px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded text-sm transition-colors"
                       disabled={!user?.permissions?.canEditTasks}
-                      title={!user?.permissions?.canEditTasks ? "You don't have permission to create tasks" : "Create a new task"}
+                      title={!user?.permissions?.canEditTasks ? "You don&apos;t have permission to create tasks" : "Create a new task"}
                     >
                       Add Task
                     </button>
@@ -920,7 +920,7 @@ export default function TaskApp() {
                       onClick={() => handleAddInlineTask()}
                       className="px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
                       disabled={!user?.permissions?.canEditTasks}
-                      title={!user?.permissions?.canEditTasks ? "You don't have permission to create tasks" : "Create your first task"}
+                      title={!user?.permissions?.canEditTasks ? "You don&apos;t have permission to create tasks" : "Create your first task"}
                     >
                       Create First Task
                     </button>
@@ -961,7 +961,7 @@ export default function TaskApp() {
                 </div>
                 <h3 className="text-lg font-medium text-gray-900 mb-2">Access Restricted</h3>
                 <p className="text-gray-500">
-                  You don't have permission to access this section. Please contact your administrator.
+                  You don&apos;t have permission to access this section. Please contact your administrator.
                 </p>
               </div>
             </div>

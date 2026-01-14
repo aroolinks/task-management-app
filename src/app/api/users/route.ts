@@ -16,7 +16,10 @@ async function verifyAdmin(request: NextRequest) {
     const { payload } = await jwtVerify(token, JWT_SECRET);
     
     // Check if user is admin or has user management permissions
-    if (payload.role !== 'admin' && !payload.permissions?.canManageUsers) {
+    const role = payload.role as string | undefined;
+    const permissions = payload.permissions as { canManageUsers?: boolean } | undefined;
+    
+    if (role !== 'admin' && !permissions?.canManageUsers) {
       return null;
     }
 
