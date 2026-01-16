@@ -38,6 +38,7 @@ export default function UserManagement() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -101,20 +102,7 @@ export default function UserManagement() {
       
       if (data.success) {
         setSuccess(`User ${formData.username} created successfully!`);
-        setFormData({
-          username: '',
-          email: '',
-          password: '',
-          role: 'team_member',
-          permissions: {
-            canViewTasks: false,
-            canEditTasks: false,
-            canViewClients: true,
-            canEditClients: true,
-            canManageUsers: false
-          }
-        });
-        setShowCreateForm(false);
+        resetForm();
         fetchUsers(); // Refresh the list
       } else {
         setError(data.error || 'Failed to create user');
@@ -123,6 +111,99 @@ export default function UserManagement() {
       console.error('Create user error:', error);
       setError('Failed to create user');
     }
+  };
+
+  const handleUpdateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser) return;
+
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const response = await fetch(`/api/users/${editingUser.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: formData.username,
+          email: formData.email,
+          role: formData.role,
+          permissions: formData.permissions,
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setSuccess(`User ${formData.username} updated successfully!`);
+        resetForm();
+        fetchUsers(); // Refresh the list
+      } else {
+        setError(data.error || 'Failed to update user');
+      }
+    } catch (error) {
+      console.error('Update user error:', error);
+      setError('Failed to update user');
+    }
+  };
+
+  const handleDeleteUser = async (userId: string, username: string) => {
+    if (!window.confirm(`Are you sure you want to delete user "${username}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const response = await fetch(`/api/users/${userId}`, {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setSuccess(`User ${username} deleted successfully!`);
+        fetchUsers(); // Refresh the list
+      } else {
+        setError(data.error || 'Failed to delete user');
+      }
+    } catch (error) {
+      console.error('Delete user error:', error);
+      setError('Failed to delete user');
+    }
+  };
+
+  const handleEditUser = (userToEdit: User) => {
+    setEditingUser(userToEdit);
+    setFormData({
+      username: userToEdit.username,
+      email: userToEdit.email,
+      password: '', // Don't populate password for security
+      role: userToEdit.role,
+      permissions: userToEdit.permissions,
+    });
+    setShowCreateForm(true);
+  };
+
+  const resetForm = () => {
+    setFormData({
+      username: '',
+      email: '',
+      password: '',
+      role: 'team_member',
+      permissions: {
+        canViewTasks: false,
+        canEditTasks: false,
+        canViewClients: true,
+        canEditClients: true,
+        canManageUsers: false
+      }
+    });
+    setShowCreateForm(false);
+    setEditingUser(null);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -198,11 +279,13 @@ export default function UserManagement() {
         </div>
       )}
 
-      {/* Create User Form */}
+      {/* Create/Edit User Form */}
       {showCreateForm && (
         <div className="mb-6 p-6 bg-white border border-gray-200 rounded-lg">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Create New User</h3>
-          <form onSubmit={handleCreateUser} className="space-y-4">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">
+            {editingUser ? 'Edit User' : 'Create New User'}
+          </h3>
+          <form onSubmit={editingUser ? handleUpdateUser : handleCreateUser} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -230,20 +313,22 @@ export default function UserManagement() {
                   required
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Password
-                </label>
-                <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
-                  minLength={6}
-                  required
-                />
-              </div>
+              {!editingUser && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Password
+                  </label>
+                  <input
+                    type="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+                    minLength={6}
+                    required
+                  />
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Role
@@ -259,6 +344,14 @@ export default function UserManagement() {
                 </select>
               </div>
             </div>
+
+            {editingUser && (
+              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded">
+                <p className="text-sm text-yellow-800">
+                  Note: Password cannot be changed through this form. Contact system administrator for password resets.
+                </p>
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -323,12 +416,12 @@ export default function UserManagement() {
                 type="submit"
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition-colors"
               >
-                Create User
+                {editingUser ? 'Update User' : 'Create User'}
               </button>
               <button
                 type="button"
                 onClick={() => {
-                  setShowCreateForm(false);
+                  resetForm();
                   setError(null);
                   setSuccess(null);
                 }}
@@ -372,49 +465,52 @@ export default function UserManagement() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Created
                   </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {users.map((user) => (
-                  <tr key={user.id}>
+                {users.map((userItem) => (
+                  <tr key={userItem.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
-                        <div className="text-sm font-medium text-gray-900">{user.username}</div>
-                        <div className="text-sm text-gray-500">{user.email}</div>
+                        <div className="text-sm font-medium text-gray-900">{userItem.username}</div>
+                        <div className="text-sm text-gray-500">{userItem.email}</div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        user.role === 'admin' 
+                        userItem.role === 'admin' 
                           ? 'bg-purple-100 text-purple-800' 
                           : 'bg-blue-100 text-blue-800'
                       }`}>
-                        {user.role === 'admin' ? 'Admin' : 'Team Member'}
+                        {userItem.role === 'admin' ? 'Admin' : 'Team Member'}
                       </span>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-wrap gap-1">
-                        {user.permissions.canViewTasks && (
+                        {userItem.permissions.canViewTasks && (
                           <span className="inline-flex px-2 py-1 text-xs bg-green-100 text-green-800 rounded">
                             View Tasks
                           </span>
                         )}
-                        {user.permissions.canEditTasks && (
+                        {userItem.permissions.canEditTasks && (
                           <span className="inline-flex px-2 py-1 text-xs bg-green-100 text-green-800 rounded">
                             Edit Tasks
                           </span>
                         )}
-                        {user.permissions.canViewClients && (
+                        {userItem.permissions.canViewClients && (
                           <span className="inline-flex px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">
                             View Clients
                           </span>
                         )}
-                        {user.permissions.canEditClients && (
+                        {userItem.permissions.canEditClients && (
                           <span className="inline-flex px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">
                             Edit Clients
                           </span>
                         )}
-                        {user.permissions.canManageUsers && (
+                        {userItem.permissions.canManageUsers && (
                           <span className="inline-flex px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded">
                             Manage Users
                           </span>
@@ -422,7 +518,32 @@ export default function UserManagement() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(user.createdAt).toLocaleDateString()}
+                      {new Date(userItem.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handleEditUser(userItem)}
+                          className="px-3 py-1.5 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors"
+                          title="Edit user"
+                        >
+                          Edit
+                        </button>
+                        {user?.username !== userItem.username && (
+                          <button
+                            onClick={() => handleDeleteUser(userItem.id, userItem.username)}
+                            className="px-3 py-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+                            title="Delete user"
+                          >
+                            Delete
+                          </button>
+                        )}
+                        {user?.username === userItem.username && (
+                          <span className="px-3 py-1.5 text-gray-400 text-xs">
+                            (You)
+                          </span>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
