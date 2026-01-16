@@ -1,10 +1,24 @@
 import { useState, useEffect, useCallback } from 'react';
 import { IClient, IClientNote } from '@/models/Client';
 
+export interface ClientLoginDetail {
+  id: string;
+  website: string;
+  url: string;
+  username: string;
+  password: string;
+  createdBy?: string;
+  editedBy?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface ClientNote {
   id: string;
   title: string;
   content: string;
+  createdBy?: string;
+  editedBy?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -13,6 +27,7 @@ export interface Client {
   id: string;
   name: string;
   notes: ClientNote[];
+  loginDetails: ClientLoginDetail[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -24,6 +39,13 @@ export interface ClientInput {
 export interface NoteInput {
   title: string;
   content: string;
+}
+
+export interface LoginDetailInput {
+  website: string;
+  url: string;
+  username: string;
+  password: string;
 }
 
 export function useClients() {
@@ -62,10 +84,25 @@ export function useClients() {
                 id: note._id || '',
                 title: note.title,
                 content: note.content,
+                createdBy: note.createdBy,
+                editedBy: note.editedBy,
                 createdAt: new Date(note.createdAt),
                 updatedAt: new Date(note.updatedAt),
               }))
             : [], // Fallback to empty array if notes is not an array
+          loginDetails: Array.isArray(client.loginDetails) 
+            ? client.loginDetails.map((login: any) => ({
+                id: login._id || '',
+                website: login.website,
+                url: login.url,
+                username: login.username,
+                password: login.password,
+                createdBy: login.createdBy,
+                editedBy: login.editedBy,
+                createdAt: new Date(login.createdAt),
+                updatedAt: new Date(login.updatedAt),
+              }))
+            : [], // Fallback to empty array if loginDetails is not an array
           createdAt: new Date(client.createdAt),
           updatedAt: new Date(client.updatedAt),
         }));
@@ -109,8 +146,23 @@ export function useClients() {
                 id: note._id || '',
                 title: note.title,
                 content: note.content,
+                createdBy: note.createdBy,
+                editedBy: note.editedBy,
                 createdAt: new Date(note.createdAt),
                 updatedAt: new Date(note.updatedAt),
+              }))
+            : [], // Fallback to empty array for new clients
+          loginDetails: Array.isArray(data.data.loginDetails) 
+            ? data.data.loginDetails.map((login: any) => ({
+                id: login._id || '',
+                website: login.website,
+                url: login.url,
+                username: login.username,
+                password: login.password,
+                createdBy: login.createdBy,
+                editedBy: login.editedBy,
+                createdAt: new Date(login.createdAt),
+                updatedAt: new Date(login.updatedAt),
               }))
             : [], // Fallback to empty array for new clients
           createdAt: new Date(data.data.createdAt),
@@ -160,9 +212,24 @@ export function useClients() {
             id: note._id || '',
             title: note.title,
             content: note.content,
+            createdBy: note.createdBy,
+            editedBy: note.editedBy,
             createdAt: new Date(note.createdAt),
             updatedAt: new Date(note.updatedAt),
           })),
+          loginDetails: Array.isArray(data.data.loginDetails) 
+            ? data.data.loginDetails.map((login: any) => ({
+                id: login._id || '',
+                website: login.website,
+                url: login.url,
+                username: login.username,
+                password: login.password,
+                createdBy: login.createdBy,
+                editedBy: login.editedBy,
+                createdAt: new Date(login.createdAt),
+                updatedAt: new Date(login.updatedAt),
+              }))
+            : [], // Fallback to empty array
           createdAt: new Date(data.data.createdAt),
           updatedAt: new Date(data.data.updatedAt),
         };
@@ -371,6 +438,169 @@ export function useClients() {
     }
   }, []);
 
+  const addLoginDetail = useCallback(async (clientId: string, loginDetailData: LoginDetailInput): Promise<ClientLoginDetail | null> => {
+    try {
+      setError(null);
+      
+      const response = await fetch(`/api/clients/${clientId}/logins`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(loginDetailData),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to add login detail');
+      }
+      
+      if (data.success) {
+        const newLoginDetail: ClientLoginDetail = {
+          id: data.data._id,
+          website: data.data.website,
+          url: data.data.url,
+          username: data.data.username,
+          password: data.data.password,
+          createdBy: data.data.createdBy,
+          editedBy: data.data.editedBy,
+          createdAt: new Date(data.data.createdAt),
+          updatedAt: new Date(data.data.updatedAt),
+        };
+        
+        // Add the login detail to the local state
+        setClients(prev => 
+          prev.map(client => 
+            client.id === clientId 
+              ? { ...client, loginDetails: [...client.loginDetails, newLoginDetail] }
+              : client
+          )
+        );
+        
+        return newLoginDetail;
+      }
+      
+      return null;
+    } catch (err) {
+      console.error('Error adding login detail:', err);
+      setError(err instanceof Error ? err.message : 'Failed to add login detail');
+      return null;
+    }
+  }, []);
+
+  const updateLoginDetail = useCallback(async (clientId: string, loginId: string, loginDetailData: LoginDetailInput): Promise<boolean> => {
+    try {
+      setError(null);
+      
+      const response = await fetch(`/api/clients/${clientId}/logins/${loginId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(loginDetailData),
+      });
+      
+      if (!response.ok) {
+        try {
+          const data = await response.json();
+          throw new Error(data.error || 'Failed to update login detail');
+        } catch {
+          throw new Error('Failed to update login detail');
+        }
+      }
+      
+      let data;
+      try {
+        data = await response.json();
+      } catch {
+        data = { success: true };
+      }
+      
+      if (data.success) {
+        const updatedLoginDetail: ClientLoginDetail = {
+          id: loginId,
+          website: loginDetailData.website,
+          url: loginDetailData.url,
+          username: loginDetailData.username,
+          password: loginDetailData.password,
+          createdBy: data.data?.createdBy,
+          editedBy: data.data?.editedBy,
+          createdAt: data.data ? new Date(data.data.createdAt) : new Date(),
+          updatedAt: new Date(),
+        };
+        
+        setClients(prev => 
+          prev.map(client => 
+            client.id === clientId 
+              ? { 
+                  ...client, 
+                  loginDetails: client.loginDetails.map(login => 
+                    login.id === loginId ? updatedLoginDetail : login
+                  )
+                }
+              : client
+          )
+        );
+        
+        return true;
+      }
+      
+      return false;
+    } catch (err) {
+      console.error('Error updating login detail:', err);
+      setError(err instanceof Error ? err.message : 'Failed to update login detail');
+      return false;
+    }
+  }, []);
+
+  const deleteLoginDetail = useCallback(async (clientId: string, loginId: string): Promise<boolean> => {
+    try {
+      setError(null);
+      
+      const response = await fetch(`/api/clients/${clientId}/logins/${loginId}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        try {
+          const data = await response.json();
+          throw new Error(data.error || 'Failed to delete login detail');
+        } catch {
+          throw new Error('Failed to delete login detail');
+        }
+      }
+      
+      let data;
+      try {
+        data = await response.json();
+      } catch {
+        data = { success: true };
+      }
+      
+      if (data.success) {
+        setClients(prev => 
+          prev.map(client => 
+            client.id === clientId 
+              ? { 
+                  ...client, 
+                  loginDetails: client.loginDetails.filter(login => login.id !== loginId)
+                }
+              : client
+          )
+        );
+        
+        return true;
+      }
+      
+      return false;
+    } catch (err) {
+      console.error('Error deleting login detail:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete login detail');
+      return false;
+    }
+  }, []);
+
   useEffect(() => {
     fetchClients();
   }, [fetchClients]);
@@ -385,6 +615,9 @@ export function useClients() {
     addNote,
     updateNote,
     deleteNote,
+    addLoginDetail,
+    updateLoginDetail,
+    deleteLoginDetail,
     refreshClients: fetchClients,
   };
 }

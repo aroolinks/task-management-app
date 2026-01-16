@@ -4,7 +4,7 @@ import Client from '@/models/Client';
 import { verifyAuth } from '@/lib/auth';
 
 interface RouteParams {
-  params: Promise<{ id: string; noteId: string }>;
+  params: Promise<{ id: string; loginId: string }>;
 }
 
 export async function PUT(
@@ -12,40 +12,45 @@ export async function PUT(
   { params }: RouteParams
 ) {
   try {
-    const { id, noteId } = await params;
+    const { id, loginId } = await params;
     const user = await verifyAuth(request);
     if (!user) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Check if user can edit clients
+    if (!user.permissions?.canEditClients) {
+      return NextResponse.json({ success: false, error: 'Insufficient permissions' }, { status: 403 });
+    }
+
     const body = await request.json();
-    const { title, content } = body;
+    const { website, url, username, password } = body;
 
-    if (!title || typeof title !== 'string' || title.trim().length === 0) {
+    if (!website || typeof website !== 'string' || website.trim().length === 0) {
       return NextResponse.json({ 
         success: false, 
-        error: 'Note title is required' 
+        error: 'Website name is required' 
       }, { status: 400 });
     }
 
-    if (!content || typeof content !== 'string' || content.trim().length === 0) {
+    if (!url || typeof url !== 'string' || url.trim().length === 0) {
       return NextResponse.json({ 
         success: false, 
-        error: 'Note content is required' 
+        error: 'Website URL is required' 
       }, { status: 400 });
     }
 
-    if (title.length > 100) {
+    if (!username || typeof username !== 'string' || username.trim().length === 0) {
       return NextResponse.json({ 
         success: false, 
-        error: 'Note title cannot be more than 100 characters' 
+        error: 'Username is required' 
       }, { status: 400 });
     }
 
-    if (content.length > 5000) {
+    if (!password || typeof password !== 'string' || password.trim().length === 0) {
       return NextResponse.json({ 
         success: false, 
-        error: 'Note content cannot be more than 5000 characters' 
+        error: 'Password is required' 
       }, { status: 400 });
     }
 
@@ -59,42 +64,38 @@ export async function PUT(
       }, { status: 404 });
     }
 
-    // Ensure notes is an array (handle migration from old string format)
-    if (!Array.isArray(client.notes)) {
-      const oldNotes = typeof client.notes === 'string' && client.notes.trim() ? client.notes.trim() : '';
-      client.notes = oldNotes ? [{
-        title: 'Migrated Notes',
-        content: oldNotes,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }] : [];
+    // Ensure loginDetails is an array
+    if (!Array.isArray(client.loginDetails)) {
+      client.loginDetails = [];
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const noteIndex = client.notes.findIndex((note: any) => note._id?.toString() === noteId);
-    if (noteIndex === -1) {
+    const loginIndex = client.loginDetails.findIndex((login: any) => login._id?.toString() === loginId);
+    if (loginIndex === -1) {
       return NextResponse.json({ 
         success: false, 
-        error: 'Note not found' 
+        error: 'Login detail not found' 
       }, { status: 404 });
     }
 
-    client.notes[noteIndex].title = title.trim();
-    client.notes[noteIndex].content = content.trim();
-    client.notes[noteIndex].editedBy = user.username;
-    client.notes[noteIndex].updatedAt = new Date();
+    client.loginDetails[loginIndex].website = website.trim();
+    client.loginDetails[loginIndex].url = url.trim();
+    client.loginDetails[loginIndex].username = username.trim();
+    client.loginDetails[loginIndex].password = password.trim();
+    client.loginDetails[loginIndex].editedBy = user.username;
+    client.loginDetails[loginIndex].updatedAt = new Date();
 
     await client.save();
 
     return NextResponse.json({ 
       success: true, 
-      data: client.notes[noteIndex] 
+      data: client.loginDetails[loginIndex] 
     });
   } catch (error) {
-    console.error('Error updating note:', error);
+    console.error('Error updating login detail:', error);
     return NextResponse.json({ 
       success: false, 
-      error: 'Failed to update note' 
+      error: 'Failed to update login detail' 
     }, { status: 500 });
   }
 }
@@ -104,17 +105,17 @@ export async function DELETE(
   { params }: RouteParams
 ) {
   try {
-    const { id, noteId } = await params;
+    const { id, loginId } = await params;
     const user = await verifyAuth(request);
     if (!user) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check if user can delete notes (only admins can delete)
+    // Check if user can delete login details (only admins can delete)
     if (user.role !== 'admin') {
       return NextResponse.json({ 
         success: false, 
-        error: 'Only administrators can delete notes' 
+        error: 'Only administrators can delete login details' 
       }, { status: 403 });
     }
 
@@ -128,38 +129,32 @@ export async function DELETE(
       }, { status: 404 });
     }
 
-    // Ensure notes is an array (handle migration from old string format)
-    if (!Array.isArray(client.notes)) {
-      const oldNotes = typeof client.notes === 'string' && client.notes.trim() ? client.notes.trim() : '';
-      client.notes = oldNotes ? [{
-        title: 'Migrated Notes',
-        content: oldNotes,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }] : [];
+    // Ensure loginDetails is an array
+    if (!Array.isArray(client.loginDetails)) {
+      client.loginDetails = [];
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const noteIndex = client.notes.findIndex((note: any) => note._id?.toString() === noteId);
-    if (noteIndex === -1) {
+    const loginIndex = client.loginDetails.findIndex((login: any) => login._id?.toString() === loginId);
+    if (loginIndex === -1) {
       return NextResponse.json({ 
         success: false, 
-        error: 'Note not found' 
+        error: 'Login detail not found' 
       }, { status: 404 });
     }
 
-    client.notes.splice(noteIndex, 1);
+    client.loginDetails.splice(loginIndex, 1);
     await client.save();
 
     return NextResponse.json({ 
       success: true, 
-      message: 'Note deleted successfully' 
+      message: 'Login detail deleted successfully' 
     });
   } catch (error) {
-    console.error('Error deleting note:', error);
+    console.error('Error deleting login detail:', error);
     return NextResponse.json({ 
       success: false, 
-      error: 'Failed to delete note' 
+      error: 'Failed to delete login detail' 
     }, { status: 500 });
   }
 }

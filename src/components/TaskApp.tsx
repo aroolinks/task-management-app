@@ -12,6 +12,7 @@ import ClientsList from '@/components/ClientsList';
 import ClientTab from '@/components/ClientTab';
 import Logo from '@/components/Logo';
 import UserManagement from '@/components/UserManagement';
+import HostingManagement from '@/components/HostingManagement';
 
 // Default sidebar groups
 const DEFAULT_GROUPS: readonly string[] = ['Casey', 'Jack', 'Upwork', 'Personal'] as const;
@@ -22,7 +23,12 @@ interface UiGroup { id?: string; name: string }
 export default function TaskApp() {
   const { user, logout } = useAuth();
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
-  const { tasks, loading, error, createTask, updateTask, deleteTask } = useTasks(selectedYear);
+  
+  // Only fetch tasks if user has permission - use empty array if no permission
+  const shouldFetchTasks = user?.permissions?.canViewTasks ?? false;
+  const { tasks: fetchedTasks, loading, error, createTask, updateTask, deleteTask } = useTasks(selectedYear);
+  const tasks = shouldFetchTasks ? fetchedTasks : [];
+  
   const { assignees, addAssignee, removeAssignee, refreshAssignees } = useAssignees();
   const { groups: contextGroups, addGroup } = useGroups();
   const { clients, refreshClients } = useClients();
@@ -30,9 +36,10 @@ export default function TaskApp() {
   const [selectedGroup, setSelectedGroup] = useState<string>('all');
   const [selectedAssignee, setSelectedAssignee] = useState<string>('all');
   const [showYearEarnings, setShowYearEarnings] = useState(false);
-  const [activeTab, setActiveTab] = useState<'tasks' | 'clients' | 'users'>('tasks');
+  const [activeTab, setActiveTab] = useState<'tasks' | 'clients' | 'hosting' | 'users'>('tasks');
   const [openClientTabs, setOpenClientTabs] = useState<string[]>([]);
   const [activeClientTab, setActiveClientTab] = useState<string | null>(null);
+  const hasSetInitialTab = useRef(false);
 
   // Sidebar project groups (server-persisted with local fallback)
   const [groups, setGroups] = useState<UiGroup[]>(Array.from(DEFAULT_GROUPS).map(name => ({ name })));
@@ -118,9 +125,16 @@ export default function TaskApp() {
     console.log('🏢 TaskApp: Clients data changed, count:', clients.length, 'clients:', clients.map(c => c.name));
   }, [clients]);
 
-  // Set default tab based on user permissions
+  // Set default tab based on user permissions (only once on mount)
   useEffect(() => {
-    if (user?.permissions) {
+    if (user?.permissions && !hasSetInitialTab.current) {
+      console.log('🔍 Setting initial tab based on permissions:', {
+        user: user?.username,
+        role: user?.role,
+        canViewTasks: user.permissions.canViewTasks,
+        canViewClients: user.permissions.canViewClients,
+      });
+      
       // If user can't view tasks but can view clients, default to clients
       if (!user.permissions.canViewTasks && user.permissions.canViewClients) {
         setActiveTab('clients');
@@ -129,15 +143,14 @@ export default function TaskApp() {
       else if (user.permissions.canViewTasks && !user.permissions.canViewClients) {
         setActiveTab('tasks');
       }
-      // If user can view both, keep current tab or default to tasks
+      // If user can view both, default to tasks
       else if (user.permissions.canViewTasks && user.permissions.canViewClients) {
-        // Keep current tab, or default to tasks if not set
-        if (activeTab !== 'tasks' && activeTab !== 'clients' && activeTab !== 'users') {
-          setActiveTab('tasks');
-        }
+        setActiveTab('tasks');
       }
+      
+      hasSetInitialTab.current = true;
     }
-  }, [user?.permissions, activeTab]);
+  }, [user?.permissions]);
 
   const handleLogout = async () => {
     await logout();
@@ -392,16 +405,27 @@ export default function TaskApp() {
           {/* Header */}
           <div className="p-6 border-b border-gray-200">
             <Logo />
-            <div className="mt-4 flex items-center gap-3">
-              <div className="w-8 h-8 bg-gray-900 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-medium">
-                  {user?.username?.charAt(0).toUpperCase()}
-                </span>
+            <div className="mt-4 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gray-900 rounded-full flex items-center justify-center">
+                  <span className="text-white text-sm font-medium">
+                    {user?.username?.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{user?.username}</p>
+                  <p className="text-xs text-gray-500 capitalize">{user?.role?.replace('_', ' ')}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-medium text-gray-900">{user?.username}</p>
-                <p className="text-xs text-gray-500 capitalize">{user?.role?.replace('_', ' ')}</p>
-              </div>
+              <button
+                onClick={handleLogout}
+                className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
+                title="Sign Out"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+              </button>
             </div>
           </div>
 
@@ -697,16 +721,6 @@ export default function TaskApp() {
               </div>
             )}
           </div>
-
-          {/* Logout */}
-          <div className="p-6 border-t border-gray-200">
-            <button
-              onClick={handleLogout}
-              className="w-full px-3 py-2 text-gray-700 hover:text-gray-900 border border-gray-300 hover:border-gray-400 rounded text-sm transition-colors"
-            >
-              Sign Out
-            </button>
-          </div>
         </div>
 
         {/* Main Content */}
@@ -763,6 +777,29 @@ export default function TaskApp() {
                     <span className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">
                       {clients.length}
                     </span>
+                  </div>
+                </button>
+              )}
+              
+              {/* Hosting Tab - Only show if user has client permissions */}
+              {user?.permissions?.canViewClients && (
+                <button
+                  onClick={() => {
+                    console.log('🖱️ Hosting tab clicked, setting activeTab to hosting');
+                    setActiveTab('hosting');
+                    setActiveClientTab(null);
+                  }}
+                  className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                    activeTab === 'hosting'
+                      ? 'border-green-500 text-green-600 bg-green-50'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
+                    </svg>
+                    Hosting
                   </div>
                 </button>
               )}
@@ -944,6 +981,11 @@ export default function TaskApp() {
                 onOpenClientTab={handleOpenClientTab}
                 onClientCreated={handleClientCreated}
               />
+            </div>
+          ) : activeTab === 'hosting' && user?.permissions?.canViewClients ? (
+            /* Hosting Content */
+            <div className="flex-1 bg-gray-50">
+              <HostingManagement />
             </div>
           ) : activeTab === 'users' && (user?.role === 'admin' || user?.permissions?.canManageUsers) ? (
             /* Users Content */

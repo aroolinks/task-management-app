@@ -73,6 +73,8 @@ export async function POST(
     const newNote = {
       title: title.trim(),
       content: content.trim(),
+      createdBy: user.username,
+      editedBy: user.username,
       createdAt: new Date(),
       updatedAt: new Date(),
     };

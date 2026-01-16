@@ -307,6 +307,16 @@ export default function ClientsList({ tasks, onOpenClientTab, onClientCreated }:
                               <p className="text-xs text-gray-600 font-mono leading-relaxed line-clamp-2">
                                 {note.content}
                               </p>
+                              {/* Show edit info if available */}
+                              {(note.createdBy || note.editedBy) && (
+                                <div className="mt-1 text-xs text-gray-400">
+                                  {note.editedBy && note.editedBy !== note.createdBy ? (
+                                    <span>Edited by {note.editedBy}</span>
+                                  ) : note.createdBy ? (
+                                    <span>By {note.createdBy}</span>
+                                  ) : null}
+                                </div>
+                              )}
                             </div>
                           ))}
                           {client.notes.length > 2 && (

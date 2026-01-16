@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Task } from '@/types/task';
 import { useClients, ClientNote } from '@/contexts/ClientContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ClientTabProps {
   clientName: string;
@@ -12,12 +13,22 @@ interface ClientTabProps {
 }
 
 export default function ClientTab({ clientName, tasks, onEditTask, onClose }: ClientTabProps) {
+  const { user } = useAuth();
   const { clients, addNote, updateNote, deleteNote, refreshClients } = useClients();
   const [showAddNoteForm, setShowAddNoteForm] = useState(false);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [noteTitle, setNoteTitle] = useState('');
   const [noteContent, setNoteContent] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
+
+  // Login details state - back to separate fields
+  const [showAddLoginForm, setShowAddLoginForm] = useState(false);
+  const [editingLoginId, setEditingLoginId] = useState<string | null>(null);
+  const [loginWebsite, setLoginWebsite] = useState('');
+  const [loginUrl, setLoginUrl] = useState('');
+  const [loginUsername, setLoginUsername] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginFormError, setLoginFormError] = useState<string | null>(null);
 
   // Find the client in the manual client system
   const client = useMemo(() => {
@@ -28,6 +39,24 @@ export default function ClientTab({ clientName, tasks, onEditTask, onClose }: Cl
   useEffect(() => {
     console.log('🔍 ClientTab - client data changed:', client);
   }, [client]);
+
+  // Handle escape key to close login modal only
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showAddLoginForm) {
+        setShowAddLoginForm(false);
+        setEditingLoginId(null);
+        setLoginWebsite('');
+        setLoginUrl('');
+        setLoginUsername('');
+        setLoginPassword('');
+        setLoginFormError(null);
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [showAddLoginForm]);
 
   // Get all notes for this client (from tasks - legacy support)
   const taskNotes = useMemo(() => {
@@ -132,6 +161,157 @@ export default function ClientTab({ clientName, tasks, onEditTask, onClose }: Cl
     }
   };
 
+  // Login Detail Functions - back to structured format but saving as notes
+  const handleAddLoginDetail = async () => {
+    if (!client) {
+      console.error('No client found');
+      return;
+    }
+    
+    console.log('Adding login detail for client:', client.id);
+    
+    const website = loginWebsite.trim();
+    const url = loginUrl.trim();
+    const username = loginUsername.trim();
+    const password = loginPassword.trim();
+    
+    if (!website || !url || !username || !password) {
+      setLoginFormError('All fields are required');
+      return;
+    }
+    
+    setLoginFormError(null);
+    
+    try {
+      // Format the login details as structured text
+      const title = website;
+      const content = `URL: ${url}\nUsername: ${username}\nPassword: ${password}`;
+      
+      // Use the addNote function to save as a note
+      const success = await addNote(client.id, { title, content });
+      
+      if (success) {
+        console.log('Login detail added successfully as note');
+        // Reset form and close modal
+        setLoginWebsite('');
+        setLoginUrl('');
+        setLoginUsername('');
+        setLoginPassword('');
+        setShowAddLoginForm(false);
+        setLoginFormError(null);
+        await refreshClients();
+      } else {
+        console.error('Failed to add login detail');
+        setLoginFormError('Failed to add login detail. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error adding login detail:', error);
+      setLoginFormError('An error occurred. Please try again.');
+    }
+  };
+
+  const handleEditLoginDetail = (note: ClientNote) => {
+    // Parse the note content back to individual fields
+    const lines = note.content.split('\n');
+    const urlLine = lines.find(line => line.startsWith('URL: '));
+    const usernameLine = lines.find(line => line.startsWith('Username: '));
+    const passwordLine = lines.find(line => line.startsWith('Password: '));
+    
+    setLoginWebsite(note.title);
+    setLoginUrl(urlLine ? urlLine.replace('URL: ', '') : '');
+    setLoginUsername(usernameLine ? usernameLine.replace('Username: ', '') : '');
+    setLoginPassword(passwordLine ? passwordLine.replace('Password: ', '') : '');
+    setEditingLoginId(note.id);
+    setShowAddLoginForm(true);
+    // Make sure note form is not shown
+    setShowAddNoteForm(false);
+  };
+
+  const handleUpdateLoginDetail = async () => {
+    if (!client || !editingLoginId) return;
+    
+    const website = loginWebsite.trim();
+    const url = loginUrl.trim();
+    const username = loginUsername.trim();
+    const password = loginPassword.trim();
+    
+    if (!website || !url || !username || !password) {
+      setLoginFormError('All fields are required');
+      return;
+    }
+    
+    setLoginFormError(null);
+    
+    try {
+      // Format the login details as structured text
+      const title = website;
+      const content = `URL: ${url}\nUsername: ${username}\nPassword: ${password}`;
+      
+      // Use the updateNote function to update the note
+      const success = await updateNote(client.id, editingLoginId, { title, content });
+      
+      if (success) {
+        // Reset form and close modal
+        setLoginWebsite('');
+        setLoginUrl('');
+        setLoginUsername('');
+        setLoginPassword('');
+        setEditingLoginId(null);
+        setShowAddLoginForm(false);
+        setLoginFormError(null);
+        await refreshClients();
+      } else {
+        setLoginFormError('Failed to update login detail. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error updating login detail:', error);
+      setLoginFormError('An error occurred. Please try again.');
+    }
+  };
+
+  const handleDeleteLoginDetail = async (noteId: string) => {
+    if (!client) return;
+    
+    if (!noteId || noteId === '' || noteId === 'undefined') {
+      console.error('❌ Invalid note ID:', noteId);
+      alert('Cannot delete login detail: Invalid note ID');
+      return;
+    }
+    
+    if (window.confirm('Are you sure you want to delete this login detail?')) {
+      const success = await deleteNote(client.id, noteId);
+      if (success) {
+        await refreshClients();
+      }
+    }
+  };
+
+  const copyToClipboard = async (text: string, type: string) => {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        console.log(`${type} copied to clipboard`);
+        // You could add a toast notification here
+      } else {
+        // Fallback for older browsers or non-secure contexts
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        console.log(`${type} copied to clipboard (fallback)`);
+      }
+    } catch (err) {
+      console.error('Failed to copy:', err);
+      alert(`Failed to copy ${type.toLowerCase()}. Please copy manually.`);
+    }
+  };
+
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', { 
       month: 'short', 
@@ -157,6 +337,14 @@ export default function ClientTab({ clientName, tasks, onEditTask, onClose }: Cl
             >
               Add Note
             </button>
+            {user?.permissions?.canEditClients && (
+              <button
+                onClick={() => setShowAddLoginForm(true)}
+                className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-medium transition-colors"
+              >
+                Add Login
+              </button>
+            )}
             <button
               onClick={onClose}
               className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-600 hover:text-gray-900 transition-colors"
@@ -172,7 +360,7 @@ export default function ClientTab({ clientName, tasks, onEditTask, onClose }: Cl
 
       {/* Content */}
       <div className="flex-1 p-6 overflow-y-auto">
-        {/* Add/Edit Note Form */}
+        {/* Add/Edit Note Form - Inline style */}
         {showAddNoteForm && (
           <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
@@ -231,6 +419,106 @@ export default function ClientTab({ clientName, tasks, onEditTask, onClose }: Cl
           </div>
         )}
 
+        {/* Add/Edit Login Details Modal - Back to structured form */}
+        {showAddLoginForm && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setShowAddLoginForm(false);
+                setEditingLoginId(null);
+                setLoginWebsite('');
+                setLoginUrl('');
+                setLoginUsername('');
+                setLoginPassword('');
+                setLoginFormError(null);
+              }
+            }}
+          >
+            <div className="bg-white rounded-lg border border-gray-200 p-6 w-full max-w-md mx-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                {editingLoginId ? 'Edit Login Detail' : 'Add New Login Detail'}
+              </h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Website Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={loginWebsite}
+                    onChange={(e) => setLoginWebsite(e.target.value)}
+                    placeholder="e.g., WordPress Admin"
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900 bg-white"
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Website URL *
+                  </label>
+                  <input
+                    type="url"
+                    value={loginUrl}
+                    onChange={(e) => setLoginUrl(e.target.value)}
+                    placeholder="https://example.com/wp-admin"
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900 bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Username *
+                  </label>
+                  <input
+                    type="text"
+                    value={loginUsername}
+                    onChange={(e) => setLoginUsername(e.target.value)}
+                    placeholder="admin"
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900 bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Password *
+                  </label>
+                  <input
+                    type="password"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-900 bg-white"
+                  />
+                </div>
+                {loginFormError && (
+                  <p className="text-red-600 text-sm">{loginFormError}</p>
+                )}
+                <div className="flex gap-3 pt-2">
+                  <button
+                    onClick={editingLoginId ? handleUpdateLoginDetail : handleAddLoginDetail}
+                    className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-medium transition-colors"
+                  >
+                    {editingLoginId ? 'Update Login' : 'Add Login'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowAddLoginForm(false);
+                      setEditingLoginId(null);
+                      setLoginWebsite('');
+                      setLoginUrl('');
+                      setLoginUsername('');
+                      setLoginPassword('');
+                      setLoginFormError(null);
+                    }}
+                    className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-sm font-medium transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Client Notes Section */}
         <div className="bg-white rounded-lg border border-gray-200 mb-6">
           <div className="px-6 py-4 border-b border-gray-200">
@@ -280,31 +568,125 @@ export default function ClientTab({ clientName, tasks, onEditTask, onClose }: Cl
                           {formatDate(note.updatedAt)}
                         </span>
                       </div>
+                      
+                      {/* Edit information */}
+                      <div className="flex items-center gap-4 mb-2 text-xs text-gray-500">
+                        {note.createdBy && (
+                          <span>Created by: <span className="font-medium">{note.createdBy}</span></span>
+                        )}
+                        {note.editedBy && note.editedBy !== note.createdBy && (
+                          <span>Last edited by: <span className="font-medium">{note.editedBy}</span></span>
+                        )}
+                      </div>
+                      
                       <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                        <pre className="text-sm text-gray-900 font-mono whitespace-pre-wrap leading-relaxed">
-                          {note.content}
-                        </pre>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1">
+                            {/* Check if this is a structured login detail */}
+                            {note.content.includes('URL: ') && note.content.includes('Username: ') && note.content.includes('Password: ') ? (
+                              <div className="space-y-2">
+                                {note.content.split('\n').map((line, index) => {
+                                  if (line.startsWith('URL: ')) {
+                                    const url = line.replace('URL: ', '');
+                                    return (
+                                      <div key={index} className="flex items-center gap-2">
+                                        <span className="text-xs font-medium text-gray-600 w-16">URL:</span>
+                                        <a 
+                                          href={url} 
+                                          target="_blank" 
+                                          rel="noopener noreferrer"
+                                          className="text-xs text-blue-600 hover:text-blue-700 underline flex-1 truncate font-mono"
+                                        >
+                                          {url}
+                                        </a>
+                                        <button
+                                          onClick={() => copyToClipboard(url, 'URL')}
+                                          className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded transition-colors"
+                                          title="Copy URL"
+                                        >
+                                          Copy
+                                        </button>
+                                      </div>
+                                    );
+                                  } else if (line.startsWith('Username: ')) {
+                                    const username = line.replace('Username: ', '');
+                                    return (
+                                      <div key={index} className="flex items-center gap-2">
+                                        <span className="text-xs font-medium text-gray-600 w-16">Username:</span>
+                                        <span className="text-xs text-gray-900 font-mono flex-1">{username}</span>
+                                        <button
+                                          onClick={() => copyToClipboard(username, 'Username')}
+                                          className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded transition-colors"
+                                          title="Copy Username"
+                                        >
+                                          Copy
+                                        </button>
+                                      </div>
+                                    );
+                                  } else if (line.startsWith('Password: ')) {
+                                    const password = line.replace('Password: ', '');
+                                    return (
+                                      <div key={index} className="flex items-center gap-2">
+                                        <span className="text-xs font-medium text-gray-600 w-16">Password:</span>
+                                        <span className="text-xs text-gray-900 font-mono flex-1">••••••••</span>
+                                        <button
+                                          onClick={() => copyToClipboard(password, 'Password')}
+                                          className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded transition-colors"
+                                          title="Copy Password"
+                                        >
+                                          Copy
+                                        </button>
+                                      </div>
+                                    );
+                                  }
+                                  return null;
+                                })}
+                              </div>
+                            ) : (
+                              <pre className="text-sm text-gray-900 font-mono whitespace-pre-wrap leading-relaxed">
+                                {note.content}
+                              </pre>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => copyToClipboard(note.content, 'Note content')}
+                            className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 rounded transition-colors flex-shrink-0"
+                            title="Copy all content"
+                          >
+                            Copy All
+                          </button>
+                        </div>
                       </div>
                     </div>
                     <div className="ml-4 flex items-center gap-2">
                       <button
-                        onClick={() => handleEditNote(note)}
+                        onClick={() => {
+                          // Check if this is a login detail (structured format)
+                          if (note.content.includes('URL: ') && note.content.includes('Username: ') && note.content.includes('Password: ')) {
+                            handleEditLoginDetail(note);
+                          } else {
+                            handleEditNote(note);
+                          }
+                        }}
                         className="px-3 py-1.5 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors text-sm"
                         title="Edit note"
                       >
                         Edit
                       </button>
-                      <button
-                        onClick={() => {
-                          console.log('🗑️ Note object:', note);
-                          console.log('🗑️ Note ID:', note.id);
-                          handleDeleteNote(note.id);
-                        }}
-                        className="px-3 py-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors text-sm"
-                        title="Delete note"
-                      >
-                        Delete
-                      </button>
+                      {/* Only show delete button for admins */}
+                      {user?.role === 'admin' && (
+                        <button
+                          onClick={() => {
+                            console.log('🗑️ Note object:', note);
+                            console.log('🗑️ Note ID:', note.id);
+                            handleDeleteNote(note.id);
+                          }}
+                          className="px-3 py-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors text-sm"
+                          title="Delete note (Admin only)"
+                        >
+                          Delete
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>

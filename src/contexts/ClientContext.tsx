@@ -26,4 +26,5 @@ export function useClients() {
 }
 
 // Re-export types
-export type { Client, ClientNote, ClientInput, NoteInput };
+export type { Client, ClientNote, ClientInput, NoteInput } from '@/hooks/useClients';
+export type { ClientLoginDetail, LoginDetailInput } from '@/hooks/useClients';
