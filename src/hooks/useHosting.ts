@@ -59,7 +59,27 @@ export function useHosting() {
       const data = await response.json();
       
       if (data.success && Array.isArray(data.data)) {
-        const formattedServices = data.data.map((service: any) => ({
+        const formattedServices = data.data.map((service: {
+          _id: string;
+          clientName: string;
+          websiteName: string;
+          websiteUrl: string;
+          hostingProvider: string;
+          packageType: string;
+          cost: number;
+          currency: string;
+          billingCycle: string;
+          startDate: string;
+          endDate: string;
+          autoRenew: boolean;
+          status: 'active' | 'expired' | 'expiring_soon';
+          contactEmail: string;
+          notes?: string;
+          createdBy?: string;
+          updatedBy?: string;
+          createdAt: string;
+          updatedAt: string;
+        }) => ({
           ...service,
           startDate: new Date(service.startDate),
           endDate: new Date(service.endDate),

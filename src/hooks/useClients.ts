@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { IClient, IClientNote } from '@/models/Client';
+import { IClient, IClientNote, IClientLoginDetail } from '@/models/Client';
 
 export interface ClientLoginDetail {
   id: string;
@@ -91,7 +91,7 @@ export function useClients() {
               }))
             : [], // Fallback to empty array if notes is not an array
           loginDetails: Array.isArray(client.loginDetails) 
-            ? client.loginDetails.map((login: any) => ({
+            ? client.loginDetails.map((login: IClientLoginDetail) => ({
                 id: login._id || '',
                 website: login.website,
                 url: login.url,
@@ -153,7 +153,7 @@ export function useClients() {
               }))
             : [], // Fallback to empty array for new clients
           loginDetails: Array.isArray(data.data.loginDetails) 
-            ? data.data.loginDetails.map((login: any) => ({
+            ? data.data.loginDetails.map((login: IClientLoginDetail) => ({
                 id: login._id || '',
                 website: login.website,
                 url: login.url,
@@ -218,7 +218,7 @@ export function useClients() {
             updatedAt: new Date(note.updatedAt),
           })),
           loginDetails: Array.isArray(data.data.loginDetails) 
-            ? data.data.loginDetails.map((login: any) => ({
+            ? data.data.loginDetails.map((login: IClientLoginDetail) => ({
                 id: login._id || '',
                 website: login.website,
                 url: login.url,

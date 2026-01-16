@@ -72,31 +72,32 @@ export async function sendExpiryNotification(params: EmailParams): Promise<boole
       console.error('❌ Failed to send email. Status:', response.status);
       return false;
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ Error sending email:', error);
     console.error('Error details:', {
-      message: error.message,
-      text: error.text,
-      status: error.status,
-      name: error.name,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      text: (error as { text?: string }).text,
+      status: (error as { status?: number }).status,
+      name: error instanceof Error ? error.name : 'Unknown',
       fullError: JSON.stringify(error),
     });
     
     let errorMessage = 'Unknown error';
-    if (error.text) {
-      errorMessage = error.text;
-    } else if (error.message) {
+    if ((error as { text?: string }).text) {
+      errorMessage = (error as { text: string }).text;
+    } else if (error instanceof Error && error.message) {
       errorMessage = error.message;
     }
     
     // Common EmailJS errors
-    if (error.status === 400) {
+    const status = (error as { status?: number }).status;
+    if (status === 400) {
       errorMessage = 'Bad Request - Check template variables';
-    } else if (error.status === 401) {
+    } else if (status === 401) {
       errorMessage = 'Unauthorized - Check your Public Key';
-    } else if (error.status === 404) {
+    } else if (status === 404) {
       errorMessage = 'Template or Service not found - Check IDs';
-    } else if (error.status === 412) {
+    } else if (status === 412) {
       errorMessage = 'Template not found or disabled';
     }
     

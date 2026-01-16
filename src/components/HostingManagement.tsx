@@ -63,7 +63,7 @@ export default function HostingManagement() {
       expiry_date: formatDate(service.endDate),
       days_remaining: Math.abs(days),
       yearly_price: service.cost,
-      status: isExpired ? 'expired' : 'expiring',
+      status: (isExpired ? 'expired' : 'expiring') as 'expired' | 'expiring',
     });
 
     setSendingEmail(null);
@@ -94,7 +94,7 @@ export default function HostingManagement() {
         expiry_date: formatDate(service.endDate),
         days_remaining: Math.abs(days),
         yearly_price: service.cost,
-        status: type,
+        status: type as 'expired' | 'expiring',
       };
     });
 
