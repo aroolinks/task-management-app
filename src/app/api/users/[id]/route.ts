@@ -56,7 +56,8 @@ export async function PUT(
     });
     
     // Don't allow updating password through this endpoint for security
-    // Create a separate password reset endpoint if needed
+    // Password updates are handled through the reset-password endpoint
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...safeUpdates } = updates;
     
     // Validate role if provided
@@ -99,12 +100,13 @@ export async function PUT(
         updatedAt: user.updatedAt
       }
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Update user error:', error);
     
     // Handle duplicate key error (username or email already exists)
-    if (error.code === 11000) {
-      const field = Object.keys(error.keyPattern || {})[0];
+    if (error && typeof error === 'object' && 'code' in error && error.code === 11000) {
+      const keyPattern = 'keyPattern' in error ? error.keyPattern as Record<string, unknown> : {};
+      const field = Object.keys(keyPattern)[0];
       return NextResponse.json(
         { success: false, error: `${field === 'username' ? 'Username' : 'Email'} already exists` },
         { status: 400 }
@@ -112,7 +114,7 @@ export async function PUT(
     }
     
     return NextResponse.json(
-      { success: false, error: error.message || 'Internal server error' },
+      { success: false, error: error instanceof Error ? error.message : 'Internal server error' },
       { status: 500 }
     );
   }

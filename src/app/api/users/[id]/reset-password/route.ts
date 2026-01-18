@@ -88,10 +88,10 @@ export async function POST(
       success: true,
       message: `Password reset successfully for ${user.username}`
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Reset password error:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Internal server error' },
+      { success: false, error: error instanceof Error ? error.message : 'Internal server error' },
       { status: 500 }
     );
   }

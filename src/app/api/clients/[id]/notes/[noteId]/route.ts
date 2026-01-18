@@ -147,11 +147,11 @@ export async function DELETE(
       clientId: id,
       taskId: noteId,
       totalTasks: client.tasks.length,
-      taskIds: client.tasks.map((t: any) => t._id?.toString())
+      taskIds: client.tasks.map((t: { _id?: { toString: () => string } }) => t._id?.toString())
     });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const noteIndex = client.tasks.findIndex((note: any) => note._id?.toString() === noteId);
+    const noteIndex = client.tasks.findIndex((note: { _id?: { toString: () => string } }) => note._id?.toString() === noteId);
     
     console.log('🗑️ DELETE: Task index:', noteIndex);
     

@@ -79,6 +79,7 @@ export default function HostingManagement() {
     setTimeout(() => setEmailStatus(null), 5000);
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleSendBulkEmails = async (type: 'expiring' | 'expired') => {
     setSendingEmail('bulk');
     setEmailStatus(null);

@@ -88,7 +88,10 @@ export async function POST(
     const savedClient = await Client.findById(id);
     const createdNote = savedClient?.tasks[savedClient.tasks.length - 1];
     
-    console.log('API: Note saved:', { noteId: (createdNote as any)?._id, assignedTo: (createdNote as any)?.assignedTo });
+    console.log('API: Note saved:', { 
+      noteId: createdNote?._id, 
+      assignedTo: (createdNote as { assignedTo?: string })?. assignedTo 
+    });
     
     return NextResponse.json({ 
       success: true, 

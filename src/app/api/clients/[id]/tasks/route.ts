@@ -88,7 +88,10 @@ export async function POST(
     const savedClient = await Client.findById(id);
     const createdTask = savedClient?.tasks[savedClient.tasks.length - 1];
     
-    console.log('API: Task saved:', { taskId: (createdTask as any)?._id, assignedTo: (createdTask as any)?.assignedTo });
+    console.log('API: Task saved:', { 
+      taskId: createdTask?._id, 
+      assignedTo: (createdTask as { assignedTo?: string })?.assignedTo 
+    });
     
     return NextResponse.json({ 
       success: true, 

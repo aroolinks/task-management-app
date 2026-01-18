@@ -530,7 +530,7 @@ export default function ClientTab({ clientName, tasks, onEditTask, onClose }: Cl
                 <label className="text-sm font-medium text-gray-700">Filter by Status:</label>
                 <select
                   value={taskFilter}
-                  onChange={(e) => setTaskFilter(e.target.value as any)}
+                  onChange={(e) => setTaskFilter(e.target.value as 'all' | 'in-progress' | 'completed' | 'assigned')}
                   className="px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
                 >
                   <option value="all">All Tasks ({regularTasks.length})</option>

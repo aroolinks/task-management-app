@@ -31,17 +31,6 @@ export default function ClientsList({ tasks, onOpenClientTab, onClientCreated }:
     );
   }, [clients, searchTerm]);
 
-  // Get task counts for each client
-  const clientTaskCounts = useMemo(() => {
-    const counts: { [clientName: string]: number } = {};
-    tasks.forEach(task => {
-      if (task.clientName) {
-        counts[task.clientName] = (counts[task.clientName] || 0) + 1;
-      }
-    });
-    return counts;
-  }, [tasks]);
-
   const handleAddClient = async () => {
     const name = newClientName.trim();
     if (!name) {
