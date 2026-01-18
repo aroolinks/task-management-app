@@ -30,7 +30,7 @@ export function AssigneeProvider({ children }: { children: React.ReactNode }) {
       const result = await response.json();
       if (result.success) {
         // Extract usernames from users for assignment dropdown
-        const usernames = result.users.map((user: any) => user.username);
+        const usernames = result.users.map((user: { username: string }) => user.username);
         setAssignees(usernames || []);
         setError(null);
       } else {

@@ -111,7 +111,7 @@ HostingServiceSchema.pre('save', function(next) {
 
 // Also handle findOneAndUpdate (used by findByIdAndUpdate)
 HostingServiceSchema.pre('findOneAndUpdate', function(next) {
-  const update = this.getUpdate() as any;
+  const update = this.getUpdate() as { endDate?: Date; $set?: { status?: string } };
   
   if (update.endDate) {
     const now = new Date();

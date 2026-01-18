@@ -31,7 +31,7 @@ export const fetchTeamMembers = async (): Promise<string[]> => {
     const data = await response.json();
     
     if (data.success && Array.isArray(data.users)) {
-      const members = data.users.map((u: any) => u.username).filter(Boolean);
+      const members = data.users.map((u: { username: string }) => u.username).filter(Boolean);
       console.log('✅ Team members loaded:', members);
       return members;
     } else {
