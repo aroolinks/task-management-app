@@ -10,7 +10,7 @@ interface ClientsListProps {
   onClientCreated?: (client: Client) => void;
 }
 
-export default function ClientsList({ tasks, onOpenClientTab, onClientCreated }: ClientsListProps) {
+export default function ClientsList({ tasks: _tasks, onOpenClientTab, onClientCreated }: ClientsListProps) {
   const { clients, loading, error, createClient, updateClient, deleteClient, refreshClients } = useClients();
   const [showAddForm, setShowAddForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState<string | null>(null);

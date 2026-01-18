@@ -480,10 +480,10 @@ export default function ClientTab({ clientName, tasks, onEditTask, onClose }: Cl
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-lg font-semibold text-gray-900">
-              {activeSubTab === 'notes' ? 'Client Tasks' : 'Login Details'}
+              {activeSubTab === 'tasks' ? 'Client Tasks' : 'Login Details'}
             </h2>
             <p className="text-sm text-gray-600 mt-1">
-              {activeSubTab === 'notes' 
+              {activeSubTab === 'tasks' 
                 ? 'Manage tasks, project information, and client work items'
                 : 'Website logins, admin credentials, and access information'
               }
