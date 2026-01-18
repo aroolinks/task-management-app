@@ -307,8 +307,8 @@ export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps)
                   {assigneesLoading 
                     ? 'Loading assignees...' 
                     : selectedAssignees.length === 0 
-                      ? 'Select team members...' 
-                      : `${selectedAssignees.length} member${selectedAssignees.length !== 1 ? 's' : ''} selected`
+                      ? 'Select users...' 
+                      : `${selectedAssignees.length} user${selectedAssignees.length !== 1 ? 's' : ''} selected`
                   }
                 </span>
                 <svg className={`h-4 w-4 text-slate-400 transition-transform ${showAssigneesModal ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -321,13 +321,13 @@ export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps)
                 <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-slate-800 border border-slate-600 rounded-md shadow-lg max-h-60 overflow-y-auto">
                   {assignees.length === 0 ? (
                     <div className="p-4 text-center text-slate-400 text-sm">
-                      No team members available. Add them in the sidebar first.
+                      No users available. Add them in the User Management tab first.
                     </div>
                   ) : (
                     <>
                       {/* Quick Actions */}
                       <div className="flex items-center justify-between p-2 border-b border-slate-700 bg-slate-750">
-                        <span className="text-xs text-slate-400 font-medium">Select Members</span>
+                        <span className="text-xs text-slate-400 font-medium">Select Users</span>
                         <div className="flex gap-1">
                           <button
                             type="button"
@@ -374,7 +374,7 @@ export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps)
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="font-medium text-sm">{assignee}</div>
-                              <div className="text-xs text-slate-500">Team Member</div>
+                              <div className="text-xs text-slate-500">User</div>
                             </div>
                             <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
                               isSelected 
@@ -444,7 +444,7 @@ export default function AddTask({ onAddTask, isVisible, onClose }: AddTaskProps)
                 onClick={() => setShowCustomAssignee(!showCustomAssignee)}
                 className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
               >
-                {showCustomAssignee ? 'Cancel' : '+ Add New Team Member'}
+                {showCustomAssignee ? 'Cancel' : '+ Add New User'}
               </button>
             </div>
           </div>

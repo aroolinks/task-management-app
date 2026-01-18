@@ -452,7 +452,7 @@ export default function TaskApp() {
 
                 {/* All Clients */}
                 <button
-                  key={`all-clients-${clients.length}-${clients.map(c => c.notes.length).join('-')}`}
+                  key={`all-clients-${clients.length}-${clients.map(c => c.tasks?.length || 0).join('-')}`}
                   onClick={async () => {
                     setActiveTab('clients');
                     setActiveClientTab(null);
@@ -475,14 +475,14 @@ export default function TaskApp() {
                 </button>
 
                 {/* Individual Clients */}
-                <div className="space-y-1" key={`clients-${clients.length}-${clients.map(c => c.notes.length).join('-')}`}>
+                <div className="space-y-1" key={`clients-${clients.length}-${clients.map(c => c.tasks?.length || 0).join('-')}`}>
                   {clients.map((client) => {
-                    const noteCount = Array.isArray(client.notes) ? client.notes.length : 0;
-                    const notesIndicator = noteCount > 0 ? '📝' : '';
+                    const taskCount = Array.isArray(client.tasks) ? client.tasks.length : 0;
+                    const tasksIndicator = taskCount > 0 ? '📝' : '';
                     
                     return (
                       <button
-                        key={`${client.id}-${noteCount}`}
+                        key={`${client.id}-${taskCount}`}
                         onClick={() => handleOpenClientTab(client.name)}
                         className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
                           activeClientTab === client.name
@@ -494,11 +494,11 @@ export default function TaskApp() {
                           <span className="truncate">{client.name}</span>
                           <div className="flex items-center gap-1">
                             <span className="text-xs px-2 py-1 bg-gray-200 text-gray-600 rounded">
-                              {noteCount}
+                              {taskCount}
                             </span>
-                            {notesIndicator && (
-                              <span className="text-xs px-1.5 py-0.5 bg-green-200 text-green-700 rounded" title={`${noteCount} notes`}>
-                                {notesIndicator}
+                            {tasksIndicator && (
+                              <span className="text-xs px-1.5 py-0.5 bg-green-200 text-green-700 rounded" title={`${taskCount} tasks`}>
+                                {tasksIndicator}
                               </span>
                             )}
                           </div>
@@ -606,15 +606,15 @@ export default function TaskApp() {
               </div>
             ) : null}
 
-            {/* Team Section - Only show in tasks tab and if user has task permissions */}
+            {/* Users Section - Only show in tasks tab and if user has task permissions */}
             {activeTab === 'tasks' && !activeClientTab && user?.permissions?.canViewTasks && (
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-sm font-semibold text-gray-900">Team</h2>
+                  <h2 className="text-sm font-semibold text-gray-900">Users</h2>
                   <button
                     onClick={() => setShowAssigneeForm(true)}
                     className="w-6 h-6 bg-gray-100 hover:bg-gray-200 rounded flex items-center justify-center text-gray-600 hover:text-gray-900 transition-colors"
-                    title="Add team member"
+                    title="Add user"
                   >
                     <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -622,7 +622,7 @@ export default function TaskApp() {
                   </button>
                 </div>
 
-                {/* All Team */}
+                {/* All Users */}
                 <button
                   onClick={() => {
                     setSelectedGroup('all');
@@ -635,14 +635,14 @@ export default function TaskApp() {
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span>All Team</span>
+                    <span>All Users</span>
                     <span className="text-xs px-2 py-1 bg-gray-200 text-gray-600 rounded">
                       {assignees.length}
                     </span>
                   </div>
                 </button>
 
-                {/* Individual Team Members */}
+                {/* Individual Users */}
                 <div className="space-y-1">
                   {assignees.map((assignee) => {
                     const assigneeTasks = assigneesWithTasks[assignee] || [];
@@ -688,14 +688,14 @@ export default function TaskApp() {
                   })}
                 </div>
 
-                {/* Add Team Member Form */}
+                {/* Add User Form */}
                 {showAssigneeForm && (
                   <div ref={assigneeFormRef} className="mt-3 p-3 bg-white border border-gray-200 rounded">
                     <input
                       type="text"
                       value={newAssigneeName}
                       onChange={(e) => setNewAssigneeName(e.target.value)}
-                      placeholder="Team member name"
+                      placeholder="User name"
                       className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent text-gray-900 bg-white"
                       autoFocus
                     />
@@ -745,7 +745,7 @@ export default function TaskApp() {
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                     </svg>
-                    Tasks
+                    Projects
                     <span className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">
                       {filteredTasks.length}
                     </span>
@@ -878,20 +878,22 @@ export default function TaskApp() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <h1 className="text-xl font-semibold text-gray-900">
-                      {selectedGroup === 'all' ? 'All Tasks' : selectedGroup}
+                      {selectedGroup === 'all' ? 'All Projects' : selectedGroup}
                       <span className="text-base font-normal text-gray-500 ml-3">• {selectedYear}</span>
                     </h1>
                     <div className="flex items-center gap-2">
                       <span className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">
                         {filteredTasks.length} tasks
                       </span>
-                      <button
-                        onClick={() => setShowYearEarnings(!showYearEarnings)}
-                        className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-900 rounded transition-colors"
-                        title={showYearEarnings ? 'Hide yearly earnings' : 'Show yearly earnings'}
-                      >
-                        £{showYearEarnings ? yearTotalEarnings.toFixed(2) : '••••'}
-                      </button>
+                      {user?.role === 'admin' && (
+                        <button
+                          onClick={() => setShowYearEarnings(!showYearEarnings)}
+                          className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-900 rounded transition-colors"
+                          title={showYearEarnings ? 'Hide yearly earnings' : 'Show yearly earnings'}
+                        >
+                          £{showYearEarnings ? yearTotalEarnings.toFixed(2) : '••••'}
+                        </button>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -1022,13 +1024,13 @@ export default function TaskApp() {
                 </svg>
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">Remove Team Member</h3>
+                <h3 className="text-lg font-semibold text-gray-900">Remove User</h3>
                 <p className="text-sm text-gray-600">This action cannot be undone</p>
               </div>
             </div>
             
             <p className="text-gray-700 mb-6">
-              Are you sure you want to remove <strong>{assigneeToDelete}</strong> from the team? 
+              Are you sure you want to remove <strong>{assigneeToDelete}</strong> from the users? 
               They will be removed from the database but will remain assigned to existing tasks.
             </p>
             
@@ -1043,7 +1045,7 @@ export default function TaskApp() {
                 onClick={confirmRemoveAssignee}
                 className="px-4 py-2 text-white bg-red-600 hover:bg-red-700 rounded transition-colors"
               >
-                Remove Member
+                Remove User
               </button>
             </div>
           </div>

@@ -1,43 +1,23 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
-import Assignee from '@/models/Assignee';
-import Task from '@/models/Task';
+import User from '@/models/User';
 
 export async function GET() {
   try {
     await dbConnect();
     
-    // Get all assignees from the Assignee collection
-    const assignees = await Assignee.find({}).sort({ name: 1 });
-    const assigneeNames = assignees.map(a => a.name);
-    
-    // Also get any assignees from tasks that might not be in the Assignee collection yet
-    // Use aggregate to flatten the assignees array and get distinct values
-    const taskAssignees = await Task.aggregate([
-      { $unwind: '$assignees' },
-      { $match: { assignees: { $nin: [null, ''] } } },
-      { $group: { _id: '$assignees' } },
-      { $project: { _id: 0, name: '$_id' } }
-    ]);
-    
-    const taskAssigneeNames = taskAssignees.map(item => item.name);
-    
-    // Merge and deduplicate
-    const allAssignees = Array.from(new Set([...assigneeNames, ...taskAssigneeNames]));
-    
-    // Sort alphabetically
-    const sortedAssignees = allAssignees.sort((a: string, b: string) => 
-      a.localeCompare(b, undefined, { sensitivity: 'base' })
-    );
+    // Get all users for assignment dropdown
+    const users = await User.find({}, { username: 1 }).sort({ username: 1 });
+    const usernames = users.map(u => u.username);
     
     return NextResponse.json({ 
       success: true, 
-      data: sortedAssignees 
+      data: usernames 
     });
   } catch (error) {
-    console.error('Error fetching assignees:', error);
+    console.error('Error fetching users for assignments:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch assignees' },
+      { success: false, error: 'Failed to fetch users' },
       { status: 500 }
     );
   }
@@ -65,37 +45,42 @@ export async function POST(request: Request) {
       );
     }
     
-    if (trimmedName.length > 50) {
-      return NextResponse.json(
-        { success: false, error: 'Name is too long' },
-        { status: 400 }
-      );
-    }
-    
-    // Check if assignee already exists (case-insensitive)
-    const existingAssignee = await Assignee.findOne({ 
-      name: { $regex: new RegExp(`^${trimmedName}$`, 'i') } 
+    // Check if user already exists (case-insensitive)
+    const existingUser = await User.findOne({ 
+      username: { $regex: new RegExp(`^${trimmedName}$`, 'i') } 
     });
     
-    if (existingAssignee) {
+    if (existingUser) {
       return NextResponse.json(
-        { success: false, error: 'Assignee already exists' },
+        { success: false, error: 'User already exists' },
         { status: 409 }
       );
     }
     
-    // Create new assignee
-    const assignee = new Assignee({ name: trimmedName });
-    await assignee.save();
+    // Create new user with basic team member permissions
+    const user = new User({ 
+      username: trimmedName,
+      email: `${trimmedName.toLowerCase()}@company.com`, // Default email
+      password: 'defaultpassword123', // Default password - should be changed
+      role: 'team_member',
+      permissions: {
+        canViewTasks: true,
+        canEditTasks: true,
+        canViewClients: true,
+        canEditClients: true,
+        canManageUsers: false
+      }
+    });
+    await user.save();
     
     return NextResponse.json({ 
       success: true, 
-      data: { _id: assignee._id, name: assignee.name } 
+      data: { _id: user._id, name: user.username } 
     });
   } catch (error) {
-    console.error('Error creating assignee:', error);
+    console.error('Error creating user:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to create assignee' },
+      { success: false, error: 'Failed to create user' },
       { status: 500 }
     );
   }
@@ -108,7 +93,7 @@ export async function DELETE(request: Request) {
     
     const { searchParams } = new URL(request.url);
     const name = searchParams.get('name');
-    console.log('👤 Attempting to delete assignee:', name);
+    console.log('👤 Attempting to delete user:', name);
     
     if (!name) {
       console.log('❌ No name provided');
@@ -118,19 +103,16 @@ export async function DELETE(request: Request) {
       );
     }
     
-    // Remove from Assignee collection
-    const deleteResult = await Assignee.deleteOne({ name });
+    // Remove user by username
+    const deleteResult = await User.deleteOne({ username: name });
     console.log('🗄️ Delete result:', deleteResult);
     
-    // Note: We don't remove from tasks as that would unassign them from existing tasks
-    // The UI should handle this by asking the user what to do with existing assignments
-    
-    console.log('✅ Successfully deleted assignee');
+    console.log('✅ Successfully deleted user');
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('❌ Error deleting assignee:', error);
+    console.error('❌ Error deleting user:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to delete assignee' },
+      { success: false, error: 'Failed to delete user' },
       { status: 500 }
     );
   }

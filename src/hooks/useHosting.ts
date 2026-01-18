@@ -79,13 +79,27 @@ export function useHosting() {
           updatedBy?: string;
           createdAt: string;
           updatedAt: string;
-        }) => ({
-          ...service,
-          startDate: new Date(service.startDate),
-          endDate: new Date(service.endDate),
-          createdAt: new Date(service.createdAt),
-          updatedAt: new Date(service.updatedAt),
-        }));
+        }) => {
+          const formatted = {
+            ...service,
+            startDate: new Date(service.startDate),
+            endDate: new Date(service.endDate),
+            createdAt: new Date(service.createdAt),
+            updatedAt: new Date(service.updatedAt),
+          };
+          
+          // Debug log for MetaLogics
+          if (service.websiteName === 'MetaLogics') {
+            console.log('MetaLogics service data:', {
+              raw_endDate: service.endDate,
+              parsed_endDate: formatted.endDate,
+              endDate_string: formatted.endDate.toISOString(),
+              endDate_local: formatted.endDate.toLocaleDateString(),
+            });
+          }
+          
+          return formatted;
+        });
         
         setHostingServices(formattedServices);
       } else {

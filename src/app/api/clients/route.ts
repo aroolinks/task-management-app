@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
 
     const client = new Client({
       name: name.trim(),
-      notes: []
+      tasks: []
     });
 
     await client.save();

@@ -1,7 +1,6 @@
 export type Priority = 'Low' | 'Medium' | 'High' | 'Urgent';
 export type Status = 'Completed' | 'InProcess' | 'Waiting for Quote';
 export type CMS = 'Wordpress' | 'Shopify' | 'Designing' | 'SEO' | 'Marketing';
-export type Assignee = 'Haroon' | 'Sameed' | 'Bilal' | 'Abubakar' | 'Awais';
 
 export interface Task {
   id: string;
@@ -22,7 +21,7 @@ export interface Task {
   deposit: number | null;
   invoiced: boolean; // New field for tracking invoice status
   paid: boolean; // New field for tracking payment status
-  assignees: string[]; // Support multiple team members per task
+  assignees: string[]; // Support multiple team members per task (usernames)
   notes: string; // New field for client notes, logins, passwords, etc.
 }
 

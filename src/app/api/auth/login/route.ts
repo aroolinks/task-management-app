@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import { SignJWT } from 'jose';
+import bcrypt from 'bcryptjs';
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'your-secret-key');
 
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
         { username: username },
         { email: username }
       ]
-    }).select('+email +role +permissions');
+    }).select('+password +email +role +permissions');
     
     console.log('🔍 Login: Found user:', {
       exists: !!user,
@@ -44,9 +45,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // For now, doing simple password comparison
-    // In production, you should use bcrypt to hash passwords
-    if (user.password !== password) {
+    // Compare password using bcrypt
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    
+    if (!isPasswordValid) {
+      console.log('❌ Login: Invalid password for user:', user.username);
       return NextResponse.json(
         { success: false, error: 'Invalid credentials' },
         { status: 401 }

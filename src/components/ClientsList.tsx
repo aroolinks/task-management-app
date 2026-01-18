@@ -24,9 +24,9 @@ export default function ClientsList({ tasks, onOpenClientTab, onClientCreated }:
     if (!searchTerm.trim()) return clients;
     return clients.filter(client =>
       client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (Array.isArray(client.notes) && client.notes.some(note => 
-        note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        note.content.toLowerCase().includes(searchTerm.toLowerCase())
+      (Array.isArray(client.tasks) && client.tasks.some(task => 
+        task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        task.content.toLowerCase().includes(searchTerm.toLowerCase())
       ))
     );
   }, [clients, searchTerm]);
@@ -222,12 +222,28 @@ export default function ClientsList({ tasks, onOpenClientTab, onClientCreated }:
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredClients.map((client) => {
-            const taskCount = clientTaskCounts[client.name] || 0;
+            // Count regular tasks (non-login tasks)
+            const regularTaskCount = Array.isArray(client.tasks) 
+              ? client.tasks.filter(task => 
+                  !(task.content.includes('URL: ') && 
+                    task.content.includes('Username: ') && 
+                    task.content.includes('Password: '))
+                ).length 
+              : 0;
+            
             const isEditing = showEditForm === client.id;
-            const noteCount = Array.isArray(client.notes) ? client.notes.length : 0;
+            
+            // Count login details (tasks that contain login information)
+            const loginCount = Array.isArray(client.tasks) 
+              ? client.tasks.filter(task => 
+                  task.content.includes('URL: ') && 
+                  task.content.includes('Username: ') && 
+                  task.content.includes('Password: ')
+                ).length 
+              : 0;
             
             return (
-              <div key={`${client.id}-${noteCount}-${client.updatedAt.getTime()}`} className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
+              <div key={`${client.id}-${regularTaskCount}-${loginCount}-${client.updatedAt.getTime()}`} className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
                 {isEditing ? (
                   /* Edit Form */
                   <div className="p-4">
@@ -284,57 +300,41 @@ export default function ClientsList({ tasks, onOpenClientTab, onClientCreated }:
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="px-2 py-1 text-xs bg-white text-blue-800 rounded-full border border-blue-200 font-medium">
-                          {taskCount} task{taskCount !== 1 ? 's' : ''}
+                          {regularTaskCount} task{regularTaskCount !== 1 ? 's' : ''}
                         </span>
-                        {(Array.isArray(client.notes) && client.notes.length > 0) && (
+                        {loginCount > 0 && (
                           <span className="px-2 py-1 text-xs bg-white text-green-800 rounded-full border border-green-200 font-medium">
-                            {client.notes.length} note{client.notes.length !== 1 ? 's' : ''}
+                            {loginCount} login{loginCount !== 1 ? 's' : ''}
                           </span>
                         )}
                       </div>
                     </div>
 
-                    {/* Client Notes Preview */}
+                    {/* Client Info Preview */}
                     <div className="px-4 py-3 flex-1 bg-white">
-                      {(Array.isArray(client.notes) && client.notes.length > 0) ? (
-                        <div className="space-y-2">
-                          <h4 className="text-xs font-semibold text-gray-700 mb-2">Recent Notes</h4>
-                          {client.notes.slice(0, 2).map((note, noteIndex) => (
-                            <div key={`${client.id}-note-${note.id || noteIndex}`} className="bg-gray-50 p-2 rounded border border-gray-200">
-                              <div className="flex items-start justify-between mb-1">
-                                <h5 className="text-xs font-medium text-gray-900 line-clamp-1">{note.title}</h5>
-                              </div>
-                              <p className="text-xs text-gray-600 font-mono leading-relaxed line-clamp-2">
-                                {note.content}
-                              </p>
-                              {/* Show edit info if available */}
-                              {(note.createdBy || note.editedBy) && (
-                                <div className="mt-1 text-xs text-gray-400">
-                                  {note.editedBy && note.editedBy !== note.createdBy ? (
-                                    <span>Edited by {note.editedBy}</span>
-                                  ) : note.createdBy ? (
-                                    <span>By {note.createdBy}</span>
-                                  ) : null}
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                          {client.notes.length > 2 && (
-                            <p className="text-xs text-gray-500 text-center pt-1">
-                              +{client.notes.length - 2} more
-                            </p>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="text-center py-4">
-                          <div className="w-8 h-8 mx-auto mb-2 bg-gray-100 rounded-full flex items-center justify-center">
-                            <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      <div className="space-y-3">
+                        {/* Tasks Info */}
+                        <div className="flex items-center justify-between p-2 bg-blue-50 rounded border border-blue-100">
+                          <div className="flex items-center gap-2">
+                            <svg className="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                             </svg>
+                            <span className="text-xs font-medium text-gray-700">Tasks</span>
                           </div>
-                          <p className="text-gray-500 text-xs">No notes yet</p>
+                          <span className="text-sm font-bold text-blue-600">{regularTaskCount}</span>
                         </div>
-                      )}
+
+                        {/* Web Logins Info */}
+                        <div className="flex items-center justify-between p-2 bg-green-50 rounded border border-green-100">
+                          <div className="flex items-center gap-2">
+                            <svg className="h-4 w-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-6 6c-3 0-5.197-1.756-6-4M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                            </svg>
+                            <span className="text-xs font-medium text-gray-700">Web Logins</span>
+                          </div>
+                          <span className="text-sm font-bold text-green-600">{loginCount}</span>
+                        </div>
+                      </div>
                     </div>
 
                     {/* Action Buttons */}

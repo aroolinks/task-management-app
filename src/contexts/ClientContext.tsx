@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext } from 'react';
-import { useClients as useClientsHook, Client, ClientNote, ClientInput, NoteInput } from '@/hooks/useClients';
+import { useClients as useClientsHook, Client, ClientTask, ClientInput, TaskInput } from '@/hooks/useClients';
 
 type ClientContextType = ReturnType<typeof useClientsHook>;
 
@@ -26,5 +26,5 @@ export function useClients() {
 }
 
 // Re-export types
-export type { Client, ClientNote, ClientInput, NoteInput } from '@/hooks/useClients';
+export type { Client, ClientTask, ClientInput, TaskInput } from '@/hooks/useClients';
 export type { ClientLoginDetail, LoginDetailInput } from '@/hooks/useClients';

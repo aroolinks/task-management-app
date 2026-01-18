@@ -16,7 +16,7 @@ export interface ITask {
   dueDate?: Date | null;
   invoiced: boolean;
   paid: boolean;
-  assignees?: string[];
+  assignees?: string[]; // Now stores user IDs instead of names
   notes?: string;
   createdAt: Date;
   updatedAt: Date;

@@ -27,6 +27,13 @@ export async function PUT(
 
     const body = await request.json();
     
+    console.log('📝 Updating hosting service:', {
+      id,
+      startDate: body.startDate,
+      endDate: body.endDate,
+      websiteName: body.websiteName || body.clientName,
+    });
+    
     await dbConnect();
 
     const hostingService = await HostingService.findByIdAndUpdate(
@@ -41,6 +48,13 @@ export async function PUT(
         error: 'Hosting service not found' 
       }, { status: 404 });
     }
+    
+    console.log('✅ Updated hosting service:', {
+      websiteName: hostingService.websiteName,
+      startDate: hostingService.startDate,
+      endDate: hostingService.endDate,
+      status: hostingService.status,
+    });
     
     return NextResponse.json({ 
       success: true, 

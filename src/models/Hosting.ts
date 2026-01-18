@@ -109,4 +109,27 @@ HostingServiceSchema.pre('save', function(next) {
   next();
 });
 
+// Also handle findOneAndUpdate (used by findByIdAndUpdate)
+HostingServiceSchema.pre('findOneAndUpdate', function(next) {
+  const update = this.getUpdate() as any;
+  
+  if (update.endDate) {
+    const now = new Date();
+    const endDate = new Date(update.endDate);
+    const daysUntilExpiry = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (daysUntilExpiry < 0) {
+      update.status = 'expired';
+    } else if (daysUntilExpiry <= 30) {
+      update.status = 'expiring_soon';
+    } else {
+      update.status = 'active';
+    }
+    
+    this.setUpdate(update);
+  }
+  
+  next();
+});
+
 export default mongoose.models.HostingService || mongoose.model('HostingService', HostingServiceSchema);

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { notifyTeamMembersUpdated } from '@/utils/teamMembersSync';
 
 interface User {
   id: string;
@@ -41,6 +42,11 @@ export default function UserManagement() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [showPasswordReset, setShowPasswordReset] = useState(false);
+  const [resetPasswordUser, setResetPasswordUser] = useState<User | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [resettingPassword, setResettingPassword] = useState(false);
 
   const [formData, setFormData] = useState<UserFormData>({
     username: '',
@@ -104,6 +110,7 @@ export default function UserManagement() {
         setSuccess(`User ${formData.username} created successfully!`);
         resetForm();
         fetchUsers(); // Refresh the list
+        notifyTeamMembersUpdated(); // Notify other components
       } else {
         setError(data.error || 'Failed to create user');
       }
@@ -140,6 +147,7 @@ export default function UserManagement() {
         setSuccess(`User ${formData.username} updated successfully!`);
         resetForm();
         fetchUsers(); // Refresh the list
+        notifyTeamMembersUpdated(); // Notify other components
       } else {
         setError(data.error || 'Failed to update user');
       }
@@ -167,6 +175,7 @@ export default function UserManagement() {
       if (data.success) {
         setSuccess(`User ${username} deleted successfully!`);
         fetchUsers(); // Refresh the list
+        notifyTeamMembersUpdated(); // Notify other components
       } else {
         setError(data.error || 'Failed to delete user');
       }
@@ -174,6 +183,72 @@ export default function UserManagement() {
       console.error('Delete user error:', error);
       setError('Failed to delete user');
     }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetPasswordUser) return;
+
+    setError(null);
+    setSuccess(null);
+
+    // Validate passwords match
+    if (newPassword !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    // Validate password length
+    if (newPassword.length < 6) {
+      setError('Password must be at least 6 characters long');
+      return;
+    }
+
+    setResettingPassword(true);
+
+    try {
+      const response = await fetch(`/api/users/${resetPasswordUser.id}/reset-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ newPassword }),
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setSuccess(`Password reset successfully for ${resetPasswordUser.username}!`);
+        setShowPasswordReset(false);
+        setResetPasswordUser(null);
+        setNewPassword('');
+        setConfirmPassword('');
+      } else {
+        setError(data.error || 'Failed to reset password');
+      }
+    } catch (error) {
+      console.error('Reset password error:', error);
+      setError('Failed to reset password');
+    } finally {
+      setResettingPassword(false);
+    }
+  };
+
+  const openPasswordResetModal = (userToReset: User) => {
+    setResetPasswordUser(userToReset);
+    setNewPassword('');
+    setConfirmPassword('');
+    setShowPasswordReset(true);
+    setError(null);
+    setSuccess(null);
+  };
+
+  const closePasswordResetModal = () => {
+    setShowPasswordReset(false);
+    setResetPasswordUser(null);
+    setNewPassword('');
+    setConfirmPassword('');
+    setError(null);
   };
 
   const handleEditUser = (userToEdit: User) => {
@@ -255,14 +330,26 @@ export default function UserManagement() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-xl font-semibold text-gray-900">User Management</h2>
-            <p className="text-gray-600 mt-1">Manage team member accounts and permissions</p>
+            <p className="text-gray-600 mt-1">Manage user accounts and permissions</p>
           </div>
-          <button
-            onClick={() => setShowCreateForm(true)}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition-colors"
-          >
-            Add User
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={fetchUsers}
+              className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-sm transition-colors flex items-center gap-1"
+              title="Refresh users"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Refresh
+            </button>
+            <button
+              onClick={() => setShowCreateForm(true)}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition-colors"
+            >
+              Add User
+            </button>
+          </div>
         </div>
       </div>
 
@@ -339,19 +426,11 @@ export default function UserManagement() {
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
                 >
-                  <option value="team_member">Team Member</option>
+                  <option value="team_member">User</option>
                   <option value="admin">Admin</option>
                 </select>
               </div>
             </div>
-
-            {editingUser && (
-              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded">
-                <p className="text-sm text-yellow-800">
-                  Note: Password cannot be changed through this form. Contact system administrator for password resets.
-                </p>
-              </div>
-            )}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -437,7 +516,7 @@ export default function UserManagement() {
       {/* Users List */}
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">Team Members</h3>
+          <h3 className="text-lg font-medium text-gray-900">Users</h3>
         </div>
         
         {loading ? (
@@ -485,7 +564,7 @@ export default function UserManagement() {
                           ? 'bg-purple-100 text-purple-800' 
                           : 'bg-blue-100 text-blue-800'
                       }`}>
-                        {userItem.role === 'admin' ? 'Admin' : 'Team Member'}
+                        {userItem.role === 'admin' ? 'Admin' : 'User'}
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -529,6 +608,13 @@ export default function UserManagement() {
                         >
                           Edit
                         </button>
+                        <button
+                          onClick={() => openPasswordResetModal(userItem)}
+                          className="px-3 py-1.5 text-orange-600 hover:text-orange-700 hover:bg-orange-50 rounded transition-colors"
+                          title="Reset password"
+                        >
+                          Reset Password
+                        </button>
                         {user?.username !== userItem.username && (
                           <button
                             onClick={() => handleDeleteUser(userItem.id, userItem.username)}
@@ -552,6 +638,95 @@ export default function UserManagement() {
           </div>
         )}
       </div>
+
+      {/* Password Reset Modal */}
+      {showPasswordReset && resetPasswordUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-md">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-xl font-bold text-gray-900">
+                Reset Password
+              </h2>
+              <button
+                onClick={closePasswordResetModal}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <form onSubmit={handleResetPassword} className="p-6 space-y-4">
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded">
+                <p className="text-sm text-blue-800">
+                  Resetting password for: <strong>{resetPasswordUser.username}</strong> ({resetPasswordUser.email})
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  New Password
+                </label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Enter new password"
+                  className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+                  minLength={6}
+                  required
+                  autoFocus
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Password must be at least 6 characters long
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Confirm New Password
+                </label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Confirm new password"
+                  className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+                  minLength={6}
+                  required
+                />
+              </div>
+
+              {error && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded">
+                  <p className="text-red-800 text-sm">{error}</p>
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="submit"
+                  disabled={resettingPassword}
+                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors disabled:bg-blue-400 disabled:cursor-not-allowed"
+                >
+                  {resettingPassword ? 'Resetting...' : 'Reset Password'}
+                </button>
+                <button
+                  type="button"
+                  onClick={closePasswordResetModal}
+                  disabled={resettingPassword}
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition-colors disabled:bg-gray-50 disabled:cursor-not-allowed"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

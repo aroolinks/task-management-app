@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
+import bcrypt from 'bcryptjs';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 
@@ -30,33 +31,61 @@ async function verifyAdmin(request: NextRequest) {
   }
 }
 
-// GET /api/users - List all users (admin only)
+// GET /api/users - List all users (for assignments and admin management)
 export async function GET(request: NextRequest) {
   try {
-    const admin = await verifyAdmin(request);
-    if (!admin) {
+    // Verify user is authenticated (any authenticated user can see the list for assignments)
+    const token = request.cookies.get('auth-token')?.value;
+    if (!token) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized - Admin access required' },
-        { status: 403 }
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const { payload } = await jwtVerify(token, JWT_SECRET);
+    if (!payload) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
       );
     }
 
     await dbConnect();
     
-    const users = await User.find({}, { password: 0 }).sort({ createdAt: -1 });
+    // Return only basic info (username) for non-admins, full info for admins
+    const role = payload.role as string | undefined;
+    const permissions = payload.permissions as { canManageUsers?: boolean } | undefined;
+    const isAdmin = role === 'admin' || permissions?.canManageUsers;
     
-    return NextResponse.json({
-      success: true,
-      users: users.map(user => ({
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        role: user.role,
-        permissions: user.permissions,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt
-      }))
-    });
+    if (isAdmin) {
+      // Full user info for admins
+      const users = await User.find({}, { password: 0 }).sort({ createdAt: -1 });
+      
+      return NextResponse.json({
+        success: true,
+        users: users.map(user => ({
+          id: user._id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          permissions: user.permissions,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt
+        }))
+      });
+    } else {
+      // Only usernames for regular users (for assignment dropdown)
+      const users = await User.find({}, { username: 1 }).sort({ username: 1 });
+      
+      return NextResponse.json({
+        success: true,
+        users: users.map(user => ({
+          id: user._id,
+          username: user.username
+        }))
+      });
+    }
   } catch (error) {
     console.error('Get users error:', error);
     return NextResponse.json(
@@ -120,11 +149,14 @@ export async function POST(request: NextRequest) {
       canManageUsers: false
     };
 
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     // Create new user
     const newUser = new User({
       username,
       email,
-      password, // In production, hash this with bcrypt
+      password: hashedPassword,
       role: role || 'team_member',
       permissions: permissions || defaultPermissions
     });

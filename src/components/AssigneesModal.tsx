@@ -11,7 +11,7 @@ interface AssigneesModalProps {
   title?: string;
 }
 
-export default function AssigneesModal({ open, options, initial, onClose, onSave, title = 'Assign Team Members' }: AssigneesModalProps) {
+export default function AssigneesModal({ open, options, initial, onClose, onSave, title = 'Assign Users' }: AssigneesModalProps) {
   const [values, setValues] = useState<string[]>(initial);
 
   useEffect(() => {
@@ -59,7 +59,7 @@ export default function AssigneesModal({ open, options, initial, onClose, onSave
           <div>
             <h3 className="text-slate-100 text-lg font-semibold">{title}</h3>
             <p className="text-slate-400 text-sm mt-1">
-              {values.length} of {options.length} members selected
+              {values.length} of {options.length} users selected
             </p>
           </div>
           <button 
@@ -82,13 +82,13 @@ export default function AssigneesModal({ open, options, initial, onClose, onSave
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
               </div>
-              <h4 className="text-slate-300 font-medium mb-2">No team members available</h4>
-              <p className="text-slate-500 text-sm">Add team members in the sidebar to assign them to tasks.</p>
+              <h4 className="text-slate-300 font-medium mb-2">No users available</h4>
+              <p className="text-slate-500 text-sm">Add users in the User Management tab to assign them to tasks.</p>
             </div>
           ) : (
             <div className="space-y-3 h-full">
               <div className="flex items-center justify-between">
-                <label className="text-slate-300 text-sm font-medium">Available Team Members</label>
+                <label className="text-slate-300 text-sm font-medium">Available Users</label>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setValues([])}
@@ -124,7 +124,7 @@ export default function AssigneesModal({ open, options, initial, onClose, onSave
                         </div>
                         <div className="flex-1">
                           <div className="font-medium">{assignee}</div>
-                          <div className="text-xs text-slate-500">Team Member</div>
+                          <div className="text-xs text-slate-500">User</div>
                         </div>
                         <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200 ${
                           isSelected 

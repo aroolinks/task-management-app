@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { IClient, IClientNote, IClientLoginDetail } from '@/models/Client';
+import { IClient, IClientTask, IClientLoginDetail } from '@/models/Client';
 
 export interface ClientLoginDetail {
   id: string;
@@ -13,12 +13,16 @@ export interface ClientLoginDetail {
   updatedAt: Date;
 }
 
-export interface ClientNote {
+export interface ClientTask {
   id: string;
   title: string;
   content: string;
   createdBy?: string;
   editedBy?: string;
+  assignedTo?: string;
+  completed?: boolean;
+  completedBy?: string;
+  completedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -26,7 +30,7 @@ export interface ClientNote {
 export interface Client {
   id: string;
   name: string;
-  notes: ClientNote[];
+  tasks: ClientTask[];
   loginDetails: ClientLoginDetail[];
   createdAt: Date;
   updatedAt: Date;
@@ -36,9 +40,11 @@ export interface ClientInput {
   name: string;
 }
 
-export interface NoteInput {
+export interface TaskInput {
   title: string;
   content: string;
+  assignedTo?: string;
+  completed?: boolean;
 }
 
 export interface LoginDetailInput {
@@ -63,9 +69,9 @@ export function useClients() {
       });
       
       if (!response.ok) {
-        // If 403 (Forbidden), user doesn't have permission
-        if (response.status === 403) {
-          console.log('User does not have permission to view clients');
+        // If 401 (Unauthorized) or 403 (Forbidden), user doesn't have permission
+        if (response.status === 401 || response.status === 403) {
+          console.log('User is not authenticated or does not have permission to view clients');
           setClients([]);
           setLoading(false);
           return;
@@ -79,17 +85,21 @@ export function useClients() {
         const formattedClients = data.data.map((client: IClient) => ({
           id: client._id,
           name: client.name,
-          notes: Array.isArray(client.notes) 
-            ? client.notes.map((note: IClientNote) => ({
-                id: note._id || '',
-                title: note.title,
-                content: note.content,
-                createdBy: note.createdBy,
-                editedBy: note.editedBy,
-                createdAt: new Date(note.createdAt),
-                updatedAt: new Date(note.updatedAt),
+          tasks: Array.isArray(client.tasks) 
+            ? client.tasks.map((task: IClientTask) => ({
+                id: task._id || '',
+                title: task.title,
+                content: task.content,
+                createdBy: task.createdBy,
+                editedBy: task.editedBy,
+                assignedTo: task.assignedTo || undefined, // Ensure it's undefined if empty
+                completed: task.completed || false,
+                completedBy: task.completedBy,
+                completedAt: task.completedAt ? new Date(task.completedAt) : undefined,
+                createdAt: new Date(task.createdAt),
+                updatedAt: new Date(task.updatedAt),
               }))
-            : [], // Fallback to empty array if notes is not an array
+            : [], // Fallback to empty array if tasks is not an array
           loginDetails: Array.isArray(client.loginDetails) 
             ? client.loginDetails.map((login: IClientLoginDetail) => ({
                 id: login._id || '',
@@ -141,15 +151,19 @@ export function useClients() {
         const newClient: Client = {
           id: data.data._id,
           name: data.data.name,
-          notes: Array.isArray(data.data.notes) 
-            ? data.data.notes.map((note: IClientNote) => ({
-                id: note._id || '',
-                title: note.title,
-                content: note.content,
-                createdBy: note.createdBy,
-                editedBy: note.editedBy,
-                createdAt: new Date(note.createdAt),
-                updatedAt: new Date(note.updatedAt),
+          tasks: Array.isArray(data.data.tasks) 
+            ? data.data.tasks.map((task: IClientTask) => ({
+                id: task._id || '',
+                title: task.title,
+                content: task.content,
+                createdBy: task.createdBy,
+                editedBy: task.editedBy,
+                assignedTo: task.assignedTo || undefined, // Ensure it's undefined if empty
+                completed: task.completed || false,
+                completedBy: task.completedBy,
+                completedAt: task.completedAt ? new Date(task.completedAt) : undefined,
+                createdAt: new Date(task.createdAt),
+                updatedAt: new Date(task.updatedAt),
               }))
             : [], // Fallback to empty array for new clients
           loginDetails: Array.isArray(data.data.loginDetails) 
@@ -169,10 +183,8 @@ export function useClients() {
           updatedAt: new Date(data.data.updatedAt),
         };
         
-        console.log('👤 Creating new client:', newClient);
         setClients(prev => {
           const updated = [...prev, newClient].sort((a, b) => a.name.localeCompare(b.name));
-          console.log('👤 Updated clients state:', updated);
           return updated;
         });
         return newClient;
@@ -208,14 +220,14 @@ export function useClients() {
         const updatedClient: Client = {
           id: data.data._id,
           name: data.data.name,
-          notes: data.data.notes.map((note: IClientNote) => ({
-            id: note._id || '',
-            title: note.title,
-            content: note.content,
-            createdBy: note.createdBy,
-            editedBy: note.editedBy,
-            createdAt: new Date(note.createdAt),
-            updatedAt: new Date(note.updatedAt),
+          tasks: data.data.tasks.map((task: IClientTask) => ({
+            id: task._id || '',
+            title: task.title,
+            content: task.content,
+            createdBy: task.createdBy,
+            editedBy: task.editedBy,
+            createdAt: new Date(task.createdAt),
+            updatedAt: new Date(task.updatedAt),
           })),
           loginDetails: Array.isArray(data.data.loginDetails) 
             ? data.data.loginDetails.map((login: IClientLoginDetail) => ({
@@ -277,61 +289,70 @@ export function useClients() {
     }
   }, []);
 
-  const addNote = useCallback(async (clientId: string, noteData: NoteInput): Promise<ClientNote | null> => {
+  const addTask = useCallback(async (clientId: string, taskData: TaskInput): Promise<ClientTask | null> => {
     try {
       setError(null);
+      
+      console.log('addTask API call:', { clientId, taskData });
       
       const response = await fetch(`/api/clients/${clientId}/notes`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(noteData),
+        body: JSON.stringify(taskData),
       });
       
       const data = await response.json();
+      console.log('addTask API response:', { status: response.status, data });
       
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to add note');
+        throw new Error(data.error || 'Failed to add task');
       }
       
       if (data.success && data.data) {
-        const newNote: ClientNote = {
+        const newTask: ClientTask = {
           id: data.data._id,
           title: data.data.title,
           content: data.data.content,
+          createdBy: data.data.createdBy,
+          editedBy: data.data.editedBy,
+          assignedTo: data.data.assignedTo || undefined,
+          completed: data.data.completed || false,
+          completedBy: data.data.completedBy,
+          completedAt: data.data.completedAt ? new Date(data.data.completedAt) : undefined,
           createdAt: new Date(data.data.createdAt),
           updatedAt: new Date(data.data.updatedAt),
         };
         
+        console.log('Transformed task:', newTask);
+        
         // Update the client in the local state
-        console.log('📝 Adding note to client:', clientId, 'Note:', newNote);
         setClients(prev => {
           const updated = prev.map(client => 
             client.id === clientId 
-              ? { ...client, notes: [...client.notes, newNote] }
+              ? { ...client, tasks: [...client.tasks, newTask] }
               : client
           );
-          console.log('📝 Updated clients state:', updated);
           return updated;
         });
         
-        return newNote;
+        return newTask;
       }
       
       throw new Error('Invalid response format');
     } catch (err) {
-      console.error('Error adding note:', err);
-      setError(err instanceof Error ? err.message : 'Failed to add note');
+      console.error('Error in addTask:', err);
+      setError(err instanceof Error ? err.message : 'Failed to add task');
       return null;
     }
   }, []);
 
-  const updateNote = useCallback(async (clientId: string, noteId: string, updates: NoteInput): Promise<boolean> => {
+  const updateTask = useCallback(async (clientId: string, taskId: string, updates: TaskInput): Promise<boolean> => {
     try {
       setError(null);
       
-      const response = await fetch(`/api/clients/${clientId}/notes/${noteId}`, {
+      const response = await fetch(`/api/clients/${clientId}/notes/${taskId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -342,26 +363,32 @@ export function useClients() {
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to update note');
+        throw new Error(data.error || 'Failed to update task');
       }
       
       if (data.success && data.data) {
-        const updatedNote: ClientNote = {
+        const updatedTask: ClientTask = {
           id: data.data._id,
           title: data.data.title,
           content: data.data.content,
+          createdBy: data.data.createdBy,
+          editedBy: data.data.editedBy,
+          assignedTo: data.data.assignedTo || undefined,
+          completed: data.data.completed || false,
+          completedBy: data.data.completedBy,
+          completedAt: data.data.completedAt ? new Date(data.data.completedAt) : undefined,
           createdAt: new Date(data.data.createdAt),
           updatedAt: new Date(data.data.updatedAt),
         };
         
-        // Update the note in the local state
+        // Update the task in the local state
         setClients(prev => 
           prev.map(client => 
             client.id === clientId 
               ? { 
                   ...client, 
-                  notes: client.notes.map(note => 
-                    note.id === noteId ? updatedNote : note
+                  tasks: client.tasks.map(task => 
+                    task.id === taskId ? updatedTask : task
                   )
                 }
               : client
@@ -373,55 +400,53 @@ export function useClients() {
       
       throw new Error('Invalid response format');
     } catch (err) {
-      console.error('Error updating note:', err);
-      setError(err instanceof Error ? err.message : 'Failed to update note');
+      console.error('Error updating task:', err);
+      setError(err instanceof Error ? err.message : 'Failed to update task');
       return false;
     }
   }, []);
 
-  const deleteNote = useCallback(async (clientId: string, noteId: string): Promise<boolean> => {
+  const toggleTaskCompletion = useCallback(async (clientId: string, taskId: string): Promise<boolean> => {
     try {
       setError(null);
       
-      console.log('🗑️ deleteNote called with:', { clientId, noteId });
-      const url = `/api/clients/${clientId}/notes/${noteId}`;
-      console.log('🗑️ DELETE URL:', url);
-      
-      const response = await fetch(url, {
-        method: 'DELETE',
+      const response = await fetch(`/api/clients/${clientId}/notes/${taskId}/toggle-completion`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
       
-      console.log('🗑️ Response status:', response.status);
+      const data = await response.json();
       
       if (!response.ok) {
-        // Try to parse error message if available
-        try {
-          const data = await response.json();
-          console.log('🗑️ Error data:', data);
-          throw new Error(data.error || 'Failed to delete note');
-        } catch (jsonError) {
-          console.log('🗑️ JSON parse error:', jsonError);
-          throw new Error('Failed to delete note');
-        }
+        throw new Error(data.error || 'Failed to toggle task completion');
       }
       
-      // Try to parse JSON response, but handle empty responses
-      let data;
-      try {
-        data = await response.json();
-      } catch {
-        // If JSON parsing fails, assume success if status is ok
-        data = { success: true };
-      }
-      
-      if (data.success) {
-        // Remove the note from the local state
+      if (data.success && data.data) {
+        const updatedTask: ClientTask = {
+          id: data.data._id,
+          title: data.data.title,
+          content: data.data.content,
+          createdBy: data.data.createdBy,
+          editedBy: data.data.editedBy,
+          assignedTo: data.data.assignedTo || undefined,
+          completed: data.data.completed || false,
+          completedBy: data.data.completedBy,
+          completedAt: data.data.completedAt ? new Date(data.data.completedAt) : undefined,
+          createdAt: new Date(data.data.createdAt),
+          updatedAt: new Date(data.data.updatedAt),
+        };
+        
+        // Update the task in the local state
         setClients(prev => 
           prev.map(client => 
             client.id === clientId 
               ? { 
                   ...client, 
-                  notes: client.notes.filter(note => note.id !== noteId)
+                  tasks: client.tasks.map(task => 
+                    task.id === taskId ? updatedTask : task
+                  )
                 }
               : client
           )
@@ -432,8 +457,69 @@ export function useClients() {
       
       throw new Error('Invalid response format');
     } catch (err) {
-      console.error('Error deleting note:', err);
-      setError(err instanceof Error ? err.message : 'Failed to delete note');
+      console.error('Error toggling task completion:', err);
+      setError(err instanceof Error ? err.message : 'Failed to toggle task completion');
+      return false;
+    }
+  }, []);
+
+  const deleteTask = useCallback(async (clientId: string, taskId: string): Promise<boolean> => {
+    try {
+      setError(null);
+      
+      const url = `/api/clients/${clientId}/notes/${taskId}`;
+      
+      console.log('🗑️ Deleting task:', { url, clientId, taskId });
+      
+      const response = await fetch(url, {
+        method: 'DELETE',
+      });
+      
+      console.log('🗑️ Delete response status:', response.status);
+      
+      if (!response.ok) {
+        // Try to parse error message if available
+        try {
+          const data = await response.json();
+          console.error('🗑️ Delete error response:', data);
+          throw new Error(data.error || `Failed to delete task (${response.status})`);
+        } catch (jsonError) {
+          console.error('🗑️ Delete failed, could not parse error:', jsonError);
+          throw new Error(`Failed to delete task (${response.status})`);
+        }
+      }
+      
+      // Try to parse JSON response, but handle empty responses
+      let data;
+      try {
+        data = await response.json();
+        console.log('🗑️ Delete success response:', data);
+      } catch {
+        // If JSON parsing fails, assume success if status is ok
+        console.log('🗑️ Delete succeeded (no JSON response)');
+        data = { success: true };
+      }
+      
+      if (data.success) {
+        // Remove the task from the local state
+        setClients(prev => 
+          prev.map(client => 
+            client.id === clientId 
+              ? { 
+                  ...client, 
+                  tasks: client.tasks.filter(task => task.id !== taskId)
+                }
+              : client
+          )
+        );
+        
+        return true;
+      }
+      
+      throw new Error('Invalid response format');
+    } catch (err) {
+      console.error('Error deleting task:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete task');
       return false;
     }
   }, []);
@@ -601,6 +687,10 @@ export function useClients() {
     }
   }, []);
 
+  const refreshClients = useCallback(async () => {
+    await fetchClients();
+  }, [fetchClients]);
+
   useEffect(() => {
     fetchClients();
   }, [fetchClients]);
@@ -612,12 +702,13 @@ export function useClients() {
     createClient,
     updateClient,
     deleteClient,
-    addNote,
-    updateNote,
-    deleteNote,
+    addTask,
+    updateTask,
+    deleteTask,
+    toggleTaskCompletion,
     addLoginDetail,
     updateLoginDetail,
     deleteLoginDetail,
-    refreshClients: fetchClients,
+    refreshClients,
   };
 }

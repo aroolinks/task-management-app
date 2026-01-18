@@ -4,6 +4,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { Task } from '@/types/task';
 import TaskItem from './TaskItem';
 import { generateGroupInvoice, generateAllTasksInvoice } from '@/utils/invoiceGenerator';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface TaskListProps {
   tasks: Task[];
@@ -14,6 +15,7 @@ interface TaskListProps {
 }
 
 export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGroup: selectedGroupProp, autoEditTaskId }: TaskListProps) {
+  const { user } = useAuth();
   const effectiveSelectedGroup = selectedGroupProp ?? 'all';
   const [showEarnings, setShowEarnings] = useState<boolean>(false);
   const [showCost, setShowCost] = useState<boolean>(false);
@@ -260,25 +262,27 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
               {totalTasks} tasks
             </span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={() => setShowEarnings(!showEarnings)}
-              className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-900 border border-gray-300 transition-colors font-medium text-xs"
-              title={showEarnings ? 'Hide earnings' : 'Show earnings'}
-            >
-              £{showEarnings ? totalEarnings.toFixed(0) : '••••'}
-            </button>
-            <button
-              onClick={handleGenerateInvoice}
-              className="px-3 py-1 rounded bg-gray-900 hover:bg-gray-800 text-white transition-colors flex items-center gap-1.5 font-medium text-xs"
-              title="Generate PDF Invoice"
-            >
-              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              PDF
-            </button>
-          </div>
+          {user?.role === 'admin' && (
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setShowEarnings(!showEarnings)}
+                className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-900 border border-gray-300 transition-colors font-medium text-xs"
+                title={showEarnings ? 'Hide earnings' : 'Show earnings'}
+              >
+                £{showEarnings ? totalEarnings.toFixed(0) : '••••'}
+              </button>
+              <button
+                onClick={handleGenerateInvoice}
+                className="px-3 py-1 rounded bg-gray-900 hover:bg-gray-800 text-white transition-colors flex items-center gap-1.5 font-medium text-xs"
+                title="Generate PDF Invoice"
+              >
+                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                PDF
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -298,7 +302,11 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
       ) : (
         <>
           {/* Header row */}
-          <div className="grid grid-cols-[160px_90px_120px_90px_120px_100px_110px_90px_120px_120px] items-center gap-0 px-4 py-2.5 text-xs font-bold text-gray-600 tracking-wider bg-gray-50 border-b border-gray-200">
+          <div className={`grid items-center gap-0 px-4 py-2.5 text-xs font-bold text-gray-600 tracking-wider bg-gray-50 border-b border-gray-200 ${
+            user?.role === 'admin' 
+              ? 'grid-cols-[160px_90px_120px_90px_120px_100px_110px_90px_120px_120px]'
+              : 'grid-cols-[160px_90px_120px_90px_120px_100px_110px_120px]'
+          }`}>
             <div className="text-left px-2 py-1 overflow-hidden truncate">CLIENT NAME</div>
             <div className="text-left px-2 py-1 overflow-hidden truncate">GROUP</div>
             <div className="text-left px-2 py-1 overflow-hidden truncate">WEBSITE</div>
@@ -306,23 +314,27 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
             <div className="text-left px-2 py-1 overflow-hidden truncate">ASSETS</div>
             <div className="text-left px-2 py-1 overflow-hidden truncate">DUE DATE</div>
             <div className="text-left px-2 py-1 overflow-hidden truncate">STATUS</div>
-            <div className="text-left px-2 py-1 overflow-hidden truncate flex items-center gap-1">
-              <span>COST</span>
-              <button
-                onClick={() => setShowCost(!showCost)}
-                className="text-gray-500 hover:text-gray-700 transition-colors"
-                title={showCost ? 'Hide cost' : 'Show cost'}
-              >
-                <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  {showCost ? (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  ) : (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
-                  )}
-                </svg>
-              </button>
-            </div>
-            <div className="text-left px-2 py-1 overflow-hidden truncate">BILLING</div>
+            {user?.role === 'admin' && (
+              <>
+                <div className="text-left px-2 py-1 overflow-hidden truncate flex items-center gap-1">
+                  <span>COST</span>
+                  <button
+                    onClick={() => setShowCost(!showCost)}
+                    className="text-gray-500 hover:text-gray-700 transition-colors"
+                    title={showCost ? 'Hide cost' : 'Show cost'}
+                  >
+                    <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      {showCost ? (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      ) : (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                      )}
+                    </svg>
+                  </button>
+                </div>
+                <div className="text-left px-2 py-1 overflow-hidden truncate">BILLING</div>
+              </>
+            )}
             <div className="text-left px-2 py-1 overflow-hidden truncate">ACTIONS</div>
           </div>
 

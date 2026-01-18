@@ -21,25 +21,27 @@ export function AssigneeProvider({ children }: { children: React.ReactNode }) {
   const fetchAssignees = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/assignees', { cache: 'no-store' });
+      const response = await fetch('/api/users', { cache: 'no-store' });
       
       if (!response.ok) {
-        throw new Error('Failed to fetch assignees');
+        throw new Error('Failed to fetch users');
       }
       
       const result = await response.json();
       if (result.success) {
-        setAssignees(result.data || []);
+        // Extract usernames from users for assignment dropdown
+        const usernames = result.users.map((user: any) => user.username);
+        setAssignees(usernames || []);
         setError(null);
       } else {
-        throw new Error(result.error || 'Failed to fetch assignees');
+        throw new Error(result.error || 'Failed to fetch users');
       }
     } catch (err) {
-      console.error('Error fetching assignees:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch assignees');
+      console.error('Error fetching users for assignments:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch users');
       
-      // Fallback to default assignees if API fails
-      setAssignees(['Haroon', 'Sameed', 'Bilal', 'Abubakar', 'Awais']);
+      // No fallback - users must be created through the user management interface
+      setAssignees([]);
     } finally {
       setLoading(false);
     }
@@ -56,24 +58,36 @@ export function AssigneeProvider({ children }: { children: React.ReactNode }) {
       a.localeCompare(b, undefined, { sensitivity: 'base' })
     ));
 
-    // Persist to database
+    // Persist to database by creating a new user
     try {
-      const response = await fetch('/api/assignees', {
+      const response = await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: trimmed })
+        body: JSON.stringify({ 
+          username: trimmed,
+          email: `${trimmed.toLowerCase()}@company.com`,
+          password: 'defaultpassword123',
+          role: 'team_member',
+          permissions: {
+            canViewTasks: true,
+            canEditTasks: true,
+            canViewClients: true,
+            canEditClients: true,
+            canManageUsers: false
+          }
+        })
       });
 
       if (!response.ok) {
         // If API call fails, revert the local state
         setAssignees(prev => prev.filter(a => a !== trimmed));
         const result = await response.json();
-        console.error('Failed to add assignee:', result.error);
+        console.error('Failed to add user:', result.error);
       }
     } catch (error) {
       // If API call fails, revert the local state
       setAssignees(prev => prev.filter(a => a !== trimmed));
-      console.error('Error adding assignee:', error);
+      console.error('Error adding user:', error);
     }
   }, [assignees]);
 
@@ -83,7 +97,7 @@ export function AssigneeProvider({ children }: { children: React.ReactNode }) {
     // Immediately update local state for better UX
     setAssignees(prev => prev.filter(a => a !== assigneeToRemove));
 
-    // Persist to database
+    // Persist to database by deleting the user
     try {
       console.log('🌐 Making DELETE request to API...');
       const response = await fetch(`/api/assignees?name=${encodeURIComponent(assigneeToRemove)}`, {
@@ -96,16 +110,16 @@ export function AssigneeProvider({ children }: { children: React.ReactNode }) {
 
       if (!response.ok) {
         // If API call fails, revert the local state
-        console.error('❌ Failed to remove assignee:', result.error);
+        console.error('❌ Failed to remove user:', result.error);
         setAssignees(prev => [...prev, assigneeToRemove].sort((a, b) => 
           a.localeCompare(b, undefined, { sensitivity: 'base' })
         ));
       } else {
-        console.log('✅ Successfully removed assignee from database');
+        console.log('✅ Successfully removed user from database');
       }
     } catch (error) {
       // If API call fails, revert the local state
-      console.error('❌ Error removing assignee:', error);
+      console.error('❌ Error removing user:', error);
       setAssignees(prev => [...prev, assigneeToRemove].sort((a, b) => 
         a.localeCompare(b, undefined, { sensitivity: 'base' })
       ));

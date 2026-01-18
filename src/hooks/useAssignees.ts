@@ -8,25 +8,27 @@ export function useAssignees() {
   const fetchAssignees = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/assignees', { cache: 'no-store' });
+      const response = await fetch('/api/users', { cache: 'no-store' });
       
       if (!response.ok) {
-        throw new Error('Failed to fetch assignees');
+        throw new Error('Failed to fetch users');
       }
       
       const result = await response.json();
       if (result.success) {
-        setAssignees(result.data || []);
+        // Extract usernames from users for assignment dropdown
+        const usernames = result.users.map((user: any) => user.username);
+        setAssignees(usernames || []);
         setError(null);
       } else {
-        throw new Error(result.error || 'Failed to fetch assignees');
+        throw new Error(result.error || 'Failed to fetch users');
       }
     } catch (err) {
-      console.error('Error fetching assignees:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch assignees');
+      console.error('Error fetching users for assignments:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch users');
       
-      // Fallback to default assignees if API fails
-      setAssignees(['Haroon', 'Sameed', 'Bilal', 'Abubakar', 'Awais']);
+      // No fallback - users must be created through the user management interface
+      setAssignees([]);
     } finally {
       setLoading(false);
     }

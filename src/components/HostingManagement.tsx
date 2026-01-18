@@ -7,7 +7,7 @@ import { sendExpiryNotification, sendBulkExpiryNotifications } from '@/utils/ema
 
 export default function HostingManagement() {
   const { user } = useAuth();
-  const { hostingServices, loading, createHostingService, updateHostingService, deleteHostingService } = useHosting();
+  const { hostingServices, loading, createHostingService, updateHostingService, deleteHostingService, refreshHostingServices } = useHosting();
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingService, setEditingService] = useState<HostingService | null>(null);
   
@@ -26,6 +26,7 @@ export default function HostingManagement() {
   const [emailStatus, setEmailStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
 
   // Calculate end date when start date or duration changes
   const calculateEndDate = (start: string, years: string) => {
@@ -192,19 +193,6 @@ export default function HostingManagement() {
     setShowAddForm(true);
   };
 
-  // Calculate statistics
-  const totalServices = hostingServices.length;
-  const totalCost = hostingServices.reduce((sum, service) => {
-    const yearlyCost = service.billingCycle === 'yearly' ? service.cost : service.cost * 12;
-    return sum + yearlyCost;
-  }, 0);
-  const yearlyRecurringCost = hostingServices
-    .filter(s => s.billingCycle === 'yearly')
-    .reduce((sum, s) => sum + s.cost, 0);
-  const expiringSoon = hostingServices.filter(s => s.status === 'expiring_soon').length;
-  const personalWebsites = hostingServices.filter(s => s.packageType !== 'Client Website').length;
-  const clientWebsites = hostingServices.filter(s => s.packageType === 'Client Website').length;
-
   // Pagination
   const totalPages = Math.ceil(hostingServices.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -221,9 +209,37 @@ export default function HostingManagement() {
 
   const getDaysUntilExpiry = (endDate: Date) => {
     const now = new Date();
-    const days = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    // Reset time to start of day for both dates to get accurate day count
+    const nowDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const expiryDate = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+    const days = Math.ceil((expiryDate.getTime() - nowDate.getTime()) / (1000 * 60 * 60 * 24));
     return days;
   };
+
+  // Calculate actual status based on current date (don't rely on DB status)
+  const getActualStatus = (endDate: Date): 'active' | 'expired' | 'expiring_soon' => {
+    const days = getDaysUntilExpiry(endDate);
+    if (days < 0) return 'expired';
+    if (days <= 30) return 'expiring_soon';
+    return 'active';
+  };
+
+  // Filter services by actual calculated status
+  const actualExpiredServices = hostingServices.filter(s => getActualStatus(s.endDate) === 'expired');
+  const actualExpiringSoonServices = hostingServices.filter(s => getActualStatus(s.endDate) === 'expiring_soon');
+
+  // Calculate statistics
+  const totalServices = hostingServices.length;
+  const totalCost = hostingServices.reduce((sum, service) => {
+    const yearlyCost = service.billingCycle === 'yearly' ? service.cost : service.cost * 12;
+    return sum + yearlyCost;
+  }, 0);
+  const yearlyRecurringCost = hostingServices
+    .filter(s => s.billingCycle === 'yearly')
+    .reduce((sum, s) => sum + s.cost, 0);
+  const expiringSoon = actualExpiringSoonServices.length;
+  const personalWebsites = hostingServices.filter(s => s.packageType !== 'Client Website').length;
+  const clientWebsites = hostingServices.filter(s => s.packageType === 'Client Website').length;
 
   if (loading) {
     return (
@@ -242,69 +258,81 @@ export default function HostingManagement() {
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Hosting Management</h1>
-            <p className="text-gray-600 mt-1">Manage client hosting services and subscriptions</p>
+            <h1 className="text-xl font-bold text-gray-900">Hosting Management</h1>
+            <p className="text-sm text-gray-500 mt-1">Manage client hosting services and subscriptions</p>
           </div>
-          {user?.permissions?.canEditClients && (
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => setShowAddForm(true)}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium transition-colors"
+              onClick={refreshHostingServices}
+              className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs font-medium transition-colors flex items-center gap-1"
+              title="Refresh data"
             >
-              Add Hosting Service
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Refresh
             </button>
-          )}
+            {user?.permissions?.canEditClients && (
+              <button
+                onClick={() => setShowAddForm(true)}
+                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium transition-colors"
+              >
+                Add Hosting Service
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
-            <p className="text-sm text-gray-600 mb-1">Total Services</p>
-            <p className="text-2xl font-bold text-gray-900">{totalServices}</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3 mb-6">
+          <div className="bg-white p-3 rounded-lg border border-gray-200">
+            <p className="text-xs text-gray-600 mb-1">Total Services</p>
+            <p className="text-xl font-bold text-gray-900">{totalServices}</p>
           </div>
           {user?.role === 'admin' && (
             <>
-              <div className="bg-white p-4 rounded-lg border border-gray-200">
-                <p className="text-sm text-gray-600 mb-1">Total Cost (All Contracts)</p>
-                <p className="text-2xl font-bold text-gray-900">£{totalCost.toFixed(0)}</p>
+              <div className="bg-white p-3 rounded-lg border border-gray-200">
+                <p className="text-xs text-gray-600 mb-1">Total Cost (All Contracts)</p>
+                <p className="text-xl font-bold text-gray-900">£{totalCost.toFixed(0)}</p>
               </div>
-              <div className="bg-white p-4 rounded-lg border border-gray-200">
-                <p className="text-sm text-gray-600 mb-1">Yearly Recurring Cost</p>
-                <p className="text-2xl font-bold text-gray-900">£{yearlyRecurringCost.toFixed(0)}</p>
+              <div className="bg-white p-3 rounded-lg border border-gray-200">
+                <p className="text-xs text-gray-600 mb-1">Yearly Recurring Cost</p>
+                <p className="text-xl font-bold text-gray-900">£{yearlyRecurringCost.toFixed(0)}</p>
               </div>
             </>
           )}
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
-            <p className="text-sm text-gray-600 mb-1">Personal Websites</p>
-            <p className="text-2xl font-bold text-gray-900">{personalWebsites}</p>
+          <div className="bg-white p-3 rounded-lg border border-gray-200">
+            <p className="text-xs text-gray-600 mb-1">Personal Websites</p>
+            <p className="text-xl font-bold text-gray-900">{personalWebsites}</p>
           </div>
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
-            <p className="text-sm text-gray-600 mb-1">Client Websites</p>
-            <p className="text-2xl font-bold text-gray-900">{clientWebsites}</p>
+          <div className="bg-white p-3 rounded-lg border border-gray-200">
+            <p className="text-xs text-gray-600 mb-1">Client Websites</p>
+            <p className="text-xl font-bold text-gray-900">{clientWebsites}</p>
           </div>
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
-            <p className="text-sm text-gray-600 mb-1">Expiring Soon</p>
-            <p className="text-2xl font-bold text-orange-600">{expiringSoon}</p>
+          <div className="bg-white p-3 rounded-lg border border-gray-200">
+            <p className="text-xs text-gray-600 mb-1">Expiring Soon</p>
+            <p className="text-xl font-bold text-orange-600">{expiringSoon}</p>
           </div>
         </div>
 
         {/* Email Status Message */}
         {emailStatus && (
-          <div className={`mb-6 p-4 rounded-lg border ${
+          <div className={`mb-4 p-3 rounded-lg border ${
             emailStatus.type === 'success' 
               ? 'bg-green-50 border-green-200' 
               : 'bg-red-50 border-red-200'
           }`}>
             <div className="flex items-center gap-2">
               {emailStatus.type === 'success' ? (
-                <svg className="h-5 w-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="h-4 w-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
               ) : (
-                <svg className="h-5 w-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="h-4 w-4 text-red-600" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                 </svg>
               )}
-              <p className={`text-sm font-medium ${
+              <p className={`text-xs font-medium ${
                 emailStatus.type === 'success' ? 'text-green-800' : 'text-red-800'
               }`}>
                 {emailStatus.message}
@@ -314,30 +342,28 @@ export default function HostingManagement() {
         )}
 
         {/* Expiring Soon Alert */}
-        {expiringSoon > 0 && (
-          <div className="bg-orange-50 border border-orange-200 rounded-lg overflow-hidden mb-6">
-            <div className="px-4 py-3 bg-orange-100 border-b border-orange-200">
+        {actualExpiringSoonServices.length > 0 && (
+          <div className="bg-orange-50 border border-orange-200 rounded-lg overflow-hidden mb-4">
+            <div className="px-3 py-2 bg-orange-100 border-b border-orange-200">
               <div className="flex items-center gap-2">
-                <svg className="h-5 w-5 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="h-4 w-4 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                 </svg>
-                <h3 className="text-sm font-semibold text-orange-800">Subscriptions Expiring Soon</h3>
+                <h3 className="text-xs font-semibold text-orange-800">Subscriptions Expiring Soon</h3>
               </div>
             </div>
             <div className="divide-y divide-orange-200">
-              {hostingServices
-                .filter(s => s.status === 'expiring_soon')
-                .map(service => {
+              {actualExpiringSoonServices.map(service => {
                   const days = getDaysUntilExpiry(service.endDate);
                   return (
-                    <div key={service._id} className="px-4 py-3 hover:bg-orange-100 transition-colors">
+                    <div key={service._id} className="px-3 py-2 hover:bg-orange-100 transition-colors">
                       <div className="flex items-center justify-between">
                         <div>
-                          <span className="font-medium text-orange-900">{service.websiteName}</span>
-                          <span className="text-orange-700 text-sm ml-2">• Expires in {days} days</span>
+                          <span className="text-sm font-medium text-orange-900">{service.websiteName}</span>
+                          <span className="text-orange-700 text-xs ml-2">• Expires in {days} days</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-orange-600 font-medium">{formatDate(service.endDate)}</span>
+                          <span className="text-xs text-orange-600 font-medium">{formatDate(service.endDate)}</span>
                           <button
                             onClick={() => handleSendEmail(service)}
                             disabled={sendingEmail === service._id}
@@ -362,30 +388,28 @@ export default function HostingManagement() {
         )}
 
         {/* Expired Alert */}
-        {hostingServices.filter(s => s.status === 'expired').length > 0 && (
-          <div className="bg-red-50 border border-red-200 rounded-lg overflow-hidden mb-6">
-            <div className="px-4 py-3 bg-red-100 border-b border-red-200">
+        {actualExpiredServices.length > 0 && (
+          <div className="bg-red-50 border border-red-200 rounded-lg overflow-hidden mb-4">
+            <div className="px-3 py-2 bg-red-100 border-b border-red-200">
               <div className="flex items-center gap-2">
-                <svg className="h-5 w-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="h-4 w-4 text-red-600" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                 </svg>
-                <h3 className="text-sm font-semibold text-red-800">Expired Subscriptions</h3>
+                <h3 className="text-xs font-semibold text-red-800">Expired Subscriptions</h3>
               </div>
             </div>
             <div className="divide-y divide-red-200">
-              {hostingServices
-                .filter(s => s.status === 'expired')
-                .map(service => {
+              {actualExpiredServices.map(service => {
                   const days = Math.abs(getDaysUntilExpiry(service.endDate));
                   return (
-                    <div key={service._id} className="px-4 py-3 hover:bg-red-100 transition-colors">
+                    <div key={service._id} className="px-3 py-2 hover:bg-red-100 transition-colors">
                       <div className="flex items-center justify-between">
                         <div>
-                          <span className="font-medium text-red-900">{service.websiteName}</span>
-                          <span className="text-red-700 text-sm ml-2">• Expired {days} days ago</span>
+                          <span className="text-sm font-medium text-red-900">{service.websiteName}</span>
+                          <span className="text-red-700 text-xs ml-2">• Expired {days} days ago</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-red-600 font-medium">{formatDate(service.endDate)}</span>
+                          <span className="text-xs text-red-600 font-medium">{formatDate(service.endDate)}</span>
                           <button
                             onClick={() => handleSendEmail(service)}
                             disabled={sendingEmail === service._id}
@@ -412,11 +436,42 @@ export default function HostingManagement() {
 
       {/* Hosting Services List */}
       <div className="bg-white rounded-lg border border-gray-200">
-        <div className="px-6 py-4 border-b border-gray-200">
+        <div className="px-4 py-3 border-b border-gray-200">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">All Hosted Websites ({totalServices})</h2>
-            <div className="text-sm text-gray-600">
-              Showing {startIndex + 1}-{Math.min(endIndex, totalServices)} of {totalServices}
+            <h2 className="text-base font-semibold text-gray-900">All Hosted Websites ({totalServices})</h2>
+            <div className="flex items-center gap-3">
+              <div className="text-xs text-gray-600">
+                Showing {startIndex + 1}-{Math.min(endIndex, totalServices)} of {totalServices}
+              </div>
+              {/* View Toggle */}
+              <div className="flex items-center gap-1 bg-gray-100 rounded p-1">
+                <button
+                  onClick={() => setViewMode('card')}
+                  className={`px-2 py-1 rounded text-xs transition-colors ${
+                    viewMode === 'card'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                  title="Card view"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`px-2 py-1 rounded text-xs transition-colors ${
+                    viewMode === 'list'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                  title="List view"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -443,116 +498,115 @@ export default function HostingManagement() {
           </div>
         ) : (
           <>
-            <div className="divide-y divide-gray-200">
-              {paginatedServices.map((service) => {
-              const days = getDaysUntilExpiry(service.endDate);
-              const isExpired = days < 0;
-              const isExpiringSoon = days >= 0 && days <= 30;
+            {/* Card Grid View */}
+            {viewMode === 'card' && (
+              <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {paginatedServices.map((service) => {
+                const days = getDaysUntilExpiry(service.endDate);
+                const isExpired = days < 0;
+                const isExpiringSoon = days >= 0 && days <= 30;
 
-              return (
-                <div key={service._id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2 flex-wrap">
-                        <h3 className="text-base font-semibold text-gray-900">{service.websiteName}</h3>
+                return (
+                  <div key={service._id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                    {/* Card Header */}
+                    <div className="mb-3">
+                      <div className="flex items-start justify-between mb-2">
+                        <h3 className="text-sm font-semibold text-gray-900 flex-1">{service.websiteName}</h3>
                         {isExpired && (
-                          <span className="px-2 py-1 text-xs bg-red-100 text-red-800 rounded-full font-medium">
+                          <span className="px-2 py-0.5 text-xs bg-red-100 text-red-800 rounded-full font-medium ml-2">
                             Expired
                           </span>
                         )}
                         {isExpiringSoon && (
-                          <span className="px-2 py-1 text-xs bg-orange-100 text-orange-800 rounded-full font-medium">
-                            Expiring Soon
+                          <span className="px-2 py-0.5 text-xs bg-orange-100 text-orange-800 rounded-full font-medium ml-2">
+                            Expiring
                           </span>
                         )}
                         {!isExpired && !isExpiringSoon && (
-                          <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full font-medium">
+                          <span className="px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded-full font-medium ml-2">
                             Active
                           </span>
                         )}
-                        
-                        {/* Website URL and Email - In same row as title */}
-                        <span className="text-gray-400">•</span>
-                        {service.websiteUrl && (
-                          <>
-                            <div className="flex items-center gap-1">
-                              <svg className="h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-                              </svg>
-                              <a 
-                                href={service.websiteUrl} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-sm text-blue-600 hover:text-blue-700 underline"
-                              >
-                                {service.websiteUrl}
-                              </a>
-                            </div>
-                            <span className="text-gray-400">•</span>
-                          </>
-                        )}
-                        <div className="flex items-center gap-1">
-                          <svg className="h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                          </svg>
-                          <span className="text-sm text-gray-600">{service.contactEmail}</span>
-                        </div>
                       </div>
                       
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                        <div>
-                          <p className="text-gray-600">Client</p>
-                          <p className="font-medium text-gray-900">{service.clientName}</p>
-                        </div>
-                        {user?.role === 'admin' && (
-                          <div>
-                            <p className="text-gray-600">Cost</p>
-                            <p className="font-medium text-gray-900">
-                              £{service.cost}/{service.billingCycle === 'yearly' ? 'year' : 'month'}
-                            </p>
-                          </div>
-                        )}
-                        <div>
-                          <p className="text-gray-600">Duration</p>
-                          <p className="font-medium text-gray-900">
-                            {Math.round((service.endDate.getTime() - service.startDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000))} year{Math.round((service.endDate.getTime() - service.startDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)) !== 1 ? 's' : ''}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">Expires</p>
-                          <p className={`font-medium ${isExpired ? 'text-red-600' : isExpiringSoon ? 'text-orange-600' : 'text-gray-900'}`}>
-                            {formatDate(service.endDate)}
-                            {!isExpired && ` (${days} days)`}
-                          </p>
-                        </div>
+                      {/* Website URL */}
+                      {service.websiteUrl && (
+                        <a 
+                          href={service.websiteUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-600 hover:text-blue-700 underline flex items-center gap-1 mb-1"
+                        >
+                          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                          </svg>
+                          <span className="truncate">{service.websiteUrl}</span>
+                        </a>
+                      )}
+                      
+                      {/* Email */}
+                      <div className="flex items-center gap-1 text-xs text-gray-600">
+                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                        <span className="truncate">{service.contactEmail}</span>
                       </div>
                     </div>
 
+                    {/* Card Details */}
+                    <div className="space-y-2 mb-3 pb-3 border-b border-gray-100">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-gray-500">Client</span>
+                        <span className="font-medium text-gray-900">{service.clientName}</span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-gray-500">Duration</span>
+                        <span className="font-medium text-gray-900">
+                          {Math.round((service.endDate.getTime() - service.startDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000))} year{Math.round((service.endDate.getTime() - service.startDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)) !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-gray-500">Expires</span>
+                        <span className={`font-medium ${isExpired ? 'text-red-600' : isExpiringSoon ? 'text-orange-600' : 'text-gray-900'}`}>
+                          {formatDate(service.endDate)}
+                        </span>
+                      </div>
+                      {!isExpired && (
+                        <div className="flex justify-between text-xs">
+                          <span className="text-gray-500">Days Left</span>
+                          <span className={`font-medium ${isExpiringSoon ? 'text-orange-600' : 'text-gray-900'}`}>
+                            {days} days
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Card Actions */}
                     {user?.permissions?.canEditClients && (
-                      <div className="ml-4 flex items-center gap-2">
+                      <div className="flex items-center gap-2">
                         <button
                           onClick={() => handleSendEmail(service)}
                           disabled={sendingEmail === service._id}
-                          className="px-3 py-1.5 text-green-600 hover:text-green-700 hover:bg-green-50 rounded transition-colors text-sm flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="flex-1 px-2 py-1.5 text-green-600 hover:text-green-700 hover:bg-green-50 rounded transition-colors text-xs flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed border border-green-200"
                           title={`Send notification to ${service.contactEmail}`}
                         >
                           {sendingEmail === service._id ? (
                             <>
                               <div className="w-3 h-3 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>
-                              Sending
+                              <span>Sending</span>
                             </>
                           ) : (
                             <>
-                              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                               </svg>
-                              Send Email
+                              Email
                             </>
                           )}
                         </button>
                         <button
                           onClick={() => handleEditService(service)}
-                          className="px-3 py-1.5 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors text-sm"
+                          className="px-2 py-1.5 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors text-xs border border-blue-200"
                           title="Edit service"
                         >
                           Edit
@@ -564,7 +618,7 @@ export default function HostingManagement() {
                                 deleteHostingService(service._id);
                               }
                             }}
-                            className="px-3 py-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors text-sm"
+                            className="px-2 py-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors text-xs border border-red-200"
                             title="Delete service (Admin only)"
                           >
                             Delete
@@ -573,22 +627,152 @@ export default function HostingManagement() {
                       </div>
                     )}
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+            )}
+
+            {/* List View */}
+            {viewMode === 'list' && (
+              <div className="divide-y divide-gray-200">
+                {paginatedServices.map((service) => {
+                const days = getDaysUntilExpiry(service.endDate);
+                const isExpired = days < 0;
+                const isExpiringSoon = days >= 0 && days <= 30;
+
+                return (
+                  <div key={service._id} className="px-4 py-3 hover:bg-gray-50 transition-colors">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                          <h3 className="text-sm font-semibold text-gray-900">{service.websiteName}</h3>
+                          {isExpired && (
+                            <span className="px-2 py-0.5 text-xs bg-red-100 text-red-800 rounded-full font-medium">
+                              Expired
+                            </span>
+                          )}
+                          {isExpiringSoon && (
+                            <span className="px-2 py-0.5 text-xs bg-orange-100 text-orange-800 rounded-full font-medium">
+                              Expiring Soon
+                            </span>
+                          )}
+                          {!isExpired && !isExpiringSoon && (
+                            <span className="px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded-full font-medium">
+                              Active
+                            </span>
+                          )}
+                          
+                          {/* Website URL and Email - In same row as title */}
+                          <span className="text-gray-400">•</span>
+                          {service.websiteUrl && (
+                            <>
+                              <div className="flex items-center gap-1">
+                                <svg className="h-3 w-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                                </svg>
+                                <a 
+                                  href={service.websiteUrl} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-blue-600 hover:text-blue-700 underline"
+                                >
+                                  {service.websiteUrl}
+                                </a>
+                              </div>
+                              <span className="text-gray-400">•</span>
+                            </>
+                          )}
+                          <div className="flex items-center gap-1">
+                            <svg className="h-3 w-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                            <span className="text-xs text-gray-600">{service.contactEmail}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
+                          <div>
+                            <p className="text-gray-500">Client</p>
+                            <p className="font-medium text-gray-900">{service.clientName}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Duration</p>
+                            <p className="font-medium text-gray-900">
+                              {Math.round((service.endDate.getTime() - service.startDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000))} year{Math.round((service.endDate.getTime() - service.startDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)) !== 1 ? 's' : ''}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Expires</p>
+                            <p className={`font-medium ${isExpired ? 'text-red-600' : isExpiringSoon ? 'text-orange-600' : 'text-gray-900'}`}>
+                              {formatDate(service.endDate)}
+                              {!isExpired && ` (${days} days)`}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {user?.permissions?.canEditClients && (
+                        <div className="ml-3 flex items-center gap-1">
+                          <button
+                            onClick={() => handleSendEmail(service)}
+                            disabled={sendingEmail === service._id}
+                            className="px-2 py-1 text-green-600 hover:text-green-700 hover:bg-green-50 rounded transition-colors text-xs flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title={`Send notification to ${service.contactEmail}`}
+                          >
+                            {sendingEmail === service._id ? (
+                              <>
+                                <div className="w-3 h-3 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>
+                                <span className="hidden sm:inline">Sending</span>
+                              </>
+                            ) : (
+                              <>
+                                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                </svg>
+                                <span className="hidden sm:inline">Email</span>
+                              </>
+                            )}
+                          </button>
+                          <button
+                            onClick={() => handleEditService(service)}
+                            className="px-2 py-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors text-xs"
+                            title="Edit service"
+                          >
+                            Edit
+                          </button>
+                          {user?.role === 'admin' && (
+                            <button
+                              onClick={() => {
+                                if (window.confirm(`Are you sure you want to delete ${service.websiteName}?`)) {
+                                  deleteHostingService(service._id);
+                                }
+                              }}
+                              className="px-2 py-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors text-xs"
+                              title="Delete service (Admin only)"
+                            >
+                              Delete
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            )}
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-              <div className="text-sm text-gray-600">
+            <div className="px-4 py-3 border-t border-gray-200 flex items-center justify-between">
+              <div className="text-xs text-gray-600">
                 Page {currentPage} of {totalPages}
               </div>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                   disabled={currentPage === 1}
-                  className="px-3 py-1.5 text-sm bg-gray-900 text-white rounded hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-2 py-1 text-xs bg-gray-900 text-white rounded hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Previous
                 </button>
@@ -605,7 +789,7 @@ export default function HostingManagement() {
                         <button
                           key={page}
                           onClick={() => setCurrentPage(page)}
-                          className={`px-3 py-1.5 text-sm rounded transition-colors ${
+                          className={`px-2 py-1 text-xs rounded transition-colors ${
                             currentPage === page
                               ? 'bg-gray-900 text-white'
                               : 'border border-gray-300 text-gray-900 hover:bg-gray-50'
@@ -618,7 +802,7 @@ export default function HostingManagement() {
                       page === currentPage - 2 ||
                       page === currentPage + 2
                     ) {
-                      return <span key={page} className="px-2 text-gray-400">...</span>;
+                      return <span key={page} className="px-1 text-gray-400 text-xs">...</span>;
                     }
                     return null;
                   })}
@@ -627,7 +811,7 @@ export default function HostingManagement() {
                 <button
                   onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                   disabled={currentPage === totalPages}
-                  className="px-3 py-1.5 text-sm bg-gray-900 text-white rounded hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-2 py-1 text-xs bg-gray-900 text-white rounded hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Next
                 </button>

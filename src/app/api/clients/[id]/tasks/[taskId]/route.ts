@@ -4,7 +4,7 @@ import Client from '@/models/Client';
 import { verifyAuth } from '@/lib/auth';
 
 interface RouteParams {
-  params: Promise<{ id: string; noteId: string }>;
+  params: Promise<{ id: string; taskId: string }>;
 }
 
 export async function PUT(
@@ -12,7 +12,7 @@ export async function PUT(
   { params }: RouteParams
 ) {
   try {
-    const { id, noteId } = await params;
+    const { id, taskId } = await params;
     const user = await verifyAuth(request);
     if (!user) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
@@ -24,28 +24,28 @@ export async function PUT(
     if (!title || typeof title !== 'string' || title.trim().length === 0) {
       return NextResponse.json({ 
         success: false, 
-        error: 'Note title is required' 
+        error: 'Task title is required' 
       }, { status: 400 });
     }
 
     if (!content || typeof content !== 'string' || content.trim().length === 0) {
       return NextResponse.json({ 
         success: false, 
-        error: 'Note content is required' 
+        error: 'Task content is required' 
       }, { status: 400 });
     }
 
     if (title.length > 100) {
       return NextResponse.json({ 
         success: false, 
-        error: 'Note title cannot be more than 100 characters' 
+        error: 'Task title cannot be more than 100 characters' 
       }, { status: 400 });
     }
 
     if (content.length > 5000) {
       return NextResponse.json({ 
         success: false, 
-        error: 'Note content cannot be more than 5000 characters' 
+        error: 'Task content cannot be more than 5000 characters' 
       }, { status: 400 });
     }
 
@@ -65,32 +65,32 @@ export async function PUT(
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const noteIndex = client.tasks.findIndex((note: any) => note._id?.toString() === noteId);
-    if (noteIndex === -1) {
+    const taskIndex = client.tasks.findIndex((task: any) => task._id?.toString() === taskId);
+    if (taskIndex === -1) {
       return NextResponse.json({ 
         success: false, 
-        error: 'Note not found' 
+        error: 'Task not found' 
       }, { status: 404 });
     }
 
-    client.tasks[noteIndex].title = title.trim();
-    client.tasks[noteIndex].content = content.trim();
-    client.tasks[noteIndex].editedBy = user.username;
-    client.tasks[noteIndex].assignedTo = assignedTo && assignedTo.trim() ? assignedTo.trim() : undefined;
-    client.tasks[noteIndex].updatedAt = new Date();
+    client.tasks[taskIndex].title = title.trim();
+    client.tasks[taskIndex].content = content.trim();
+    client.tasks[taskIndex].editedBy = user.username;
+    client.tasks[taskIndex].assignedTo = assignedTo && assignedTo.trim() ? assignedTo.trim() : undefined;
+    client.tasks[taskIndex].updatedAt = new Date();
     
     // Handle completion status change
-    const wasCompleted = client.tasks[noteIndex].completed || false;
+    const wasCompleted = client.tasks[taskIndex].completed || false;
     const nowCompleted = completed || false;
     
     if (nowCompleted !== wasCompleted) {
-      client.tasks[noteIndex].completed = nowCompleted;
+      client.tasks[taskIndex].completed = nowCompleted;
       if (nowCompleted) {
-        client.tasks[noteIndex].completedBy = user.username;
-        client.tasks[noteIndex].completedAt = new Date();
+        client.tasks[taskIndex].completedBy = user.username;
+        client.tasks[taskIndex].completedAt = new Date();
       } else {
-        client.tasks[noteIndex].completedBy = undefined;
-        client.tasks[noteIndex].completedAt = undefined;
+        client.tasks[taskIndex].completedBy = undefined;
+        client.tasks[taskIndex].completedAt = undefined;
       }
     }
 
@@ -98,13 +98,13 @@ export async function PUT(
 
     return NextResponse.json({ 
       success: true, 
-      data: client.tasks[noteIndex] 
+      data: client.tasks[taskIndex] 
     });
   } catch (error) {
-    console.error('Error updating note:', error);
+    console.error('Error updating task:', error);
     return NextResponse.json({ 
       success: false, 
-      error: 'Failed to update note' 
+      error: 'Failed to update task' 
     }, { status: 500 });
   }
 }
@@ -114,17 +114,17 @@ export async function DELETE(
   { params }: RouteParams
 ) {
   try {
-    const { id, noteId } = await params;
+    const { id, taskId } = await params;
     const user = await verifyAuth(request);
     if (!user) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check if user can delete notes (only admins can delete)
+    // Check if user can delete tasks (only admins can delete)
     if (user.role !== 'admin') {
       return NextResponse.json({ 
         success: false, 
-        error: 'Only administrators can delete notes' 
+        error: 'Only administrators can delete tasks' 
       }, { status: 403 });
     }
 
@@ -143,39 +143,27 @@ export async function DELETE(
       client.tasks = [];
     }
 
-    console.log('🗑️ DELETE: Looking for task:', {
-      clientId: id,
-      taskId: noteId,
-      totalTasks: client.tasks.length,
-      taskIds: client.tasks.map((t: any) => t._id?.toString())
-    });
-
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const noteIndex = client.tasks.findIndex((note: any) => note._id?.toString() === noteId);
-    
-    console.log('🗑️ DELETE: Task index:', noteIndex);
-    
-    if (noteIndex === -1) {
+    const taskIndex = client.tasks.findIndex((task: any) => task._id?.toString() === taskId);
+    if (taskIndex === -1) {
       return NextResponse.json({ 
         success: false, 
         error: 'Task not found' 
       }, { status: 404 });
     }
 
-    client.tasks.splice(noteIndex, 1);
+    client.tasks.splice(taskIndex, 1);
     await client.save();
-
-    console.log('🗑️ DELETE: Task deleted successfully');
 
     return NextResponse.json({ 
       success: true, 
-      message: 'Note deleted successfully' 
+      message: 'Task deleted successfully' 
     });
   } catch (error) {
-    console.error('Error deleting note:', error);
+    console.error('Error deleting task:', error);
     return NextResponse.json({ 
       success: false, 
-      error: 'Failed to delete note' 
+      error: 'Failed to delete task' 
     }, { status: 500 });
   }
 }

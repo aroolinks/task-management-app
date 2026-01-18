@@ -49,6 +49,12 @@ export async function PUT(
     
     const updates = await request.json();
     
+    console.log('📝 Updating user:', {
+      id,
+      updates,
+      adminUser: admin.username,
+    });
+    
     // Don't allow updating password through this endpoint for security
     // Create a separate password reset endpoint if needed
     const { password, ...safeUpdates } = updates;
@@ -74,6 +80,13 @@ export async function PUT(
       );
     }
 
+    console.log('✅ User updated successfully:', {
+      id: user._id,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+    });
+
     return NextResponse.json({
       success: true,
       user: {
@@ -86,10 +99,20 @@ export async function PUT(
         updatedAt: user.updatedAt
       }
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Update user error:', error);
+    
+    // Handle duplicate key error (username or email already exists)
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern || {})[0];
+      return NextResponse.json(
+        { success: false, error: `${field === 'username' ? 'Username' : 'Email'} already exists` },
+        { status: 400 }
+      );
+    }
+    
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
+      { success: false, error: error.message || 'Internal server error' },
       { status: 500 }
     );
   }

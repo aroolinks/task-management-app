@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Task, Priority, Status, CMS } from '@/types/task';
 import { useAssignees } from '@/contexts/AssigneeContext';
 import { useGroups } from '@/contexts/GroupContext';
+import { useAuth } from '@/contexts/AuthContext';
 import AssigneesModal from './AssigneesModal';
 
 interface TaskItemProps {
@@ -18,6 +19,7 @@ const cmsOptions: CMS[] = ['Wordpress', 'Shopify', 'Designing', 'SEO', 'Marketin
 
 
 export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = false, autoEdit = false }: TaskItemProps) {
+  const { user } = useAuth();
   const { assignees } = useAssignees();
   const { groups } = useGroups();
   const [isEditing, setIsEditing] = useState(autoEdit);
@@ -262,7 +264,11 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
   };
 
   return (
-    <div className={`grid grid-cols-[160px_90px_120px_90px_120px_100px_110px_90px_120px_120px] items-center gap-0 px-4 text-xs min-h-[48px] ${task.status === 'Completed' ? 'text-gray-500' : 'text-gray-900'} ${getRowBgColor()} transition-colors hover:bg-gray-50`}>
+    <div className={`grid items-center gap-0 px-4 text-xs min-h-[48px] ${task.status === 'Completed' ? 'text-gray-500' : 'text-gray-900'} ${getRowBgColor()} transition-colors hover:bg-gray-50 ${
+      user?.role === 'admin' 
+        ? 'grid-cols-[160px_90px_120px_90px_120px_100px_110px_90px_120px_120px]'
+        : 'grid-cols-[160px_90px_120px_90px_120px_100px_110px_120px]'
+    }`}>
 
       {/* Client Name */}
       <div className="px-2 py-1.5 text-left overflow-hidden">
@@ -418,25 +424,27 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
         )}
       </div>
 
+      {/* Total Cost - Admin Only */}
+      {user?.role === 'admin' && (
+        <div className="px-2 py-1.5 text-left overflow-hidden">
+          {editingField === 'totalPrice' ? (
+            renderEditableField('totalPrice', 'Total Price', task.totalPrice?.toString() || '', 'number')
+          ) : (
+            <span 
+              className={`cursor-pointer hover:bg-gray-100 px-2 py-1.5 rounded transition-colors ${task.status === 'Completed' ? 'text-gray-500' : 'text-gray-900'}`}
+              onClick={() => handleFieldClick('totalPrice')}
+              title="Click to edit"
+            >
+              {showCost ? (task.totalPrice ? `£${task.totalPrice.toFixed(2)}` : 'N/A') : '••••'}
+            </span>
+          )}
+        </div>
+      )}
 
-      {/* Total Cost */}
-      <div className="px-2 py-1.5 text-left overflow-hidden">
-        {editingField === 'totalPrice' ? (
-          renderEditableField('totalPrice', 'Total Price', task.totalPrice?.toString() || '', 'number')
-        ) : (
-          <span 
-            className={`cursor-pointer hover:bg-gray-100 px-2 py-1.5 rounded transition-colors ${task.status === 'Completed' ? 'text-gray-500' : 'text-gray-900'}`}
-            onClick={() => handleFieldClick('totalPrice')}
-            title="Click to edit"
-          >
-            {showCost ? (task.totalPrice ? `£${task.totalPrice.toFixed(2)}` : 'N/A') : '••••'}
-          </span>
-        )}
-      </div>
-
-      {/* Billing: Invoice + Paid */}
-      <div className="px-2 py-2 text-left overflow-hidden">
-        <div className="flex flex-col gap-1.5">
+      {/* Billing: Invoice + Paid - Admin Only */}
+      {user?.role === 'admin' && (
+        <div className="px-2 py-2 text-left overflow-hidden">
+          <div className="flex flex-col gap-1.5">
           {/* Invoice Status */}
           <div 
             className={`inline-flex items-center gap-1.5 px-2 py-1 rounded cursor-pointer transition-colors ${
@@ -503,6 +511,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
           </div>
         </div>
       </div>
+      )}
 
       {/* Actions */}
       <div className="flex items-center justify-start gap-2 px-2 py-2 overflow-hidden">
@@ -511,7 +520,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
           onClick={() => setShowAssignModal(true)}
           className="w-7 h-7 bg-blue-100 hover:bg-blue-200 border border-blue-200 hover:border-blue-300 rounded flex items-center justify-center text-blue-700 hover:text-blue-800 transition-colors"
           aria-label="Manage assignments"
-          title="Assign team members"
+          title="Assign users"
         >
           <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a4 4 0 00-3-3.87M9 20v-2a4 4 0 013-3.87M15 11a4 4 0 10-8 0 4 4 0 008 0z" />
