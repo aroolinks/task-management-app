@@ -19,6 +19,7 @@ export async function sendExpiryNotification(params: EmailParams): Promise<boole
     // Initialize EmailJS here instead of at module level
     if (typeof window === 'undefined') {
       console.error('❌ EmailJS can only be used in the browser');
+      alert('Email service is not available on the server. Please try again.');
       return false;
     }
 
@@ -26,14 +27,18 @@ export async function sendExpiryNotification(params: EmailParams): Promise<boole
       hasPublicKey: !!EMAILJS_PUBLIC_KEY,
       hasServiceId: !!EMAILJS_SERVICE_ID,
       hasTemplateId: !!EMAILJS_TEMPLATE_ID,
-      publicKey: EMAILJS_PUBLIC_KEY,
-      serviceId: EMAILJS_SERVICE_ID,
-      templateId: EMAILJS_TEMPLATE_ID,
+      publicKey: EMAILJS_PUBLIC_KEY ? `${EMAILJS_PUBLIC_KEY.substring(0, 5)}...` : 'MISSING',
+      serviceId: EMAILJS_SERVICE_ID || 'MISSING',
+      templateId: EMAILJS_TEMPLATE_ID || 'MISSING',
     });
 
     if (!EMAILJS_PUBLIC_KEY || !EMAILJS_SERVICE_ID || !EMAILJS_TEMPLATE_ID) {
       console.error('❌ EmailJS configuration is missing');
-      alert('EmailJS configuration is missing. Please check your environment variables.');
+      const missing = [];
+      if (!EMAILJS_PUBLIC_KEY) missing.push('Public Key');
+      if (!EMAILJS_SERVICE_ID) missing.push('Service ID');
+      if (!EMAILJS_TEMPLATE_ID) missing.push('Template ID');
+      alert(`EmailJS configuration is incomplete. Missing: ${missing.join(', ')}\n\nPlease check your .env.local file and restart the server.`);
       return false;
     }
 
