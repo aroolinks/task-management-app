@@ -80,7 +80,7 @@ export default function TestEmailPage() {
             <p className="font-semibold mb-2">📝 Instructions:</p>
             <ol className="list-decimal list-inside space-y-1">
               <li>Enter your email address above</li>
-              <li>Click "Send Test Email"</li>
+              <li>Click &quot;Send Test Email&quot;</li>
               <li>Open browser console (F12) to see detailed logs</li>
               <li>Check your email inbox (and spam folder)</li>
             </ol>
