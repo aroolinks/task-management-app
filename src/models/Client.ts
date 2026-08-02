@@ -26,11 +26,24 @@ export interface IClientTask {
   updatedAt: Date;
 }
 
+export interface IClientProject {
+  _id?: string;
+  name: string;
+  description?: string;
+  status: 'active' | 'completed' | 'on_hold';
+  createdBy?: string;
+  editedBy?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface IClient {
   _id: string;
   name: string;
+  type: 'client' | 'agency';
   tasks: IClientTask[];
   loginDetails: IClientLoginDetail[];
+  projects: IClientProject[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -109,6 +122,38 @@ const TaskSchema = new mongoose.Schema(
   }
 );
 
+// Project subdocument schema
+const ProjectSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: true,
+      maxlength: 200,
+    },
+    description: {
+      type: String,
+      required: false,
+      maxlength: 2000,
+    },
+    status: {
+      type: String,
+      enum: ['active', 'completed', 'on_hold'],
+      default: 'active',
+    },
+    createdBy: {
+      type: String,
+      required: false,
+    },
+    editedBy: {
+      type: String,
+      required: false,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
 // Simple schema without complex validation
 const ClientSchema = new mongoose.Schema(
   {
@@ -117,12 +162,21 @@ const ClientSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
+    type: {
+      type: String,
+      enum: ['client', 'agency'],
+      default: 'client',
+    },
     tasks: {
       type: [TaskSchema],
       default: [],
     },
     loginDetails: {
       type: [LoginDetailSchema],
+      default: [],
+    },
+    projects: {
+      type: [ProjectSchema],
       default: [],
     },
   },

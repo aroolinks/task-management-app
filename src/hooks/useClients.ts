@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { IClient, IClientTask, IClientLoginDetail } from '@/models/Client';
+import { IClient, IClientTask, IClientLoginDetail, IClientProject } from '@/models/Client';
 
 export interface ClientLoginDetail {
   id: string;
@@ -27,17 +27,37 @@ export interface ClientTask {
   updatedAt: Date;
 }
 
+export interface ClientProject {
+  id: string;
+  name: string;
+  description?: string;
+  status: 'active' | 'completed' | 'on_hold';
+  createdBy?: string;
+  editedBy?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface Client {
   id: string;
   name: string;
+  type: 'client' | 'agency';
   tasks: ClientTask[];
   loginDetails: ClientLoginDetail[];
+  projects: ClientProject[];
   createdAt: Date;
   updatedAt: Date;
 }
 
 export interface ClientInput {
   name: string;
+  type?: 'client' | 'agency';
+}
+
+export interface ProjectInput {
+  name: string;
+  description?: string;
+  status?: 'active' | 'completed' | 'on_hold';
 }
 
 export interface TaskInput {
@@ -85,7 +105,8 @@ export function useClients() {
         const formattedClients = data.data.map((client: IClient) => ({
           id: client._id,
           name: client.name,
-          tasks: Array.isArray(client.tasks) 
+          type: client.type === 'agency' ? 'agency' : 'client',
+          tasks: Array.isArray(client.tasks)
             ? client.tasks.map((task: IClientTask) => ({
                 id: task._id || '',
                 title: task.title,
@@ -100,7 +121,7 @@ export function useClients() {
                 updatedAt: new Date(task.updatedAt),
               }))
             : [], // Fallback to empty array if tasks is not an array
-          loginDetails: Array.isArray(client.loginDetails) 
+          loginDetails: Array.isArray(client.loginDetails)
             ? client.loginDetails.map((login: IClientLoginDetail) => ({
                 id: login._id || '',
                 website: login.website,
@@ -113,10 +134,22 @@ export function useClients() {
                 updatedAt: new Date(login.updatedAt),
               }))
             : [], // Fallback to empty array if loginDetails is not an array
+          projects: Array.isArray(client.projects)
+            ? client.projects.map((project: IClientProject) => ({
+                id: project._id || '',
+                name: project.name,
+                description: project.description,
+                status: project.status || 'active',
+                createdBy: project.createdBy,
+                editedBy: project.editedBy,
+                createdAt: new Date(project.createdAt),
+                updatedAt: new Date(project.updatedAt),
+              }))
+            : [], // Fallback to empty array if projects is not an array
           createdAt: new Date(client.createdAt),
           updatedAt: new Date(client.updatedAt),
         }));
-        
+
         setClients(formattedClients);
       } else {
         throw new Error(data.error || 'Invalid response format');
@@ -151,7 +184,8 @@ export function useClients() {
         const newClient: Client = {
           id: data.data._id,
           name: data.data.name,
-          tasks: Array.isArray(data.data.tasks) 
+          type: data.data.type === 'agency' ? 'agency' : 'client',
+          tasks: Array.isArray(data.data.tasks)
             ? data.data.tasks.map((task: IClientTask) => ({
                 id: task._id || '',
                 title: task.title,
@@ -166,7 +200,7 @@ export function useClients() {
                 updatedAt: new Date(task.updatedAt),
               }))
             : [], // Fallback to empty array for new clients
-          loginDetails: Array.isArray(data.data.loginDetails) 
+          loginDetails: Array.isArray(data.data.loginDetails)
             ? data.data.loginDetails.map((login: IClientLoginDetail) => ({
                 id: login._id || '',
                 website: login.website,
@@ -179,10 +213,22 @@ export function useClients() {
                 updatedAt: new Date(login.updatedAt),
               }))
             : [], // Fallback to empty array for new clients
+          projects: Array.isArray(data.data.projects)
+            ? data.data.projects.map((project: IClientProject) => ({
+                id: project._id || '',
+                name: project.name,
+                description: project.description,
+                status: project.status || 'active',
+                createdBy: project.createdBy,
+                editedBy: project.editedBy,
+                createdAt: new Date(project.createdAt),
+                updatedAt: new Date(project.updatedAt),
+              }))
+            : [], // Fallback to empty array for new clients
           createdAt: new Date(data.data.createdAt),
           updatedAt: new Date(data.data.updatedAt),
         };
-        
+
         setClients(prev => {
           const updated = [...prev, newClient].sort((a, b) => a.name.localeCompare(b.name));
           return updated;
@@ -220,6 +266,7 @@ export function useClients() {
         const updatedClient: Client = {
           id: data.data._id,
           name: data.data.name,
+          type: data.data.type === 'agency' ? 'agency' : 'client',
           tasks: data.data.tasks.map((task: IClientTask) => ({
             id: task._id || '',
             title: task.title,
@@ -229,7 +276,7 @@ export function useClients() {
             createdAt: new Date(task.createdAt),
             updatedAt: new Date(task.updatedAt),
           })),
-          loginDetails: Array.isArray(data.data.loginDetails) 
+          loginDetails: Array.isArray(data.data.loginDetails)
             ? data.data.loginDetails.map((login: IClientLoginDetail) => ({
                 id: login._id || '',
                 website: login.website,
@@ -240,6 +287,18 @@ export function useClients() {
                 editedBy: login.editedBy,
                 createdAt: new Date(login.createdAt),
                 updatedAt: new Date(login.updatedAt),
+              }))
+            : [], // Fallback to empty array
+          projects: Array.isArray(data.data.projects)
+            ? data.data.projects.map((project: IClientProject) => ({
+                id: project._id || '',
+                name: project.name,
+                description: project.description,
+                status: project.status || 'active',
+                createdBy: project.createdBy,
+                editedBy: project.editedBy,
+                createdAt: new Date(project.createdAt),
+                updatedAt: new Date(project.updatedAt),
               }))
             : [], // Fallback to empty array
           createdAt: new Date(data.data.createdAt),
@@ -687,6 +746,143 @@ export function useClients() {
     }
   }, []);
 
+  const addProject = useCallback(async (clientId: string, projectData: ProjectInput): Promise<ClientProject | null> => {
+    try {
+      setError(null);
+
+      const response = await fetch(`/api/clients/${clientId}/projects`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(projectData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to add project');
+      }
+
+      if (data.success && data.data) {
+        const newProject: ClientProject = {
+          id: data.data._id,
+          name: data.data.name,
+          description: data.data.description,
+          status: data.data.status || 'active',
+          createdBy: data.data.createdBy,
+          editedBy: data.data.editedBy,
+          createdAt: new Date(data.data.createdAt),
+          updatedAt: new Date(data.data.updatedAt),
+        };
+
+        setClients(prev =>
+          prev.map(client =>
+            client.id === clientId
+              ? { ...client, projects: [...client.projects, newProject] }
+              : client
+          )
+        );
+
+        return newProject;
+      }
+
+      throw new Error('Invalid response format');
+    } catch (err) {
+      console.error('Error adding project:', err);
+      setError(err instanceof Error ? err.message : 'Failed to add project');
+      return null;
+    }
+  }, []);
+
+  const updateProject = useCallback(async (clientId: string, projectId: string, updates: ProjectInput): Promise<boolean> => {
+    try {
+      setError(null);
+
+      const response = await fetch(`/api/clients/${clientId}/projects/${projectId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updates),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update project');
+      }
+
+      if (data.success && data.data) {
+        const updatedProject: ClientProject = {
+          id: data.data._id,
+          name: data.data.name,
+          description: data.data.description,
+          status: data.data.status || 'active',
+          createdBy: data.data.createdBy,
+          editedBy: data.data.editedBy,
+          createdAt: new Date(data.data.createdAt),
+          updatedAt: new Date(data.data.updatedAt),
+        };
+
+        setClients(prev =>
+          prev.map(client =>
+            client.id === clientId
+              ? {
+                  ...client,
+                  projects: client.projects.map(project =>
+                    project.id === projectId ? updatedProject : project
+                  )
+                }
+              : client
+          )
+        );
+
+        return true;
+      }
+
+      throw new Error('Invalid response format');
+    } catch (err) {
+      console.error('Error updating project:', err);
+      setError(err instanceof Error ? err.message : 'Failed to update project');
+      return false;
+    }
+  }, []);
+
+  const deleteProject = useCallback(async (clientId: string, projectId: string): Promise<boolean> => {
+    try {
+      setError(null);
+
+      const response = await fetch(`/api/clients/${clientId}/projects/${projectId}`, {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete project');
+      }
+
+      if (data.success) {
+        setClients(prev =>
+          prev.map(client =>
+            client.id === clientId
+              ? { ...client, projects: client.projects.filter(project => project.id !== projectId) }
+              : client
+          )
+        );
+
+        return true;
+      }
+
+      throw new Error('Invalid response format');
+    } catch (err) {
+      console.error('Error deleting project:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete project');
+      return false;
+    }
+  }, []);
+
   const refreshClients = useCallback(async () => {
     await fetchClients();
   }, [fetchClients]);
@@ -709,6 +905,9 @@ export function useClients() {
     addLoginDetail,
     updateLoginDetail,
     deleteLoginDetail,
+    addProject,
+    updateProject,
+    deleteProject,
     refreshClients,
   };
 }

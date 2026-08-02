@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Task, Priority, Status, CMS } from '@/types/task';
 import { useAssignees } from '@/contexts/AssigneeContext';
-import { useGroups } from '@/contexts/GroupContext';
+import { useClients } from '@/contexts/ClientContext';
 import { useAuth } from '@/contexts/AuthContext';
 import AssigneesModal from './AssigneesModal';
 
@@ -12,18 +12,15 @@ interface TaskItemProps {
   onDeleteTask: (id: string) => void;
   onEditTask: (id: string, updates: Partial<Task>) => void;
   showCost?: boolean;
-  autoEdit?: boolean;
 }
 
 const cmsOptions: CMS[] = ['Wordpress', 'Shopify', 'Designing', 'SEO', 'Marketing'];
 
-
-export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = false, autoEdit = false }: TaskItemProps) {
+export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = false }: TaskItemProps) {
   const { user } = useAuth();
   const { assignees } = useAssignees();
-  const { groups } = useGroups();
-  const [isEditing, setIsEditing] = useState(autoEdit);
-  const [editingField, setEditingField] = useState<string | null>(autoEdit ? 'clientName' : null);
+  const { clients } = useClients();
+  const [editingField, setEditingField] = useState<string | null>(null);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [editData, setEditData] = useState({
@@ -91,24 +88,22 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
   };
 
   const handleFieldClick = (field: string) => {
-    if (!isEditing) {
-      setEditingField(field);
-      // Update editData to current task values when starting inline edit
-      setEditData({
-        dueDate: task.dueDate instanceof Date ? task.dueDate.toISOString().split('T')[0] : '',
-        priority: task.priority,
-        status: task.status,
-        clientName: task.clientName,
-        clientGroup: task.clientGroup,
-        cms: task.cms,
-        webUrl: task.webUrl,
-        figmaUrl: task.figmaUrl,
-        assetUrl: task.assetUrl,
-        totalPrice: task.totalPrice?.toString() || '',
-        assignees: task.assignees || [],
-        notes: task.notes || ''
-      });
-    }
+    setEditingField(field);
+    // Update editData to current task values when starting inline edit
+    setEditData({
+      dueDate: task.dueDate instanceof Date ? task.dueDate.toISOString().split('T')[0] : '',
+      priority: task.priority,
+      status: task.status,
+      clientName: task.clientName,
+      clientGroup: task.clientGroup,
+      cms: task.cms,
+      webUrl: task.webUrl,
+      figmaUrl: task.figmaUrl,
+      assetUrl: task.assetUrl,
+      totalPrice: task.totalPrice?.toString() || '',
+      assignees: task.assignees || [],
+      notes: task.notes || ''
+    });
   };
 
   const handleKeyPress = (e: React.KeyboardEvent, field: string) => {
@@ -146,7 +141,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
       displayValue = getUrlLabel(String(value));
     }
     
-    if (isCurrentlyEditing && !isEditing) {
+    if (isCurrentlyEditing) {
       if (type === 'select' && options) {
         return (
           <select
@@ -310,22 +305,22 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
             className="w-full px-2 py-1.5 text-[12px] bg-white border border-gray-300 text-gray-900 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             autoFocus
           >
-            <option value="">No Group</option>
-            {groups.map(group => (
-              <option key={group} value={group}>{group}</option>
+            <option value="">No Client</option>
+            {clients.map(client => (
+              <option key={client.id} value={client.name}>{client.name}</option>
             ))}
           </select>
         ) : (
           <span
             className={`flex items-center gap-1 cursor-pointer hover:bg-gray-100 px-2 py-1.5 rounded transition-colors ${task.status === 'Completed' ? 'text-gray-500' : 'text-gray-900'}`}
             onClick={() => handleFieldClick('clientGroup')}
-            title="Click to change group (will move task to different tab)"
+            title="Click to change client (will move project to different tab)"
           >
             <svg className="h-3 w-3 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
             </svg>
             <span className="truncate">
-              {task.clientGroup || 'No Group'}
+              {task.clientGroup || 'No Client'}
             </span>
           </span>
         )}
@@ -520,7 +515,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
           onClick={() => setShowAssignModal(true)}
           className="w-7 h-7 bg-blue-100 hover:bg-blue-200 border border-blue-200 hover:border-blue-300 rounded flex items-center justify-center text-blue-700 hover:text-blue-800 transition-colors"
           aria-label="Manage assignments"
-          title="Assign users"
+          title="Assign team members"
         >
           <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a4 4 0 00-3-3.87M9 20v-2a4 4 0 013-3.87M15 11a4 4 0 10-8 0 4 4 0 008 0z" />
@@ -540,25 +535,14 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
           </div>
-        ) : (
-          <button
-            onClick={() => setIsEditing(!isEditing)}
-            className="w-7 h-7 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded flex items-center justify-center text-gray-600 hover:text-gray-700 transition-colors"
-            aria-label="Edit task"
-            title="Edit task"
-          >
-            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-            </svg>
-          </button>
-        )}
+        ) : null}
 
         {/* Delete Button */}
         <button
           onClick={() => onDeleteTask(task.id)}
           className="w-7 h-7 bg-red-100 hover:bg-red-200 border border-red-200 hover:border-red-300 rounded flex items-center justify-center text-red-700 hover:text-red-800 transition-colors"
-          aria-label="Delete task"
-          title="Delete task"
+          aria-label="Delete project"
+          title="Delete project"
         >
           <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

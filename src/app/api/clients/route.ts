@@ -59,21 +59,23 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name } = body;
+    const { name, type } = body;
 
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Client name is required' 
+      return NextResponse.json({
+        success: false,
+        error: 'Client name is required'
       }, { status: 400 });
     }
 
     if (name.length > 200) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Client name cannot be more than 200 characters' 
+      return NextResponse.json({
+        success: false,
+        error: 'Client name cannot be more than 200 characters'
       }, { status: 400 });
     }
+
+    const clientType = type === 'agency' ? 'agency' : 'client';
 
     await dbConnect();
 
@@ -91,6 +93,7 @@ export async function POST(request: NextRequest) {
 
     const client = new Client({
       name: name.trim(),
+      type: clientType,
       tasks: []
     });
 

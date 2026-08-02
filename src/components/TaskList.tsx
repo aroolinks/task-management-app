@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { Task } from '@/types/task';
 import TaskItem from './TaskItem';
 import { generateGroupInvoice, generateAllTasksInvoice } from '@/utils/invoiceGenerator';
@@ -19,7 +19,7 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
   const effectiveSelectedGroup = selectedGroupProp ?? 'all';
   const [showEarnings, setShowEarnings] = useState<boolean>(false);
   const [showCost, setShowCost] = useState<boolean>(false);
-  const [statusTab, setStatusTab] = useState<'inprocess' | 'completed'>('inprocess');
+  const [statusTab, setStatusTab] = useState<'all' | 'inprocess' | 'completed'>('inprocess');
   
   // Get current year and create month tabs
   const year = new Date().getFullYear();
@@ -53,6 +53,21 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
       setSelectedMonth(monthsWithTasks[0]);
     }
   }, [monthsWithTasks, selectedMonth]);
+
+  // When a task is freshly created (autoEditTaskId changes), jump the view to
+  // that task's month/status tab so it doesn't silently disappear off-screen.
+  const lastJumpedTaskId = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (!autoEditTaskId || autoEditTaskId === lastJumpedTaskId.current) return;
+    const task = tasks.find(t => t.id === autoEditTaskId);
+    if (!task) return; // wait for it to show up in the tasks prop
+    lastJumpedTaskId.current = autoEditTaskId;
+    const monthKey = task.dueDate
+      ? task.dueDate.toLocaleDateString('en-US', { month: 'long' })
+      : 'No Due Date';
+    setSelectedMonth(monthKey);
+    setStatusTab(task.status === 'Completed' ? 'completed' : 'inprocess');
+  }, [autoEditTaskId, tasks]);
 
   // Group tasks by month
   const tasksByMonth = useMemo(() => {
@@ -103,9 +118,11 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
     }
     
     // Apply status tab filter
-    monthTasks = monthTasks.filter(t => 
-      statusTab === 'completed' ? t.status === 'Completed' : t.status !== 'Completed'
-    );
+    if (statusTab !== 'all') {
+      monthTasks = monthTasks.filter(t =>
+        statusTab === 'completed' ? t.status === 'Completed' : t.status !== 'Completed'
+      );
+    }
     
     return monthTasks;
   }, [tasksByMonth, selectedMonth, effectiveSelectedGroup, statusTab]);
@@ -141,7 +158,7 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
           </div>
         </div>
         <h3 className="text-gray-900 text-lg font-semibold mb-2">No projects yet</h3>
-        <p className="text-gray-600 mb-4 max-w-sm mx-auto text-sm">Get started by creating your first project. Click the &quot;Add Task&quot; button above to begin organizing your work.</p>
+        <p className="text-gray-600 mb-4 max-w-sm mx-auto text-sm">Get started by creating your first project. Click the &quot;Add Project&quot; button above to begin organizing your work.</p>
         <div className="flex items-center justify-center gap-1.5 text-xs text-gray-500">
           <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -171,12 +188,13 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
                 }`}
                 onClick={() => hasTasksInMonth && setSelectedMonth(month.value)}
                 disabled={!hasTasksInMonth}
-                title={hasTasksInMonth ? `${month.value} - ${tasksByMonth[month.value]?.length || 0} tasks` : `No tasks in ${month.value}`}
+                title={hasTasksInMonth ? `${month.value} - ${tasksByMonth[month.value]?.length || 0} projects` : `No projects in ${month.value}`}
               >
                 {month.label}
                 {hasTasksInMonth ? (
                   <span className="ml-1 px-1.5 py-0.5 bg-gray-200 text-gray-600 rounded text-xs">
-                    {tasksByMonth[month.value]?.length || 0}
+                    {
+                    tasksByMonth[month.value]?.length || 0}
                   </span>
                 ) : (
                   <span className="ml-1 px-1.5 py-0.5 bg-gray-300 text-gray-500 rounded text-xs">
@@ -195,7 +213,7 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
                   : 'hover:bg-gray-200 text-gray-700 hover:text-gray-900'
               }`}
               onClick={() => setSelectedMonth('No Due Date')}
-              title={`No Due Date - ${tasksByMonth['No Due Date']?.length || 0} tasks`}
+              title={`No Due Date - ${tasksByMonth['No Due Date']?.length || 0} projects`}
             >
               No Date
               <span className="ml-1 px-1.5 py-0.5 bg-gray-200 text-gray-600 rounded text-xs">
@@ -212,7 +230,18 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
           <div className="inline-flex rounded border border-gray-300 overflow-hidden">
             <button
               className={`px-3 py-1.5 text-xs font-medium flex items-center gap-1.5 transition-colors ${
-                statusTab === 'inprocess' 
+                statusTab === 'all'
+                  ? 'bg-gray-900 text-white'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+              }`}
+              onClick={() => setStatusTab('all')}
+              title="Show all projects"
+            >
+              All
+            </button>
+            <button
+              className={`px-3 py-1.5 text-xs font-medium flex items-center gap-1.5 transition-colors ${
+                statusTab === 'inprocess'
                   ? 'bg-gray-900 text-white' 
                   : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
               }`}
@@ -253,13 +282,13 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
             </button>
           </div>
           <div className="text-sm text-gray-900 font-medium">
-            {selectedMonth} - {statusTab === 'completed' ? 'Completed' : 'In Process'} Tasks
+            {selectedMonth} - {statusTab === 'completed' ? 'Completed' : statusTab === 'inprocess' ? 'In Process' : 'All'} Projects
           </div>
         </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5 text-xs">
             <span className="px-2 py-1 rounded bg-gray-100 text-gray-700 border border-gray-300 font-medium">
-              {totalTasks} tasks
+              {totalTasks} projects
             </span>
           </div>
           {user?.role === 'admin' && (
@@ -294,9 +323,9 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
           </div>
-          <h3 className="text-gray-900 font-medium mb-1">No tasks found</h3>
+          <h3 className="text-gray-900 font-medium mb-1">No projects found</h3>
           <p className="text-gray-500 text-sm">
-            No {statusTab === 'completed' ? 'completed' : 'in-process'} tasks in {selectedMonth}
+            No {statusTab === 'completed' ? 'completed' : statusTab === 'inprocess' ? 'in-process' : ''} projects in {selectedMonth}
           </p>
         </div>
       ) : (
@@ -347,7 +376,6 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
                 onDeleteTask={onDeleteTask}
                 onEditTask={onEditTask}
                 showCost={showCost}
-                autoEdit={task.id === autoEditTaskId}
               />
             ))}
           </div>

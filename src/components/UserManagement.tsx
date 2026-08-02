@@ -107,16 +107,16 @@ export default function UserManagement() {
       const data = await response.json();
       
       if (data.success) {
-        setSuccess(`User ${formData.username} created successfully!`);
+        setSuccess(`Team member ${formData.username} created successfully!`);
         resetForm();
         fetchUsers(); // Refresh the list
         notifyTeamMembersUpdated(); // Notify other components
       } else {
-        setError(data.error || 'Failed to create user');
+        setError(data.error || 'Failed to create team member');
       }
     } catch (error) {
       console.error('Create user error:', error);
-      setError('Failed to create user');
+      setError('Failed to create team member');
     }
   };
 
@@ -144,21 +144,21 @@ export default function UserManagement() {
       const data = await response.json();
       
       if (data.success) {
-        setSuccess(`User ${formData.username} updated successfully!`);
+        setSuccess(`Team member ${formData.username} updated successfully!`);
         resetForm();
         fetchUsers(); // Refresh the list
         notifyTeamMembersUpdated(); // Notify other components
       } else {
-        setError(data.error || 'Failed to update user');
+        setError(data.error || 'Failed to update team member');
       }
     } catch (error) {
       console.error('Update user error:', error);
-      setError('Failed to update user');
+      setError('Failed to update team member');
     }
   };
 
   const handleDeleteUser = async (userId: string, username: string) => {
-    if (!window.confirm(`Are you sure you want to delete user "${username}"? This action cannot be undone.`)) {
+    if (!window.confirm(`Are you sure you want to delete team member "${username}"? This action cannot be undone.`)) {
       return;
     }
 
@@ -171,17 +171,17 @@ export default function UserManagement() {
       });
 
       const data = await response.json();
-      
+
       if (data.success) {
-        setSuccess(`User ${username} deleted successfully!`);
+        setSuccess(`Team member ${username} deleted successfully!`);
         fetchUsers(); // Refresh the list
         notifyTeamMembersUpdated(); // Notify other components
       } else {
-        setError(data.error || 'Failed to delete user');
+        setError(data.error || 'Failed to delete team member');
       }
     } catch (error) {
       console.error('Delete user error:', error);
-      setError('Failed to delete user');
+      setError('Failed to delete team member');
     }
   };
 
@@ -317,7 +317,7 @@ export default function UserManagement() {
           </div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">Access Restricted</h3>
           <p className="text-gray-500">
-            You don&apos;t have permission to manage users. Please contact your administrator.
+            You don&apos;t have permission to manage the team. Please contact your administrator.
           </p>
         </div>
       </div>
@@ -329,14 +329,14 @@ export default function UserManagement() {
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900">User Management</h2>
-            <p className="text-gray-600 mt-1">Manage user accounts and permissions</p>
+            <h2 className="text-xl font-semibold text-gray-900">Team Management</h2>
+            <p className="text-gray-600 mt-1">Manage team member accounts and permissions</p>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={fetchUsers}
               className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-sm transition-colors flex items-center gap-1"
-              title="Refresh users"
+              title="Refresh team members"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -347,7 +347,7 @@ export default function UserManagement() {
               onClick={() => setShowCreateForm(true)}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition-colors"
             >
-              Add User
+              Add Team Member
             </button>
           </div>
         </div>
@@ -370,7 +370,7 @@ export default function UserManagement() {
       {showCreateForm && (
         <div className="mb-6 p-6 bg-white border border-gray-200 rounded-lg">
           <h3 className="text-lg font-medium text-gray-900 mb-4">
-            {editingUser ? 'Edit User' : 'Create New User'}
+            {editingUser ? 'Edit Team Member' : 'Create New Team Member'}
           </h3>
           <form onSubmit={editingUser ? handleUpdateUser : handleCreateUser} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -426,7 +426,7 @@ export default function UserManagement() {
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
                 >
-                  <option value="team_member">User</option>
+                  <option value="team_member">Team Member</option>
                   <option value="admin">Admin</option>
                 </select>
               </div>
@@ -485,7 +485,7 @@ export default function UserManagement() {
                     onChange={handleInputChange}
                     className="mr-2"
                   />
-                  <span className="text-sm text-gray-700">Can Manage Users</span>
+                  <span className="text-sm text-gray-700">Can Manage Team</span>
                 </label>
               </div>
             </div>
@@ -495,7 +495,7 @@ export default function UserManagement() {
                 type="submit"
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition-colors"
               >
-                {editingUser ? 'Update User' : 'Create User'}
+                {editingUser ? 'Update Team Member' : 'Create Team Member'}
               </button>
               <button
                 type="button"
@@ -513,19 +513,19 @@ export default function UserManagement() {
         </div>
       )}
 
-      {/* Users List */}
+      {/* Team List */}
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">Users</h3>
+          <h3 className="text-lg font-medium text-gray-900">Team</h3>
         </div>
-        
+
         {loading ? (
           <div className="p-6 text-center">
-            <div className="text-gray-500">Loading users...</div>
+            <div className="text-gray-500">Loading team members...</div>
           </div>
         ) : users.length === 0 ? (
           <div className="p-6 text-center">
-            <div className="text-gray-500">No users found</div>
+            <div className="text-gray-500">No team members found</div>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -533,7 +533,7 @@ export default function UserManagement() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    User
+                    Team Member
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Role
@@ -564,19 +564,19 @@ export default function UserManagement() {
                           ? 'bg-purple-100 text-purple-800' 
                           : 'bg-blue-100 text-blue-800'
                       }`}>
-                        {userItem.role === 'admin' ? 'Admin' : 'User'}
+                        {userItem.role === 'admin' ? 'Admin' : 'Team Member'}
                       </span>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-wrap gap-1">
                         {userItem.permissions.canViewTasks && (
                           <span className="inline-flex px-2 py-1 text-xs bg-green-100 text-green-800 rounded">
-                            View Tasks
+                            View Projects
                           </span>
                         )}
                         {userItem.permissions.canEditTasks && (
                           <span className="inline-flex px-2 py-1 text-xs bg-green-100 text-green-800 rounded">
-                            Edit Tasks
+                            Edit Projects
                           </span>
                         )}
                         {userItem.permissions.canViewClients && (
@@ -591,7 +591,7 @@ export default function UserManagement() {
                         )}
                         {userItem.permissions.canManageUsers && (
                           <span className="inline-flex px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded">
-                            Manage Users
+                            Manage Team
                           </span>
                         )}
                       </div>
@@ -604,7 +604,7 @@ export default function UserManagement() {
                         <button
                           onClick={() => handleEditUser(userItem)}
                           className="px-3 py-1.5 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors"
-                          title="Edit user"
+                          title="Edit team member"
                         >
                           Edit
                         </button>
@@ -619,7 +619,7 @@ export default function UserManagement() {
                           <button
                             onClick={() => handleDeleteUser(userItem.id, userItem.username)}
                             className="px-3 py-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
-                            title="Delete user"
+                            title="Delete team member"
                           >
                             Delete
                           </button>
