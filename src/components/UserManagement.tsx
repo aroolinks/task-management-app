@@ -128,6 +128,15 @@ export default function UserManagement() {
     setError(null);
     setSuccess(null);
 
+    // A password was typed into the "New Password" field - validate before
+    // touching either the profile or the password, so we don't leave things
+    // half-updated.
+    const newPasswordTyped = formData.password.trim();
+    if (newPasswordTyped && newPasswordTyped.length < 6) {
+      setError('New password must be at least 6 characters long');
+      return;
+    }
+
     try {
       const response = await fetch(`/api/users/${editingUser.id}`, {
         method: 'PUT',
@@ -143,15 +152,29 @@ export default function UserManagement() {
       });
 
       const data = await response.json();
-      
-      if (data.success) {
-        setSuccess(`Team member ${formData.username} updated successfully!`);
-        resetForm();
-        fetchUsers(); // Refresh the list
-        notifyTeamMembersUpdated(); // Notify other components
-      } else {
+
+      if (!data.success) {
         setError(data.error || 'Failed to update team member');
+        return;
       }
+
+      if (newPasswordTyped) {
+        const pwResponse = await fetch(`/api/users/${editingUser.id}/reset-password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ newPassword: newPasswordTyped }),
+        });
+        const pwData = await pwResponse.json();
+        if (!pwData.success) {
+          setError(pwData.error || 'Profile updated, but failed to update password');
+          return;
+        }
+      }
+
+      setSuccess(`Team member ${formData.username} updated successfully!`);
+      resetForm();
+      fetchUsers(); // Refresh the list
+      notifyTeamMembersUpdated(); // Notify other components
     } catch (error) {
       console.error('Update user error:', error);
       setError('Failed to update team member');
@@ -401,22 +424,26 @@ export default function UserManagement() {
                   required
                 />
               </div>
-              {!editingUser && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Password
-                  </label>
-                  <input
-                    type="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
-                    minLength={6}
-                    required
-                  />
-                </div>
-              )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {editingUser ? 'New Password' : 'Password'}
+                </label>
+                <input
+                  type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  placeholder={editingUser ? 'Leave blank to keep current password' : ''}
+                  className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white"
+                  minLength={6}
+                  required={!editingUser}
+                />
+                {editingUser && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Set this if the team member forgot their password. Leave blank to keep it unchanged.
+                  </p>
+                )}
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Role

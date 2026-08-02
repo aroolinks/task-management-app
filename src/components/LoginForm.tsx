@@ -12,6 +12,7 @@ export default function LoginForm() {
   });
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +23,7 @@ export default function LoginForm() {
       return;
     }
 
-    const success = await login(formData.username, formData.password);
+    const success = await login(formData.username, formData.password, rememberMe);
     if (!success) {
       setError("Invalid username/email or password");
     }
@@ -167,6 +168,17 @@ export default function LoginForm() {
                   </button>
                 </div>
               </div>
+
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  disabled={loading}
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-600">Remember me</span>
+              </label>
 
               {error && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-3">

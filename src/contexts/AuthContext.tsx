@@ -19,7 +19,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (username: string, password: string) => Promise<boolean>;
+  login: (username: string, password: string, rememberMe?: boolean) => Promise<boolean>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
 }
@@ -54,7 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const login = useCallback(async (username: string, password: string): Promise<boolean> => {
+  const login = useCallback(async (username: string, password: string, rememberMe = false): Promise<boolean> => {
     try {
       setLoading(true);
       const response = await fetch('/api/auth/login', {
@@ -63,7 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username, password, rememberMe }),
       });
 
       const data = await response.json();

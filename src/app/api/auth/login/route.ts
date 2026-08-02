@@ -10,8 +10,8 @@ export async function POST(request: NextRequest) {
   try {
     await dbConnect();
     
-    const { username, password } = await request.json();
-    
+    const { username, password, rememberMe } = await request.json();
+
     if (!username || !password) {
       return NextResponse.json(
         { success: false, error: 'Username/Email and password are required' },
@@ -56,16 +56,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // "Remember me" keeps the session alive for 30 days instead of the
+    // default 24 hours; unchecked, the cookie is session-only (no maxAge)
+    // so it clears when the browser closes.
+    const sessionLength = rememberMe ? '30d' : '24h';
+
     // Create JWT token with role and permissions
-    const token = await new SignJWT({ 
-      userId: user._id.toString(), 
+    const token = await new SignJWT({
+      userId: user._id.toString(),
       username: user.username,
       email: user.email,
       role: user.role,
       permissions: user.permissions
     })
       .setProtectedHeader({ alg: 'HS256' })
-      .setExpirationTime('24h')
+      .setExpirationTime(sessionLength)
       .sign(JWT_SECRET);
 
     console.log('🔑 Login: Creating token for user:', {
@@ -86,12 +91,14 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    // Set HTTP-only cookie
+    // Set HTTP-only cookie. Only give it a maxAge (persists across browser
+    // restarts) when "remember me" was checked; otherwise it's a session
+    // cookie that disappears when the browser closes.
     response.cookies.set('auth-token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 24 * 60 * 60 // 24 hours
+      ...(rememberMe ? { maxAge: 30 * 24 * 60 * 60 } : {})
     });
 
     console.log('🔑 Login: Cookie set successfully');
