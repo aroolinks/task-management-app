@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { notifyTeamMembersUpdated } from '@/utils/teamMembersSync';
+import ProjectTypeManagement from './ProjectTypeManagement';
 
 interface User {
   id: string;
@@ -638,6 +639,8 @@ export default function UserManagement() {
           </div>
         )}
       </div>
+
+      <ProjectTypeManagement />
 
       {/* Password Reset Modal */}
       {showPasswordReset && resetPasswordUser && (

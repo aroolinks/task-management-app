@@ -24,8 +24,8 @@ export default function ClientsList({ tasks, onOpenClientTab, onClientCreated }:
   const [sortBy, setSortBy] = useState<'name' | 'projects' | 'recent'>('name');
   const [typeFilter, setTypeFilter] = useState<'all' | 'client' | 'agency'>('all');
   const [viewMode, setViewMode] = useState<'list' | 'card'>(() => {
-    if (typeof window === 'undefined') return 'list';
-    return window.localStorage.getItem('clientsViewMode') === 'card' ? 'card' : 'list';
+    if (typeof window === 'undefined') return 'card';
+    return window.localStorage.getItem('clientsViewMode') === 'list' ? 'list' : 'card';
   });
 
   const handleSetViewMode = (mode: 'list' | 'card') => {

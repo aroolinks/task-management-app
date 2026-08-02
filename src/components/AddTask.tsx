@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { TaskInput, Priority, Status, CMS } from '@/types/task';
+import { TaskInput, Priority, Status } from '@/types/task';
 import { useAssignees } from '@/contexts/AssigneeContext';
 import { useClients } from '@/contexts/ClientContext';
+import { useProjectTypes } from '@/contexts/ProjectTypeContext';
 
 interface AddTaskProps {
   onAddTask: (task: TaskInput) => Promise<boolean>;
@@ -14,7 +15,6 @@ interface AddTaskProps {
 
 const priorities: Priority[] = ['Low', 'Medium', 'High', 'Urgent'];
 const statuses: Status[] = ['InProcess', 'Waiting for Quote', 'Completed'];
-const cmsOptions: CMS[] = ['Wordpress', 'Shopify', 'Designing', 'SEO', 'Marketing'];
 
 const getToday = () => new Date().toISOString().split('T')[0];
 
@@ -25,12 +25,13 @@ const labelClass = 'block text-xs font-medium text-slate-400 mb-1';
 export default function AddTask({ onAddTask, isVisible, onClose, defaultClientName }: AddTaskProps) {
   const { assignees, loading: assigneesLoading, addAssignee } = useAssignees();
   const { clients, loading: clientsLoading } = useClients();
+  const { projectTypeNames } = useProjectTypes();
 
   const [dueDate, setDueDate] = useState(getToday());
   const [priority, setPriority] = useState<Priority>('Low');
   const [status, setStatus] = useState<Status>('InProcess');
   const [clientName, setClientName] = useState('');
-  const [cms, setCms] = useState<CMS | null>(null);
+  const [cms, setCms] = useState<string | null>(null);
   const [webUrl, setWebUrl] = useState('');
   const [figmaUrl, setFigmaUrl] = useState('');
   const [assetUrl, setAssetUrl] = useState('');
@@ -232,15 +233,15 @@ export default function AddTask({ onAddTask, isVisible, onClose, defaultClientNa
                   </div>
 
                   <div>
-                    <label htmlFor="cms" className={labelClass}>Job Desc</label>
+                    <label htmlFor="cms" className={labelClass}>Project Type</label>
                     <select
                       id="cms"
                       value={cms || ''}
-                      onChange={(e) => setCms(e.target.value ? e.target.value as CMS : null)}
+                      onChange={(e) => setCms(e.target.value || null)}
                       className={fieldClass}
                     >
                       <option value="">None</option>
-                      {cmsOptions.map(c => (
+                      {projectTypeNames.map(c => (
                         <option key={c} value={c}>{c}</option>
                       ))}
                     </select>

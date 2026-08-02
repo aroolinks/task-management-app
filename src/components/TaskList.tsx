@@ -20,6 +20,17 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
   const [showEarnings, setShowEarnings] = useState<boolean>(false);
   const [showCost, setShowCost] = useState<boolean>(false);
   const [statusTab, setStatusTab] = useState<'all' | 'inprocess' | 'completed'>('inprocess');
+  const [viewMode, setViewMode] = useState<'list' | 'card'>(() => {
+    if (typeof window === 'undefined') return 'list';
+    return window.localStorage.getItem('projectsViewMode') === 'card' ? 'card' : 'list';
+  });
+
+  const handleSetViewMode = (mode: 'list' | 'card') => {
+    setViewMode(mode);
+    try {
+      window.localStorage.setItem('projectsViewMode', mode);
+    } catch {}
+  };
   
   // Get current year and create month tabs
   const year = new Date().getFullYear();
@@ -149,9 +160,9 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
   // Early return after all hooks are called
   if (tasks.length === 0) {
     return (
-      <div className="bg-white border border-gray-200 rounded-lg p-8 text-center">
+      <div className="rounded-2xl border border-gray-200 bg-white p-6 text-center">
         <div className="mb-4">
-          <div className="w-16 h-16 mx-auto mb-3 bg-gray-100 rounded-lg flex items-center justify-center">
+          <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-xl bg-gray-100">
             <svg className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
@@ -170,9 +181,9 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+    <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
       {/* Month tabs */}
-      <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200">
+      <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-3 py-2.5">
         <div className="flex items-center gap-1 overflow-x-auto">
           {months.map(month => {
             const hasTasksInMonth = tasksByMonth[month.value] && tasksByMonth[month.value].length > 0;
@@ -225,9 +236,9 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
       </div>
 
       {/* Status tabs and summary for selected month */}
-      <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200">
+      <div className="flex items-center justify-between border-b border-gray-200 bg-white px-3 py-2.5">
         <div className="flex items-center gap-3">
-          <div className="inline-flex rounded border border-gray-300 overflow-hidden">
+          <div className="inline-flex overflow-hidden rounded-lg border border-gray-300">
             <button
               className={`px-3 py-1.5 text-xs font-medium flex items-center gap-1.5 transition-colors ${
                 statusTab === 'all'
@@ -286,8 +297,33 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {/* View Toggle */}
+          <div className="flex shrink-0 items-center gap-1 rounded-lg bg-gray-100 p-1">
+            <button
+              onClick={() => handleSetViewMode('list')}
+              className={`rounded-md p-2 transition-all ${
+                viewMode === 'list' ? 'bg-white text-gray-900' : 'text-gray-500 hover:text-gray-700'
+              }`}
+              title="List view"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            <button
+              onClick={() => handleSetViewMode('card')}
+              className={`rounded-md p-2 transition-all ${
+                viewMode === 'card' ? 'bg-white text-gray-900' : 'text-gray-500 hover:text-gray-700'
+              }`}
+              title="Card view"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 5h7v7H4V5zm9 0h7v7h-7V5zM4 14h7v7H4v-7zm9 0h7v7h-7v-7z" />
+              </svg>
+            </button>
+          </div>
           <div className="flex items-center gap-1.5 text-xs">
-            <span className="px-2 py-1 rounded bg-gray-100 text-gray-700 border border-gray-300 font-medium">
+            <span className="rounded-md border border-gray-200 bg-gray-50 px-2 py-1 text-xs font-medium text-gray-700">
               {totalTasks} projects
             </span>
           </div>
@@ -295,14 +331,14 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
             <div className="flex items-center gap-1.5">
               <button
                 onClick={() => setShowEarnings(!showEarnings)}
-                className="px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 text-gray-700 hover:text-gray-900 border border-gray-300 transition-colors font-medium text-xs"
+                className="rounded-md border border-gray-200 bg-gray-50 px-2 py-1 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900"
                 title={showEarnings ? 'Hide earnings' : 'Show earnings'}
               >
                 £{showEarnings ? totalEarnings.toFixed(0) : '••••'}
               </button>
               <button
                 onClick={handleGenerateInvoice}
-                className="px-3 py-1 rounded bg-gray-900 hover:bg-gray-800 text-white transition-colors flex items-center gap-1.5 font-medium text-xs"
+                className="flex items-center gap-1.5 rounded-md bg-gray-900 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-gray-800"
                 title="Generate PDF Invoice"
               >
                 <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -317,7 +353,7 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
 
       {/* Show message if no tasks for selected month and status */}
       {selectedMonthTasks.length === 0 ? (
-        <div className="p-8 text-center">
+        <div className="p-6 text-center">
           <div className="w-12 h-12 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
             <svg className="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -328,47 +364,9 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
             No {statusTab === 'completed' ? 'completed' : statusTab === 'inprocess' ? 'in-process' : ''} projects in {selectedMonth}
           </p>
         </div>
-      ) : (
-        <>
-          {/* Header row */}
-          <div className={`grid items-center gap-0 px-4 py-2.5 text-xs font-bold text-gray-600 tracking-wider bg-gray-50 border-b border-gray-200 ${
-            user?.role === 'admin' 
-              ? 'grid-cols-[160px_90px_120px_90px_120px_100px_110px_90px_120px_120px]'
-              : 'grid-cols-[160px_90px_120px_90px_120px_100px_110px_120px]'
-          }`}>
-            <div className="text-left px-2 py-1 overflow-hidden truncate">CLIENT NAME</div>
-            <div className="text-left px-2 py-1 overflow-hidden truncate">GROUP</div>
-            <div className="text-left px-2 py-1 overflow-hidden truncate">WEBSITE</div>
-            <div className="text-left px-2 py-1 overflow-hidden truncate">JOB TYPE</div>
-            <div className="text-left px-2 py-1 overflow-hidden truncate">ASSETS</div>
-            <div className="text-left px-2 py-1 overflow-hidden truncate">DUE DATE</div>
-            <div className="text-left px-2 py-1 overflow-hidden truncate">STATUS</div>
-            {user?.role === 'admin' && (
-              <>
-                <div className="text-left px-2 py-1 overflow-hidden truncate flex items-center gap-1">
-                  <span>COST</span>
-                  <button
-                    onClick={() => setShowCost(!showCost)}
-                    className="text-gray-500 hover:text-gray-700 transition-colors"
-                    title={showCost ? 'Hide cost' : 'Show cost'}
-                  >
-                    <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      {showCost ? (
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      ) : (
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
-                      )}
-                    </svg>
-                  </button>
-                </div>
-                <div className="text-left px-2 py-1 overflow-hidden truncate">BILLING</div>
-              </>
-            )}
-            <div className="text-left px-2 py-1 overflow-hidden truncate">ACTIONS</div>
-          </div>
-
-          {/* Tasks for selected month */}
-          <div className="divide-y divide-gray-200">
+      ) : viewMode === 'card' ? (
+        <div className="p-3">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
             {selectedMonthTasks.map(task => (
               <TaskItem
                 key={task.id}
@@ -376,10 +374,40 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
                 onDeleteTask={onDeleteTask}
                 onEditTask={onEditTask}
                 showCost={showCost}
+                viewMode="card"
               />
             ))}
           </div>
-        </>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-200 bg-gray-50 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                <th className="w-10 px-3 py-2.5">#</th>
+                <th className="px-3 py-2.5">Project Name</th>
+                <th className="px-3 py-2.5">Type</th>
+                <th className="px-3 py-2.5">Links</th>
+                <th className="px-3 py-2.5">Due Date</th>
+                <th className="px-3 py-2.5">Status</th>
+                <th className="w-10 px-3 py-2.5" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {selectedMonthTasks.map((task, i) => (
+                <TaskItem
+                  key={task.id}
+                  index={i + 1}
+                  task={task}
+                  onDeleteTask={onDeleteTask}
+                  onEditTask={onEditTask}
+                  showCost={showCost}
+                  viewMode="list"
+                />
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

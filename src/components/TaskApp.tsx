@@ -30,6 +30,7 @@ export default function TaskApp() {
   const [addProjectDefaultClient, setAddProjectDefaultClient] = useState<string | undefined>(undefined);
   const [selectedGroup] = useState<string>('all');
   const [showYearEarnings, setShowYearEarnings] = useState(false);
+  const [showProjectValue, setShowProjectValue] = useState(false);
   const [activeTab, setActiveTab] = useState<'tasks' | 'clients' | 'hosting' | 'users'>('tasks');
   const [openClientTabs, setOpenClientTabs] = useState<string[]>([]);
   const [activeClientTab, setActiveClientTab] = useState<string | null>(null);
@@ -168,6 +169,22 @@ export default function TaskApp() {
     , 0);
   }, [tasks, selectedYear]);
 
+  const projectStats = useMemo(() => {
+    const total = filteredTasks.length;
+    const completed = filteredTasks.filter((task) => task.status === 'Completed').length;
+    const inProgress = filteredTasks.filter((task) => task.status === 'InProcess').length;
+    const waitingForQuote = filteredTasks.filter((task) => task.status === 'Waiting for Quote').length;
+    const totalValue = filteredTasks.reduce((sum, task) => sum + (task.totalPrice || 0), 0);
+
+    return {
+      total,
+      completed,
+      inProgress,
+      waitingForQuote,
+      totalValue,
+    };
+  }, [filteredTasks]);
+
   if (loading && tasks.length === 0) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
@@ -203,7 +220,7 @@ export default function TaskApp() {
                 <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
-                <span className="flex-1 text-left">Projects</span>
+                <span className="flex-1 text-left">All Projects</span>
                 <span className="px-2 py-0.5 text-xs bg-gray-200 text-gray-600 rounded-full">{filteredTasks.length}</span>
               </button>
             )}
@@ -352,41 +369,33 @@ export default function TaskApp() {
             </div>
           ) : activeTab === 'tasks' && user?.permissions?.canViewTasks ? (
             <>
-              {/* Tasks Header */}
-              <div className="bg-white border-b border-gray-200 px-6 py-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <h1 className="text-xl font-semibold text-gray-900">
-                      {selectedGroup === 'all' ? 'All Projects' : selectedGroup}
-                      <span className="text-base font-normal text-gray-500 ml-3">• {selectedYear}</span>
-                    </h1>
-                    <div className="flex items-center gap-2">
-                      <span className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">
-                        {filteredTasks.length} projects
-                      </span>
-                      {user?.role === 'admin' && (
-                        <button
-                          onClick={() => setShowYearEarnings(!showYearEarnings)}
-                          className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-900 rounded transition-colors"
-                          title={showYearEarnings ? 'Hide yearly earnings' : 'Show yearly earnings'}
-                        >
-                          £{showYearEarnings ? yearTotalEarnings.toFixed(2) : '••••'}
-                        </button>
-                      )}
+              <div className="border-b border-slate-200 bg-white px-4 py-4 text-slate-900 sm:px-5 sm:py-5">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="max-w-2xl">
+                    <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-600">
+                      <span className="h-2 w-2 rounded-full bg-slate-400" />
+                      Project workspace
                     </div>
+                    <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+                      {selectedGroup === 'all' ? 'All Projects' : selectedGroup}
+                      <span className="ml-2 text-base font-normal text-slate-500">• {selectedYear}</span>
+                    </h1>
+                    <p className="mt-1 text-sm text-slate-600">
+                      Keep milestones and client activity visible in one place.
+                    </p>
                   </div>
-                  <div className="flex items-center gap-3">
-                    {/* Year Selector */}
+
+                  <div className="flex flex-wrap items-center gap-2">
                     <select
                       value={selectedYear}
                       onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                      className="px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent bg-white text-gray-900 cursor-pointer appearance-none"
-                      style={{ 
+                      className="cursor-pointer appearance-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none ring-0"
+                      style={{
                         backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
-                        backgroundPosition: 'right 0.5rem center',
+                        backgroundPosition: 'right 0.75rem center',
                         backgroundRepeat: 'no-repeat',
-                        backgroundSize: '1.5em 1.5em',
-                        paddingRight: '2.5rem'
+                        backgroundSize: '1.1em 1.1em',
+                        paddingRight: '2.5rem',
                       }}
                       title="Select year to view projects"
                     >
@@ -399,44 +408,80 @@ export default function TaskApp() {
                         );
                       })}
                     </select>
+                    {user?.role === 'admin' && (
+                      <>
+                        <button
+                          onClick={() => setShowYearEarnings(!showYearEarnings)}
+                          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                          title={showYearEarnings ? 'Hide yearly earnings' : 'Show yearly earnings'}
+                        >
+                          £{showYearEarnings ? yearTotalEarnings.toFixed(2) : '••••'}
+                        </button>
+                      </>
+                    )}
                     <button
                       onClick={() => openAddProjectModal()}
-                      className="px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded text-sm transition-colors"
+                      className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
                       disabled={!user?.permissions?.canEditTasks}
                       title={!user?.permissions?.canEditTasks ? "You don&apos;t have permission to create projects" : "Create a new project"}
                     >
-                      Add Project
+                      + Add Project
                     </button>
                   </div>
                 </div>
+
+                <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+                  <div className="rounded-lg bg-slate-50 p-2.5">
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">Projects</p>
+                    <p className="mt-1 text-xl font-semibold text-slate-900">{projectStats.total}</p>
+                  </div>
+                  <div className="rounded-lg bg-slate-50 p-2.5">
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">In progress</p>
+                    <p className="mt-1 text-xl font-semibold text-slate-900">{projectStats.inProgress}</p>
+                  </div>
+                  <div className="rounded-lg bg-slate-50 p-2.5">
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">Completed</p>
+                    <p className="mt-1 text-xl font-semibold text-slate-900">{projectStats.completed}</p>
+                  </div>
+                  {user?.role === 'admin' && (
+                    <button
+                      type="button"
+                      onClick={() => setShowProjectValue(!showProjectValue)}
+                      className="rounded-lg bg-slate-50 p-2.5 text-left transition-colors hover:bg-slate-100"
+                      title={showProjectValue ? 'Click to hide project value' : 'Click to show project value'}
+                    >
+                      <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">Project value</p>
+                      <p className="mt-1 text-xl font-semibold text-slate-900">
+                        {showProjectValue ? `£${projectStats.totalValue.toFixed(2)}` : '••••'}
+                      </p>
+                    </button>
+                  )}
+                </div>
               </div>
 
-              {/* Tasks Content */}
-              <div className="flex-1 p-6 bg-gray-50">
+              <div className="flex-1 bg-slate-50 p-2 sm:p-3">
                 {error ? (
-                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded">
-                    <p className="text-red-800 text-sm">{error}</p>
+                  <div className="mb-3 rounded-xl border border-red-200 bg-red-50 p-3">
+                    <p className="text-sm text-red-800">{error}</p>
                   </div>
                 ) : null}
 
-                {/* Task List */}
                 {filteredTasks.length === 0 ? (
-                  <div className="text-center py-12">
-                    <div className="w-16 h-16 mx-auto mb-4 bg-gray-200 rounded-full flex items-center justify-center">
-                      <svg className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  <div className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white px-6 py-12 text-center">
+                    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-900 text-white">
+                      <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                       </svg>
                     </div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No projects found</h3>
-                    <p className="text-gray-500 mb-6">
+                    <h3 className="text-lg font-semibold text-slate-900">No projects found</h3>
+                    <p className="mt-2 max-w-md text-sm text-slate-500">
                       {selectedYear !== new Date().getFullYear()
                         ? `No projects found for ${selectedYear}. Try selecting a different year or create a new project.`
-                        : 'Get started by creating your first project.'
-                      }
+                        : 'Get started by creating your first project.'}
                     </p>
                     <button
                       onClick={() => openAddProjectModal()}
-                      className="px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                      className="mt-6 rounded-xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
                       disabled={!user?.permissions?.canEditTasks}
                       title={!user?.permissions?.canEditTasks ? "You don&apos;t have permission to create projects" : "Create your first project"}
                     >

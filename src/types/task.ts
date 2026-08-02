@@ -1,6 +1,5 @@
 export type Priority = 'Low' | 'Medium' | 'High' | 'Urgent';
 export type Status = 'Completed' | 'InProcess' | 'Waiting for Quote';
-export type CMS = 'Wordpress' | 'Shopify' | 'Designing' | 'SEO' | 'Marketing';
 
 export interface Task {
   id: string;
@@ -13,7 +12,7 @@ export interface Task {
   status: Status;
   clientName: string;
   clientGroup: string; // New field for grouping projects by client sections
-  cms: CMS | null;
+  cms: string | null; // Project type, managed dynamically via ProjectTypeContext
   webUrl: string;
   figmaUrl: string;
   assetUrl: string;

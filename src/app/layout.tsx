@@ -4,6 +4,7 @@ import { AssigneeProvider } from "@/contexts/AssigneeContext";
 import { GroupProvider } from "@/contexts/GroupContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ClientProvider } from "@/contexts/ClientContext";
+import { ProjectTypeProvider } from "@/contexts/ProjectTypeContext";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -35,7 +36,9 @@ export default function RootLayout({
           <AssigneeProvider>
             <GroupProvider>
               <ClientProvider>
-                {children}
+                <ProjectTypeProvider>
+                  {children}
+                </ProjectTypeProvider>
               </ClientProvider>
             </GroupProvider>
           </AssigneeProvider>

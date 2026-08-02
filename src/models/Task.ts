@@ -7,7 +7,7 @@ export interface ITask {
   completed: boolean;
   priority: 'Low' | 'Medium' | 'High' | 'Urgent';
   status: 'Completed' | 'InProcess' | 'Waiting for Quote';
-  cms: 'Wordpress' | 'Shopify' | 'Designing' | 'SEO' | 'Marketing' | null;
+  cms: string | null;
   webUrl?: string;
   figmaUrl?: string;
   assetUrl?: string;
@@ -50,7 +50,6 @@ const TaskSchema = new mongoose.Schema<ITask>(
     },
     cms: {
       type: String,
-      enum: ['Wordpress', 'Shopify', 'Designing', 'SEO', 'Marketing'],
       default: null,
     },
     webUrl: {
