@@ -1,5 +1,7 @@
 import { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
+import dbConnect from './mongodb';
+import User from '@/models/User';
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'your-secret-key');
 
@@ -29,31 +31,52 @@ export async function verifyAuth(request: NextRequest): Promise<AuthenticatedUse
     }
 
     const { payload } = await jwtVerify(token, JWT_SECRET);
-    
+
     console.log('🔐 verifyAuth: Token verified, payload:', {
       userId: payload.userId,
       username: payload.username,
       role: payload.role,
       hasPermissions: !!payload.permissions
     });
-    
-    // Handle legacy tokens that don't have role/permissions
-    const role = (payload.role as 'admin' | 'team_member') || 'admin';
-    const permissions = (payload.permissions as {
+
+    // Role/permissions embedded in the token are a snapshot from login time.
+    // Sessions can now live up to 30 days ("remember me"), so an admin
+    // changing someone's permissions wouldn't take effect until that
+    // person's token expired - re-check against the DB on every request
+    // instead of trusting the token's payload.
+    let role: 'admin' | 'team_member';
+    let permissions: {
       canViewTasks: boolean;
       canEditTasks: boolean;
       canViewClients: boolean;
       canEditClients: boolean;
       canManageUsers: boolean;
-    }) || {
-      // Default to admin permissions if not present (legacy tokens)
-      canViewTasks: true,
-      canEditTasks: true,
-      canViewClients: true,
-      canEditClients: true,
-      canManageUsers: true
     };
-    
+
+    try {
+      await dbConnect();
+      const dbUser = await User.findById(payload.userId as string);
+      if (!dbUser) {
+        console.log('🔐 verifyAuth: User no longer exists, denying');
+        return null;
+      }
+      role = dbUser.role;
+      permissions = dbUser.permissions;
+    } catch (dbError) {
+      // DB unreachable - fall back to the token's snapshot rather than
+      // locking everyone out over a transient connection issue.
+      console.error('🔐 verifyAuth: DB lookup failed, falling back to token payload:', dbError);
+      role = (payload.role as 'admin' | 'team_member') || 'admin';
+      permissions = (payload.permissions as typeof permissions) || {
+        // Default to admin permissions if not present (legacy tokens)
+        canViewTasks: true,
+        canEditTasks: true,
+        canViewClients: true,
+        canEditClients: true,
+        canManageUsers: true
+      };
+    }
+
     return {
       userId: payload.userId as string,
       username: payload.username as string,

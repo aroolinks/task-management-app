@@ -6,7 +6,9 @@ import User from '@/models/User';
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'your-secret-key');
 
-// Verify admin permissions
+// Verify admin permissions. Checks the live user record rather than the
+// JWT payload, so a permission change takes effect immediately instead of
+// requiring the affected user to log out and back in.
 async function verifyAdmin(request: NextRequest) {
   try {
     const token = request.cookies.get('auth-token')?.value;
@@ -15,12 +17,14 @@ async function verifyAdmin(request: NextRequest) {
     }
 
     const { payload } = await jwtVerify(token, JWT_SECRET);
-    
-    // Check if user is admin or has user management permissions
-    const role = payload.role as string | undefined;
-    const permissions = payload.permissions as { canManageUsers?: boolean } | undefined;
-    
-    if (role !== 'admin' && !permissions?.canManageUsers) {
+
+    await dbConnect();
+    const dbUser = await User.findById(payload.userId as string);
+    if (!dbUser) {
+      return null;
+    }
+
+    if (dbUser.role !== 'admin' && !dbUser.permissions?.canManageUsers) {
       return null;
     }
 
