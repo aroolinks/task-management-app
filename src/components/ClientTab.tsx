@@ -69,6 +69,12 @@ export default function ClientTab({ clientName, tasks, onClose, onAddProject, on
       });
   }, [tasks, clientName]);
 
+  const clientProjectsTotalCost = useMemo(
+    () => clientProjects.reduce((sum, project) => sum + (project.totalPrice || 0), 0),
+    [clientProjects]
+  );
+  const [showTotalCost, setShowTotalCost] = useState(false);
+
   // Debug: Log when client data changes
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
@@ -299,6 +305,18 @@ export default function ClientTab({ clientName, tasks, onClose, onAddProject, on
                 <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-[10px] font-semibold">
                   Agency
                 </span>
+              )}
+              {user?.role === 'admin' && (
+                <button
+                  onClick={() => setShowTotalCost(prev => !prev)}
+                  className="flex items-center gap-1.5 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-200 transition-colors"
+                  title={showTotalCost ? 'Click to hide total earned' : 'Click to show total earned from this client'}
+                >
+                  <svg className="h-3 w-3 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V6m0 2v8m0 0v2m0-2c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {showTotalCost ? `£${clientProjectsTotalCost.toFixed(2)} earned` : '•••• earned'}
+                </button>
               )}
             </div>
             <div className="flex items-center gap-2">

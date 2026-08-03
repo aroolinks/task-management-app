@@ -56,6 +56,29 @@ export default function ClientsList({ tasks, onOpenClientTab, onClientCreated }:
     return counts;
   }, [tasks]);
 
+  // Total value of the projects linked to each client (by clientGroup match)
+  const clientProjectCost = useMemo(() => {
+    const totals = new Map<string, number>();
+    tasks.forEach(task => {
+      if (!task.clientGroup) return;
+      totals.set(task.clientGroup, (totals.get(task.clientGroup) || 0) + (task.totalPrice || 0));
+    });
+    return totals;
+  }, [tasks]);
+
+  // Which clients currently have their project value revealed - per-client,
+  // so revealing one card's amount doesn't reveal every other card too.
+  const [revealedCostIds, setRevealedCostIds] = useState<Set<string>>(new Set());
+
+  const toggleCostRevealed = (clientId: string) => {
+    setRevealedCostIds(prev => {
+      const next = new Set(prev);
+      if (next.has(clientId)) next.delete(clientId);
+      else next.add(clientId);
+      return next;
+    });
+  };
+
   // Filter and sort clients
   const filteredClients = useMemo(() => {
     let filtered = clients;
@@ -98,6 +121,17 @@ export default function ClientsList({ tasks, onOpenClientTab, onClientCreated }:
 
     return sorted;
   }, [clients, searchTerm, sortBy, typeFilter, clientsWithActiveProjects, clientProjectCounts]);
+
+  const allCostRevealed = filteredClients.length > 0 && filteredClients.every(c => revealedCostIds.has(c.id));
+
+  const toggleAllCostRevealed = () => {
+    setRevealedCostIds(prev => {
+      if (allCostRevealed) return new Set();
+      const next = new Set(prev);
+      filteredClients.forEach(c => next.add(c.id));
+      return next;
+    });
+  };
 
   const handleAddClient = async () => {
     const name = newClientName.trim();
@@ -250,6 +284,16 @@ export default function ClientsList({ tasks, onOpenClientTab, onClientCreated }:
             <option value="projects">Most Projects</option>
             <option value="recent">Recently Updated</option>
           </select>
+
+          {user?.role === 'admin' && (
+            <button
+              onClick={toggleAllCostRevealed}
+              className="px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors shrink-0"
+              title={allCostRevealed ? 'Hide all project values' : 'Show all project values'}
+            >
+              {allCostRevealed ? 'Hide value' : 'Show value'}
+            </button>
+          )}
 
           {/* View Toggle */}
           <div className="flex items-center gap-1 p-1 bg-gray-100 rounded-xl shrink-0">
@@ -407,6 +451,8 @@ export default function ClientsList({ tasks, onOpenClientTab, onClientCreated }:
 
               // Real Projects linked to this client (from the main Projects list)
               const projectCount = clientProjectCounts.get(client.name) || 0;
+              const projectCost = clientProjectCost.get(client.name) || 0;
+              const isCostRevealed = revealedCostIds.has(client.id);
 
               // Total login count includes both loginDetails array and login tasks
               const loginCount = loginTaskCount + (Array.isArray(client.loginDetails) ? client.loginDetails.length : 0);
@@ -514,8 +560,23 @@ export default function ClientsList({ tasks, onOpenClientTab, onClientCreated }:
                       <div className="w-10 h-10 rounded-full bg-gray-900 text-white flex items-center justify-center text-sm font-semibold shrink-0">
                         {client.name.charAt(0).toUpperCase()}
                       </div>
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {editDeleteButtons}
+                      <div className="flex items-center gap-2">
+                        {user?.role === 'admin' && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleCostRevealed(client.id);
+                            }}
+                            className="text-base font-bold text-gray-900 hover:text-gray-600 transition-colors"
+                            title={isCostRevealed ? 'Click to hide value' : 'Click to show value'}
+                          >
+                            {isCostRevealed ? `£${projectCost.toFixed(2)}` : '••••'}
+                          </button>
+                        )}
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {editDeleteButtons}
+                        </div>
                       </div>
                     </div>
                     <h3 className="text-sm font-medium text-gray-900 truncate">{client.name}</h3>
@@ -558,6 +619,19 @@ export default function ClientsList({ tasks, onOpenClientTab, onClientCreated }:
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       {editDeleteButtons}
                     </div>
+                    {user?.role === 'admin' && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleCostRevealed(client.id);
+                        }}
+                        className="text-base font-bold text-gray-900 hover:text-gray-600 transition-colors shrink-0 min-w-[90px] text-right"
+                        title={isCostRevealed ? 'Click to hide value' : 'Click to show value'}
+                      >
+                        {isCostRevealed ? `£${projectCost.toFixed(2)}` : '••••'}
+                      </button>
+                    )}
                     <button
                       onClick={() => onOpenClientTab(client.name)}
                       className="p-1.5 text-gray-300 group-hover:text-gray-500 transition-colors"
