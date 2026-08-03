@@ -13,6 +13,7 @@ import ClientTab from '@/components/ClientTab';
 import Logo from '@/components/Logo';
 import UserManagement from '@/components/UserManagement';
 import HostingManagement from '@/components/HostingManagement';
+import MonthlyExpenses from '@/components/MonthlyExpenses';
 
 export default function TaskApp() {
   const { user, logout } = useAuth();
@@ -31,7 +32,7 @@ export default function TaskApp() {
   const [selectedGroup] = useState<string>('all');
   const [showYearEarnings, setShowYearEarnings] = useState(false);
   const [showProjectValue, setShowProjectValue] = useState(false);
-  const [activeTab, setActiveTab] = useState<'tasks' | 'clients' | 'hosting' | 'users'>('tasks');
+  const [activeTab, setActiveTab] = useState<'tasks' | 'clients' | 'hosting' | 'expenses' | 'users'>('tasks');
   const [openClientTabs, setOpenClientTabs] = useState<string[]>([]);
   const [activeClientTab, setActiveClientTab] = useState<string | null>(null);
   const hasSetInitialTab = useRef(false);
@@ -262,6 +263,25 @@ export default function TaskApp() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
                 </svg>
                 <span className="flex-1 text-left">Hosting</span>
+              </button>
+            )}
+
+            {user?.role === 'admin' && (
+              <button
+                onClick={() => {
+                  setActiveTab('expenses');
+                  setActiveClientTab(null);
+                }}
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === 'expenses'
+                    ? 'bg-amber-50 text-amber-600'
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                }`}
+              >
+                <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v14a2 2 0 01-2 2z" />
+                </svg>
+                <span className="flex-1 text-left">Monthly Exp</span>
               </button>
             )}
 
@@ -512,6 +532,11 @@ export default function TaskApp() {
             /* Hosting Content */
             <div className="flex-1 bg-gray-50">
               <HostingManagement />
+            </div>
+          ) : activeTab === 'expenses' && user?.role === 'admin' ? (
+            /* Monthly Expenses Content */
+            <div className="flex-1 bg-gray-50">
+              <MonthlyExpenses tasks={tasks} />
             </div>
           ) : activeTab === 'users' && (user?.role === 'admin' || user?.permissions?.canManageUsers) ? (
             /* Users Content */
