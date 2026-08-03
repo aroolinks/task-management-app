@@ -385,6 +385,8 @@ export default function TaskApp() {
                   setActiveClientTab(null);
                 }}
                 onAddProject={() => openAddProjectModal(activeClientTab)}
+                onEditTask={handleEditTask}
+                onDeleteTask={handleDeleteTask}
               />
             </div>
           ) : activeTab === 'tasks' && user?.permissions?.canViewTasks ? (

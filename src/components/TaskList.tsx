@@ -402,6 +402,7 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
                   onDeleteTask={onDeleteTask}
                   onEditTask={onEditTask}
                   showCost={showCost}
+                  showCostColumn={false}
                   viewMode="list"
                 />
               ))}

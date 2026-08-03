@@ -14,6 +14,7 @@ interface TaskItemProps {
   onDeleteTask: (id: string) => void;
   onEditTask: (id: string, updates: Partial<Task>) => void;
   showCost?: boolean;
+  showCostColumn?: boolean;
   viewMode?: 'list' | 'card';
   index?: number;
 }
@@ -30,7 +31,7 @@ const statusPillLabels: Record<string, string> = {
   'Waiting for Quote': 'Waiting',
 };
 
-export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = false, viewMode = 'list', index }: TaskItemProps) {
+export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = false, showCostColumn = true, viewMode = 'list', index }: TaskItemProps) {
   const { user } = useAuth();
   const { assignees } = useAssignees();
   const { clients } = useClients();
@@ -39,6 +40,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [costRevealed, setCostRevealed] = useState(false);
   const [editData, setEditData] = useState({
     dueDate: task.dueDate instanceof Date ? task.dueDate.toISOString().split('T')[0] : '',
     priority: task.priority,
@@ -387,9 +389,28 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
           {editingField === 'totalPrice' ? (
             <div className="w-24">{renderEditableField('totalPrice', 'Total Price', task.totalPrice?.toString() || '', 'number')}</div>
           ) : (
-            <button type="button" className={`flex h-7 items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2.5 text-xs font-medium transition-colors hover:bg-gray-100 ${task.status === 'Completed' ? 'text-gray-400' : 'text-gray-700'}`} onClick={() => handleFieldClick('totalPrice')} title="Click to edit cost">
-              {showCost ? (task.totalPrice ? `£${task.totalPrice.toFixed(2)}` : 'No cost') : '••••'}
-            </button>
+            <div className={`flex h-7 items-center gap-1 rounded-md border border-gray-200 bg-white pl-2.5 pr-1 text-xs font-medium transition-colors ${task.status === 'Completed' ? 'text-gray-400' : 'text-gray-700'}`}>
+              <button
+                type="button"
+                className="hover:text-gray-900 transition-colors"
+                onClick={() => setCostRevealed(prev => !prev)}
+                title={showCost || costRevealed ? 'Click to hide cost' : 'Click to show cost'}
+              >
+                {(showCost || costRevealed) ? (task.totalPrice ? `£${task.totalPrice.toFixed(2)}` : 'No cost') : '••••'}
+              </button>
+              {(showCost || costRevealed) && (
+                <button
+                  type="button"
+                  className="flex h-5 w-5 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+                  onClick={() => handleFieldClick('totalPrice')}
+                  title="Edit cost"
+                >
+                  <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </button>
+              )}
+            </div>
           )}
 
           <button type="button" className={`flex h-7 items-center gap-1.5 rounded-md border px-2.5 text-xs font-semibold transition-colors ${task.invoiced ? 'border-blue-100 bg-blue-50 text-blue-700 hover:bg-blue-100' : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-100'}`} onClick={() => onEditTask(task.id, { invoiced: !task.invoiced, updatedAt: new Date() })} title={task.invoiced ? 'Mark as not invoiced' : 'Mark as invoiced'}>
@@ -481,6 +502,39 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
         </td>
         <td className="whitespace-nowrap px-3 py-3 text-gray-600">{formatDate(task.dueDate)}</td>
         <td className="px-3 py-3">{statusControl}</td>
+        {user?.role === 'admin' && showCostColumn && (
+          <td className="px-3 py-3">
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                className="font-medium text-gray-700 hover:text-gray-900 transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCostRevealed(prev => !prev);
+                }}
+                title={showCost || costRevealed ? 'Click to hide cost' : 'Click to show cost'}
+              >
+                {(showCost || costRevealed) ? (task.totalPrice ? `£${task.totalPrice.toFixed(2)}` : 'No cost') : '••••'}
+              </button>
+              {(showCost || costRevealed) && (
+                <button
+                  type="button"
+                  className="flex h-5 w-5 items-center justify-center rounded text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsExpanded(true);
+                    handleFieldClick('totalPrice');
+                  }}
+                  title="Edit cost"
+                >
+                  <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          </td>
+        )}
         <td className="px-3 py-3 text-right">
           <svg className={`ml-auto h-4 w-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -489,7 +543,7 @@ export default function TaskItem({ task, onDeleteTask, onEditTask, showCost = fa
       </tr>
       {isExpanded && (
         <tr className="bg-gray-50/60">
-          <td colSpan={7} className="border-t border-gray-100 p-4" onClick={(e) => e.stopPropagation()}>
+          <td colSpan={user?.role === 'admin' && showCostColumn ? 8 : 7} className="border-t border-gray-100 p-4" onClick={(e) => e.stopPropagation()}>
             <div className="space-y-3">
               {detailFields}
               <div className="flex flex-wrap items-center gap-2 border-t border-gray-100 pt-3">

@@ -481,14 +481,15 @@ export default function MonthlyExpenses({ tasks }: MonthlyExpensesProps) {
       )}
 
       {/* P&L Summary */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
         <div className="rounded-lg bg-gray-50 border border-gray-200 p-4">
-          <p className="text-[11px] uppercase tracking-[0.2em] text-gray-500">Project Revenue</p>
-          <p className="mt-1 text-xl font-semibold text-gray-900">{display(totalProjectRevenue)}</p>
-        </div>
-        <div className="rounded-lg bg-gray-50 border border-gray-200 p-4">
-          <p className="text-[11px] uppercase tracking-[0.2em] text-gray-500">Other Income</p>
-          <p className="mt-1 text-xl font-semibold text-gray-900">{display(totalOtherIncome)}</p>
+          <p className="text-[11px] uppercase tracking-[0.2em] text-gray-500">Income (Total Earning)</p>
+          <p className="mt-1 text-xl font-semibold text-gray-900">{display(totalRevenue)}</p>
+          <p className="mt-1 text-xs text-gray-500">
+            {showValues
+              ? `Projects ${formatCurrency(totalProjectRevenue)} · Other ${formatCurrency(totalOtherIncome)}`
+              : 'Projects •••• · Other ••••'}
+          </p>
         </div>
         <div className="rounded-lg bg-gray-50 border border-gray-200 p-4">
           <p className="text-[11px] uppercase tracking-[0.2em] text-gray-500">Expenses</p>

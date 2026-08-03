@@ -5,6 +5,7 @@ import { Task } from '@/types/task';
 import { useClients, ClientTask } from '@/contexts/ClientContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchTeamMembers, onTeamMembersUpdated } from '@/utils/teamMembersSync';
+import TaskItem from './TaskItem';
 
 interface ClientTabProps {
   clientName: string;
@@ -12,26 +13,16 @@ interface ClientTabProps {
   onClose: () => void;
   onOpenProject?: (taskId: string) => void;
   onAddProject?: () => void;
+  onEditTask: (id: string, updates: Partial<Task>) => void;
+  onDeleteTask: (id: string) => void;
 }
 
-const statusBadgeStyles: Record<string, string> = {
-  Completed: 'bg-green-100 text-green-800',
-  InProcess: 'bg-blue-100 text-blue-800',
-  'Waiting for Quote': 'bg-gray-100 text-gray-800',
-};
-
-const priorityBadgeStyles: Record<string, string> = {
-  Low: 'bg-gray-100 text-gray-700',
-  Medium: 'bg-blue-100 text-blue-700',
-  High: 'bg-orange-100 text-orange-700',
-  Urgent: 'bg-red-100 text-red-700',
-};
-
-export default function ClientTab({ clientName, tasks, onClose, onOpenProject, onAddProject }: ClientTabProps) {
+export default function ClientTab({ clientName, tasks, onClose, onAddProject, onEditTask, onDeleteTask }: ClientTabProps) {
   const { user } = useAuth();
   const { clients, addTask, updateTask, deleteTask, refreshClients } = useClients();
   const [activeSubTab, setActiveSubTab] = useState<'projects' | 'logins'>('projects');
   const [teamMembers, setTeamMembers] = useState<string[]>([]); // Dynamic from API
+  const [showCost] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'card'>(() => {
     if (typeof window === 'undefined') return 'card';
     return window.localStorage.getItem('clientTabViewMode') === 'list' ? 'list' : 'card';
@@ -292,6 +283,17 @@ export default function ClientTab({ clientName, tasks, onClose, onOpenProject, o
         <div className="px-6 py-4 border-b border-gray-100">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
+              <button
+                onClick={onClose}
+                className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
+                title="Back"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back
+              </button>
+              <div className="h-5 w-px bg-gray-200" />
               <h1 className="text-xl font-semibold text-gray-900">{clientName}</h1>
               {client?.type === 'agency' && (
                 <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-[10px] font-semibold">
@@ -542,167 +544,45 @@ export default function ClientTab({ clientName, tasks, onClose, onOpenProject, o
             ) : viewMode === 'card' ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {clientProjects.map((project) => (
-                  <button
+                  <TaskItem
                     key={project.id}
-                    onClick={() => onOpenProject?.(project.id)}
-                    className="bg-white border border-gray-200 rounded-xl p-5 hover:border-gray-300 hover:shadow-md transition-all text-left group relative overflow-hidden"
-                  >
-                    {/* Header with Status and Priority */}
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <span className={`px-2.5 py-1 text-xs rounded-lg font-semibold ${statusBadgeStyles[project.status] || 'bg-gray-100 text-gray-800'}`}>
-                          {project.status}
-                        </span>
-                        <span className={`px-2.5 py-1 text-xs rounded-lg font-semibold ${priorityBadgeStyles[project.priority] || 'bg-gray-100 text-gray-700'}`}>
-                          {project.priority}
-                        </span>
-                      </div>
-                      <svg className="h-5 w-5 text-gray-300 group-hover:text-gray-500 group-hover:translate-x-1 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                      </svg>
-                    </div>
-
-                    {/* Project Name */}
-                    <h4 className="text-base font-bold text-gray-900 mb-3 line-clamp-2">
-                      {project.clientName || 'Untitled Project'}
-                    </h4>
-
-                    {/* Assignees */}
-                    {project.assignees && project.assignees.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mb-4">
-                        {project.assignees.map(a => (
-                          <span key={a} className="px-2.5 py-1 text-xs bg-purple-50 text-purple-700 rounded-lg font-medium border border-purple-100">
-                            {a}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Bottom Info - Due Date and Price */}
-                    <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                      <div className="flex items-center gap-1.5 text-gray-500">
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        <span className="text-xs font-medium">
-                          {project.dueDate ? formatDate(project.dueDate) : 'No due date'}
-                        </span>
-                      </div>
-                      {project.totalPrice && (
-                        <span className="text-sm font-bold text-gray-900">
-                          £{project.totalPrice.toFixed(2)}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Resource Links */}
-                    {(project.webUrl || project.figmaUrl) && (
-                      <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100">
-                        {project.webUrl && (
-                          <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-medium border border-blue-100">
-                            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-                            </svg>
-                            <span>Website</span>
-                          </div>
-                        )}
-                        {project.figmaUrl && (
-                          <div className="flex items-center gap-1 px-2 py-1 bg-purple-50 text-purple-700 rounded-lg text-xs font-medium border border-purple-100">
-                            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
-                            </svg>
-                            <span>Figma</span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </button>
+                    task={project}
+                    onDeleteTask={onDeleteTask}
+                    onEditTask={onEditTask}
+                    showCost={showCost}
+                    viewMode="card"
+                  />
                 ))}
               </div>
             ) : (
-              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                <div className="divide-y divide-gray-100">
-                  {clientProjects.map((project) => (
-                    <button
-                      key={project.id}
-                      onClick={() => onOpenProject?.(project.id)}
-                      className="w-full text-left px-5 py-4 hover:bg-gray-50 transition-colors group"
-                    >
-                      <div className="flex items-center gap-4">
-                        {/* Status Badge */}
-                        <span className={`px-2.5 py-1 text-xs rounded-lg font-semibold shrink-0 ${statusBadgeStyles[project.status] || 'bg-gray-100 text-gray-800'}`}>
-                          {project.status}
-                        </span>
-
-                        {/* Project Name */}
-                        <div className="flex-1 min-w-0">
-                          <h4 className="text-sm font-semibold text-gray-900 truncate">{project.clientName || 'Untitled Project'}</h4>
-                        </div>
-
-                        {/* Assignees */}
-                        {project.assignees && project.assignees.length > 0 && (
-                          <div className="flex gap-1.5 shrink-0">
-                            {project.assignees.slice(0, 3).map(a => (
-                              <span key={a} className="px-2 py-0.5 text-xs bg-purple-50 text-purple-700 rounded-md font-medium border border-purple-100">
-                                {a}
-                              </span>
-                            ))}
-                            {project.assignees.length > 3 && (
-                              <span className="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded-md font-medium">
-                                +{project.assignees.length - 3}
-                              </span>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Priority Badge */}
-                        <span className={`px-2 py-0.5 text-xs rounded-md font-semibold shrink-0 ${priorityBadgeStyles[project.priority] || 'bg-gray-100 text-gray-700'}`}>
-                          {project.priority}
-                        </span>
-
-                        {/* Resource Links */}
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          {project.webUrl && (
-                            <div className="w-6 h-6 flex items-center justify-center bg-blue-50 text-blue-600 rounded" title="Website">
-                              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-                              </svg>
-                            </div>
-                          )}
-                          {project.figmaUrl && (
-                            <div className="w-6 h-6 flex items-center justify-center bg-purple-50 text-purple-600 rounded" title="Figma">
-                              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
-                              </svg>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Due Date */}
-                        <div className="flex items-center gap-1.5 text-gray-500 shrink-0 min-w-[120px]">
-                          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                          <span className="text-xs font-medium">
-                            {project.dueDate ? formatDate(project.dueDate) : 'No date'}
-                          </span>
-                        </div>
-
-                        {/* Price */}
-                        {project.totalPrice && (
-                          <span className="text-sm font-bold text-gray-900 shrink-0 min-w-[70px] text-right">
-                            £{project.totalPrice.toFixed(2)}
-                          </span>
-                        )}
-
-                        {/* Arrow */}
-                        <svg className="h-5 w-5 text-gray-300 group-hover:text-gray-500 group-hover:translate-x-1 transition-all shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                        </svg>
-                      </div>
-                    </button>
-                  ))}
-                </div>
+              <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-200 bg-gray-50 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                      <th className="w-10 px-3 py-2.5">#</th>
+                      <th className="px-3 py-2.5">Project Name</th>
+                      <th className="px-3 py-2.5">Type</th>
+                      <th className="px-3 py-2.5">Links</th>
+                      <th className="px-3 py-2.5">Due Date</th>
+                      <th className="px-3 py-2.5">Status</th>
+                      {user?.role === 'admin' && <th className="px-3 py-2.5">Cost</th>}
+                      <th className="w-10 px-3 py-2.5" />
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {clientProjects.map((project, i) => (
+                      <TaskItem
+                        key={project.id}
+                        index={i + 1}
+                        task={project}
+                        onDeleteTask={onDeleteTask}
+                        onEditTask={onEditTask}
+                        showCost={showCost}
+                        viewMode="list"
+                      />
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </>
