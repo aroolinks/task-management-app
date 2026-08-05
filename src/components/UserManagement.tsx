@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { notifyTeamMembersUpdated } from '@/utils/teamMembersSync';
 import ProjectTypeManagement from './ProjectTypeManagement';
+import ExpenseCategoryManagement from './ExpenseCategoryManagement';
+import CompanyDataCategoryManagement from './CompanyDataCategoryManagement';
 
 interface User {
   id: string;
@@ -668,6 +670,13 @@ export default function UserManagement() {
       </div>
 
       <ProjectTypeManagement />
+
+      {user?.role === 'admin' && (
+        <>
+          <ExpenseCategoryManagement />
+          <CompanyDataCategoryManagement />
+        </>
+      )}
 
       {/* Password Reset Modal */}
       {showPasswordReset && resetPasswordUser && (

@@ -5,6 +5,8 @@ import { GroupProvider } from "@/contexts/GroupContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ClientProvider } from "@/contexts/ClientContext";
 import { ProjectTypeProvider } from "@/contexts/ProjectTypeContext";
+import { ExpenseCategoryProvider } from "@/contexts/ExpenseCategoryContext";
+import { CompanyDataCategoryProvider } from "@/contexts/CompanyDataCategoryContext";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -37,7 +39,11 @@ export default function RootLayout({
             <GroupProvider>
               <ClientProvider>
                 <ProjectTypeProvider>
-                  {children}
+                  <ExpenseCategoryProvider>
+                    <CompanyDataCategoryProvider>
+                      {children}
+                    </CompanyDataCategoryProvider>
+                  </ExpenseCategoryProvider>
                 </ProjectTypeProvider>
               </ClientProvider>
             </GroupProvider>

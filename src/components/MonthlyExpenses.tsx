@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Task } from '@/types/task';
 import { useClients } from '@/contexts/ClientContext';
+import { useExpenseCategories } from '@/contexts/ExpenseCategoryContext';
 
 interface Expense {
   id: string;
@@ -29,7 +30,6 @@ interface MonthlyExpensesProps {
   tasks: Task[];
 }
 
-const expenseCategories = ['Salaries', 'Software', 'Marketing', 'Rent', 'Utilities', 'Other'];
 const incomeCategories = ['Client Payment', 'Deposit', 'Refund Received', 'Other'];
 
 const monthNames = Array.from({ length: 12 }, (_, i) =>
@@ -40,6 +40,7 @@ const getToday = () => new Date().toISOString().split('T')[0];
 
 export default function MonthlyExpenses({ tasks }: MonthlyExpensesProps) {
   const { clients } = useClients();
+  const { expenseCategoryNames } = useExpenseCategories();
 
   const [activeSection, setActiveSection] = useState<'expenses' | 'income'>('expenses');
 
@@ -57,7 +58,7 @@ export default function MonthlyExpenses({ tasks }: MonthlyExpensesProps) {
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [expDescription, setExpDescription] = useState('');
   const [expAmount, setExpAmount] = useState('');
-  const [expCategory, setExpCategory] = useState(expenseCategories[0]);
+  const [expCategory, setExpCategory] = useState('Other');
   const [expDate, setExpDate] = useState(getToday());
   const [expNotes, setExpNotes] = useState('');
   const [expFormError, setExpFormError] = useState<string | null>(null);
@@ -190,7 +191,7 @@ export default function MonthlyExpenses({ tasks }: MonthlyExpensesProps) {
   const resetExpenseForm = () => {
     setExpDescription('');
     setExpAmount('');
-    setExpCategory(expenseCategories[0]);
+    setExpCategory(expenseCategoryNames[0] || 'Other');
     setExpDate(getToday());
     setExpNotes('');
     setExpFormError(null);
@@ -575,7 +576,7 @@ export default function MonthlyExpenses({ tasks }: MonthlyExpensesProps) {
                   onChange={(e) => setExpCategory(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
                 >
-                  {expenseCategories.map(c => (
+                  {expenseCategoryNames.map(c => (
                     <option key={c} value={c}>{c}</option>
                   ))}
                 </select>

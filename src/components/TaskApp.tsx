@@ -14,6 +14,7 @@ import Logo from '@/components/Logo';
 import UserManagement from '@/components/UserManagement';
 import HostingManagement from '@/components/HostingManagement';
 import MonthlyExpenses from '@/components/MonthlyExpenses';
+import CompanyDataManagement from '@/components/CompanyDataManagement';
 
 export default function TaskApp() {
   const { user, logout } = useAuth();
@@ -32,7 +33,7 @@ export default function TaskApp() {
   const [selectedGroup] = useState<string>('all');
   const [showYearEarnings, setShowYearEarnings] = useState(false);
   const [showProjectValue, setShowProjectValue] = useState(false);
-  const [activeTab, setActiveTab] = useState<'tasks' | 'clients' | 'hosting' | 'expenses' | 'users'>('tasks');
+  const [activeTab, setActiveTab] = useState<'tasks' | 'clients' | 'hosting' | 'expenses' | 'users' | 'company-data'>('tasks');
   const [openClientTabs, setOpenClientTabs] = useState<string[]>([]);
   const [activeClientTab, setActiveClientTab] = useState<string | null>(null);
   const hasSetInitialTab = useRef(false);
@@ -303,6 +304,25 @@ export default function TaskApp() {
                 <span className="flex-1 text-left">Team</span>
               </button>
             )}
+
+            {user?.role === 'admin' && (
+              <button
+                onClick={() => {
+                  setActiveTab('company-data');
+                  setActiveClientTab(null);
+                }}
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === 'company-data'
+                    ? 'bg-rose-50 text-rose-600'
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                }`}
+              >
+                <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                <span className="flex-1 text-left">Company Data</span>
+              </button>
+            )}
           </div>
 
           {/* Open client tabs */}
@@ -544,6 +564,11 @@ export default function TaskApp() {
             /* Users Content */
             <div className="flex-1 bg-gray-50">
               <UserManagement />
+            </div>
+          ) : activeTab === 'company-data' && user?.role === 'admin' ? (
+            /* Company Data Content */
+            <div className="flex-1 bg-gray-50">
+              <CompanyDataManagement />
             </div>
           ) : (
             /* No Permission Message */
