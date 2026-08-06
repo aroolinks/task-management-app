@@ -22,7 +22,7 @@ export function createInvoiceLineItem(): InvoiceLineItem {
     description: '',
     quantity: 1,
     unitPriceMinor: 0,
-    vatRateBasisPoints: 2_000,
+    vatRateBasisPoints: 0,
   };
 }
 

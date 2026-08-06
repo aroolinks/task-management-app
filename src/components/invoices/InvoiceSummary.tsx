@@ -19,14 +19,6 @@ export default function InvoiceSummary({ totals, compact = false }: InvoiceSumma
           <dd>-{formatMinor(totals.discountMinor)}</dd>
         </div>
       )}
-      <div className="flex justify-between gap-6">
-        <dt className="text-slate-500">Net</dt>
-        <dd>{formatMinor(totals.netMinor)}</dd>
-      </div>
-      <div className="flex justify-between gap-6">
-        <dt className="text-slate-500">VAT</dt>
-        <dd>{formatMinor(totals.vatMinor)}</dd>
-      </div>
       <div className="flex justify-between gap-6 border-t border-slate-200 pt-2 font-semibold text-slate-900">
         <dt>Total</dt>
         <dd>{formatMinor(totals.totalMinor)}</dd>

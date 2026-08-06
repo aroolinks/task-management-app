@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useClients } from '@/contexts/ClientContext';
 import { calculateInvoice, parseMajorToMinor, percentageToBasisPoints } from '@/lib/invoices/calculations';
 import { invoiceDraftSchema } from '@/lib/invoices/validation';
 import { createInvoiceDraft } from '@/lib/invoices/utils';
 import { loadInvoiceDefaults, saveInvoiceDefaults } from '@/lib/invoices/defaults';
+import { downloadInvoicePdf } from '@/lib/invoices/pdf';
 import type { InvoiceDiscountType, InvoiceDraft } from '@/types/invoice';
 import InvoiceCurrencyInput from './InvoiceCurrencyInput';
 import InvoiceLineItems from './InvoiceLineItems';
@@ -21,6 +22,8 @@ export default function InvoiceForm() {
   const { clients } = useClients();
   const [invoice, setInvoice] = useState<InvoiceDraft>(() => createInvoiceDraft(loadInvoiceDefaults()));
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const previewRef = useRef<HTMLDivElement>(null);
   const totals = useMemo(() => calculateInvoice(invoice.items, invoice.discount, invoice.amountPaidMinor), [invoice]);
 
   useEffect(() => {
@@ -44,6 +47,19 @@ export default function InvoiceForm() {
       return;
     }
     setMessage({ type: 'success', text: 'Invoice details are valid. Saving will be added in the database phase.' });
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!previewRef.current || isDownloading) return;
+    setIsDownloading(true);
+    try {
+      const filenameSafeNumber = invoice.invoiceNumber.trim().replace(/[^a-zA-Z0-9-_]+/g, '-') || 'draft';
+      await downloadInvoicePdf(previewRef.current, `invoice-${filenameSafeNumber}.pdf`);
+    } catch {
+      setMessage({ type: 'error', text: 'Could not generate the PDF. Please try again.' });
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   return (
@@ -90,9 +106,9 @@ export default function InvoiceForm() {
             ) : undefined}
           />
 
-          <InvoiceLineItems items={invoice.items} calculatedLines={totals.lines} onChange={(items) => setInvoice({ ...invoice, items })} />
+          <InvoiceLineItems items={invoice.items} onChange={(items) => setInvoice({ ...invoice, items })} />
 
-          <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+          <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 !mt-10">
             <h2 className="mb-4 font-semibold text-slate-900">Totals and payment</h2>
             <div className="grid gap-3 sm:grid-cols-3">
               <label><span className={labelClass}>Discount</span><select value={invoice.discount.type} onChange={(event) => setDiscountType(event.target.value as InvoiceDiscountType)} className={fieldClass}><option value="none">No discount</option><option value="percentage">Percentage</option><option value="fixed">Fixed amount</option></select></label>
@@ -116,8 +132,23 @@ export default function InvoiceForm() {
         </div>
 
         <aside className="min-w-0 lg:sticky lg:top-24 lg:self-start">
-          <div className="mb-2 flex items-center justify-between"><h2 className="text-sm font-semibold text-slate-700">Live A4 preview</h2><span className="text-xs text-slate-500">210 × 297 mm</span></div>
-          <InvoicePreview invoice={invoice} totals={totals} />
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold text-slate-700">Live A4 preview</h2>
+              <span className="text-xs text-slate-500">210 × 297 mm</span>
+            </div>
+            <button
+              type="button"
+              onClick={handleDownloadPdf}
+              disabled={isDownloading}
+              className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isDownloading ? 'Generating…' : 'Download PDF'}
+            </button>
+          </div>
+          <div ref={previewRef}>
+            <InvoicePreview invoice={invoice} totals={totals} />
+          </div>
         </aside>
       </main>
     </form>

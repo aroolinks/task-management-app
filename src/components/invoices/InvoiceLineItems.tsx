@@ -1,19 +1,17 @@
 'use client';
 
-import { formatMinor } from '@/lib/invoices/calculations';
 import { createInvoiceLineItem } from '@/lib/invoices/utils';
-import type { CalculatedInvoiceLine, InvoiceLineItem } from '@/types/invoice';
+import type { InvoiceLineItem } from '@/types/invoice';
 import InvoiceCurrencyInput from './InvoiceCurrencyInput';
 
 interface InvoiceLineItemsProps {
   items: InvoiceLineItem[];
-  calculatedLines: CalculatedInvoiceLine[];
   onChange: (items: InvoiceLineItem[]) => void;
 }
 
 const fieldClass = 'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20';
 
-export default function InvoiceLineItems({ items, calculatedLines, onChange }: InvoiceLineItemsProps) {
+export default function InvoiceLineItems({ items, onChange }: InvoiceLineItemsProps) {
   const updateItem = (id: string, update: Partial<InvoiceLineItem>) => {
     onChange(items.map((item) => item.id === id ? { ...item, ...update } : item));
   };
@@ -36,10 +34,9 @@ export default function InvoiceLineItems({ items, calculatedLines, onChange }: I
 
       <div className="space-y-3">
         <div className="hidden grid-cols-12 gap-3 px-3 text-xs font-semibold uppercase tracking-wide text-slate-500 sm:grid" aria-hidden="true">
-          <span className="col-span-6">Description</span>
+          <span className="col-span-8">Description</span>
           <span className="col-span-2">Quantity</span>
           <span className="col-span-2">Unit price</span>
-          <span className="col-span-2">VAT</span>
         </div>
         {items.map((item, index) => (
           <div key={item.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
@@ -56,7 +53,7 @@ export default function InvoiceLineItems({ items, calculatedLines, onChange }: I
               </button>
             </div>
             <div className="grid gap-3 sm:grid-cols-12">
-              <label className="sm:col-span-6">
+              <label className="sm:col-span-8">
                 <span className="mb-1 block text-xs font-medium text-slate-600 sm:sr-only">Description</span>
                 <input
                   value={item.description}
@@ -86,22 +83,7 @@ export default function InvoiceLineItems({ items, calculatedLines, onChange }: I
                   className={fieldClass}
                 />
               </div>
-              <label className="sm:col-span-2">
-                <span className="mb-1 block text-xs font-medium text-slate-600 sm:sr-only">VAT</span>
-                <select
-                  value={item.vatRateBasisPoints}
-                  onChange={(event) => updateItem(item.id, { vatRateBasisPoints: Number(event.target.value) })}
-                  className={fieldClass}
-                >
-                  <option value={0}>0%</option>
-                  <option value={500}>5%</option>
-                  <option value={2000}>20%</option>
-                </select>
-              </label>
             </div>
-            <p className="mt-2 text-right text-xs font-medium text-slate-500">
-              Net after discount: {formatMinor(calculatedLines[index]?.netMinor ?? 0)}
-            </p>
           </div>
         ))}
       </div>

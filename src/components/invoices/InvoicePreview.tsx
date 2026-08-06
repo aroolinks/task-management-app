@@ -1,4 +1,5 @@
-import { formatBasisPoints, formatMinor } from '@/lib/invoices/calculations';
+import Image from 'next/image';
+import { formatMinor } from '@/lib/invoices/calculations';
 import type { InvoiceDraft, InvoiceTotals } from '@/types/invoice';
 import InvoiceSummary from './InvoiceSummary';
 
@@ -27,7 +28,7 @@ export default function InvoicePreview({ invoice, totals }: InvoicePreviewProps)
       <div className="flex h-full flex-col p-[6%] text-[clamp(7px,1vw,12px)]">
         <header className="flex items-start justify-between border-b-2 border-blue-900 pb-[4%]">
           <div>
-            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-blue-900 text-lg font-bold text-white">M</div>
+            <Image src="/metalogics-logo-full.svg" alt="Metalogics" width={274} height={56} className="mb-3 h-14 w-auto" priority />
             <Address party={invoice.seller} />
           </div>
           <div className="text-right">
@@ -52,11 +53,9 @@ export default function InvoicePreview({ invoice, totals }: InvoicePreviewProps)
           <table className="w-full table-fixed border-collapse">
             <thead>
               <tr className="bg-blue-950 text-left text-white">
-                <th className="w-[48%] px-2 py-2 font-semibold">Description</th>
-                <th className="w-[10%] px-2 py-2 text-right font-semibold">Qty</th>
-                <th className="w-[17%] px-2 py-2 text-right font-semibold">Price</th>
-                <th className="w-[10%] px-2 py-2 text-right font-semibold">VAT</th>
-                <th className="w-[15%] px-2 py-2 text-right font-semibold">Net</th>
+                <th className="w-[63%] px-2 py-2 font-semibold">Description</th>
+                <th className="w-[12%] px-2 py-2 text-right font-semibold">Qty</th>
+                <th className="w-[25%] px-2 py-2 text-right font-semibold">Price</th>
               </tr>
             </thead>
             <tbody>
@@ -64,15 +63,13 @@ export default function InvoicePreview({ invoice, totals }: InvoicePreviewProps)
                 <tr key={line.id} className="border-b border-slate-200 align-top">
                   <td className="break-words px-2 py-2 text-slate-900">{line.description || 'Untitled item'}</td>
                   <td className="px-2 py-2 text-right">{line.quantity}</td>
-                  <td className="px-2 py-2 text-right">{formatMinor(line.unitPriceMinor)}</td>
-                  <td className="px-2 py-2 text-right">{formatBasisPoints(line.vatRateBasisPoints)}</td>
-                  <td className="px-2 py-2 text-right font-medium">{formatMinor(line.netMinor)}</td>
+                  <td className="px-2 py-2 text-right font-medium">{formatMinor(line.unitPriceMinor)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
 
-          <div className="ml-auto mt-4 w-[48%] min-w-[180px]">
+          <div className="ml-auto mt-10 w-[48%] min-w-[180px]">
             <InvoiceSummary totals={totals} compact />
           </div>
         </div>
