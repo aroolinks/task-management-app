@@ -17,17 +17,21 @@ One-off DB/data scripts live in `scripts/*.js` (migrations, cleanup, user creati
 
 ## Architecture
 
-Next.js 15 App Router app with a **single-page-app shell**: `src/app/page.tsx` renders `AppContent`, which shows `LoginForm` or `TaskApp` based on `AuthContext`. `TaskApp` (`src/components/TaskApp.tsx`) is the main shell — it owns an `activeTab` state (`tasks | clients | hosting | expenses | users`) and gates each tab behind `user.permissions` / `user.role`, rendering the relevant top-level component itself rather than using nested routes. Most feature routes under `src/app/api/**` exist to serve this shell; there's essentially one client route (`/`).
+Next.js 15 App Router app with a **single-page-app shell**: `src/app/page.tsx` renders `AppContent`, which shows `LoginForm` or `TaskApp` based on `AuthContext`. `TaskApp` (`src/components/TaskApp.tsx`) is the main shell — it owns an `activeTab` state (`tasks | clients | hosting | expenses | users | company-data | spreadsheet`) and gates each tab behind `user.permissions` / `user.role` **at both the sidebar-button and content-render sites** (rendering the relevant top-level component itself rather than using nested routes). Most feature routes under `src/app/api/**` exist to serve this shell; there's essentially one client route (`/`).
 
 ### Data flow pattern
 
-Each domain has a matching **model → API route(s) → hook → context** stack:
+Each domain has a matching **model → API route(s) → hook → (optional context)** stack:
 - `src/models/*.ts` — Mongoose schemas/models (see Models below).
 - `src/app/api/**/route.ts` — REST-ish handlers per resource, returning `{ success, data?, error? }`. Route handlers call `dbConnect()` (`src/lib/mongodb.ts`) then the Mongoose model directly — there is no separate service/repository layer.
-- `src/hooks/use*.ts` (`useTasks`, `useClients`, `useAssignees`, `useHosting`) — client-side data fetching/mutation against the API routes, exposing loading/error state and CRUD functions.
-- `src/contexts/*.tsx` — wrap the hooks in React Context (`AuthContext`, `AssigneeContext`, `GroupContext`, `ClientContext`, `ProjectTypeContext`) so components consume data via `useAuth()`, `useClients()`, etc. All providers are mounted globally in `src/app/layout.tsx`.
+- `src/hooks/use*.ts` (`useTasks`, `useClients`, `useAssignees`, `useHosting`, `useCompanyData`, `useSpreadsheet`) — client-side data fetching/mutation against the API routes, exposing loading/error state and CRUD functions.
+- `src/contexts/*.tsx` — wrap a hook in React Context **only when the data is needed by more than one component tree** (`AuthContext`, `AssigneeContext`, `GroupContext`, `ClientContext`, `ProjectTypeContext`, `ExpenseCategoryContext`, `CompanyDataCategoryContext`), so components consume it via `useAuth()`, `useClients()`, etc. All providers are mounted globally in `src/app/layout.tsx`. Hooks used by only one page (`useHosting`, `useCompanyData`, `useSpreadsheet`) are called directly in that page's component with no context wrapper — don't add one unless a second consumer actually appears.
 
 When adding a feature, follow this same chain rather than fetching directly from components.
+
+### Manageable-category pattern
+
+`ProjectType`, `ExpenseCategory`, and `CompanyDataCategory` are three independent copies of the same pattern: a tiny model with a single unique `name` field, a route (`GET` seeds a hardcoded default list on first query via per-name upsert, `POST`/`PUT`/`DELETE` mutate it), a context exposing `{ x, xNames, addX, renameX, removeX }`, and a `*Management.tsx` component (add form + inline-rename/delete chips) rendered on the Team page (`UserManagement.tsx`). If you need another user-editable dropdown list somewhere, copy this trio (model + route + context + management component) rather than inventing a new shape. `ProjectType`'s API has no auth check (legacy); `ExpenseCategory`/`CompanyDataCategory` require `role === 'admin'` — match whichever the parent feature needs, don't copy the unauthenticated one by default.
 
 ### Auth
 
@@ -42,6 +46,8 @@ JWT-based, via `jose`, stored in an `auth-token` httpOnly cookie (not localStora
 - `ClientV2` (`src/models/Client.ts`, stored in Mongo collection `clientsv2`, model name `ClientV2` despite the filename) — a client/agency record with three embedded subdocument arrays: `tasks` (per-client to-dos, **not** the same as the `Task` model), `loginDetails`, and `projects`. These are edited via nested API routes like `/api/clients/[id]/tasks/[taskId]`.
 - `User` — single source of truth for both login accounts and "assignable people"; there is no separate team-member/assignee entity. `useAssignees`/`AssigneeContext` and the assignee picker read from `/api/users`.
 - `Hosting`, `Expense`, `Income`, `Group`, `ProjectType` — supporting domain models for the Hosting and Expenses tabs.
+- `CompanyCredential` (`src/models/CompanyCredential.ts`, collection `companycredentials`) — the company's own login credentials (as opposed to `ClientV2.loginDetails`, which is per-client). `category` is a free-form string validated only against the `CompanyDataCategory` list, not a schema enum — same pattern as `Expense.category`. Entirely admin-only: gated in `TaskApp.tsx` at both the sidebar and content level, and re-checked (`role === 'admin'`) inside every `/api/company-data*` route handler, not just the UI.
+- `SpreadsheetSheet` (`src/models/Spreadsheet.ts`) — a free-form 50-row × 8-column grid, keyed by a compound unique index on `{ year, month, sheetIndex }` (5 years × 12 months × 4 sheets-per-month, seeded lazily on first fetch of a given year+month). `data` is `Schema.Types.Mixed` rather than a typed nested array specifically so single-cell edits can `$set` a dot-path like `data.3.5` directly instead of rewriting the whole 400-cell grid. Also admin-only, same double-gating (UI + every route handler) as `CompanyCredential`.
 
 Two naming migrations already happened and are documented (for historical context only — the code has been fully updated, don't reintroduce the old names) in `NOTES_TO_TASKS_MIGRATION.md` ("notes" → "tasks" on the Client model) and `TEAM_TO_USERS_MIGRATION_COMPLETE.md` (a separate "assignees"/"team members" collection was collapsed into `User`). If you see references to "notes" or a standalone "assignee"/"team member" concept in older docs, treat `ClientTask`/`User` as current.
 
