@@ -28,7 +28,7 @@ export default function InvoicePreview({ invoice, totals }: InvoicePreviewProps)
       <div className="flex h-full flex-col p-[6%] text-[clamp(7px,1vw,12px)]">
         <header className="flex items-start justify-between border-b-2 border-blue-900 pb-[4%]">
           <div>
-            <Image src="/metalogics-logo-full.svg" alt="Metalogics" width={274} height={56} className="mb-3 h-14 w-auto" priority />
+            <Image src="/metalogics-logo-full.svg" alt="Metalogics" width={274} height={56} className="mb-3 h-14 w-auto" priority unoptimized />
             <Address party={invoice.seller} />
           </div>
           <div className="text-right">
