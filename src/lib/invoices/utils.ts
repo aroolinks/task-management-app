@@ -1,4 +1,5 @@
 import type { InvoiceDraft, InvoiceLineItem, InvoiceParty } from '@/types/invoice';
+import type { InvoiceDefaults } from './defaults';
 
 export function createInvoiceParty(name = ''): InvoiceParty {
   return {
@@ -34,7 +35,7 @@ function localIsoDateAfterDays(days: number): string {
   return `${year}-${month}-${day}`;
 }
 
-export function createInvoiceDraft(): InvoiceDraft {
+export function createInvoiceDraft(defaults?: Partial<InvoiceDefaults> | null): InvoiceDraft {
   const issueDate = localIsoDateAfterDays(0);
   return {
     invoiceNumber: `DRAFT-${issueDate.replaceAll('-', '')}`,
@@ -42,13 +43,13 @@ export function createInvoiceDraft(): InvoiceDraft {
     issueDate,
     dueDate: localIsoDateAfterDays(30),
     currency: 'GBP',
-    seller: createInvoiceParty('Metalogics'),
+    seller: defaults?.seller ?? createInvoiceParty('Metalogics'),
     customer: createInvoiceParty(),
     items: [createInvoiceLineItem()],
     discount: { type: 'none', value: 0 },
     amountPaidMinor: 0,
-    notes: '',
-    paymentTerms: 'Payment is due within 30 days. Please use the invoice number as your payment reference.',
-    bankDetails: { accountName: '', bankName: '', sortCode: '', accountNumber: '' },
+    notes: defaults?.notes ?? '',
+    paymentTerms: defaults?.paymentTerms ?? 'Payment is due within 30 days. Please use the invoice number as your payment reference.',
+    bankDetails: defaults?.bankDetails ?? { accountName: '', bankName: '', sortCode: '', accountNumber: '' },
   };
 }

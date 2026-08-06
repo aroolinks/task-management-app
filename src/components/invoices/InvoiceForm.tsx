@@ -1,11 +1,12 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useClients } from '@/contexts/ClientContext';
 import { calculateInvoice, parseMajorToMinor, percentageToBasisPoints } from '@/lib/invoices/calculations';
 import { invoiceDraftSchema } from '@/lib/invoices/validation';
 import { createInvoiceDraft } from '@/lib/invoices/utils';
+import { loadInvoiceDefaults, saveInvoiceDefaults } from '@/lib/invoices/defaults';
 import type { InvoiceDiscountType, InvoiceDraft } from '@/types/invoice';
 import InvoiceCurrencyInput from './InvoiceCurrencyInput';
 import InvoiceLineItems from './InvoiceLineItems';
@@ -18,9 +19,18 @@ const labelClass = 'mb-1 block text-xs font-medium text-slate-600';
 
 export default function InvoiceForm() {
   const { clients } = useClients();
-  const [invoice, setInvoice] = useState<InvoiceDraft>(() => createInvoiceDraft());
+  const [invoice, setInvoice] = useState<InvoiceDraft>(() => createInvoiceDraft(loadInvoiceDefaults()));
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const totals = useMemo(() => calculateInvoice(invoice.items, invoice.discount, invoice.amountPaidMinor), [invoice]);
+
+  useEffect(() => {
+    saveInvoiceDefaults({
+      seller: invoice.seller,
+      bankDetails: invoice.bankDetails,
+      paymentTerms: invoice.paymentTerms,
+      notes: invoice.notes,
+    });
+  }, [invoice.seller, invoice.bankDetails, invoice.paymentTerms, invoice.notes]);
 
   const setDiscountType = (type: InvoiceDiscountType) => {
     setInvoice((current) => ({ ...current, discount: { type, value: 0 } }));

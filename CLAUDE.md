@@ -17,7 +17,15 @@ One-off DB/data scripts live in `scripts/*.js` (migrations, cleanup, user creati
 
 ## Architecture
 
-Next.js 15 App Router app with a **single-page-app shell**: `src/app/page.tsx` renders `AppContent`, which shows `LoginForm` or `TaskApp` based on `AuthContext`. `TaskApp` (`src/components/TaskApp.tsx`) is the main shell — it owns an `activeTab` state (`tasks | clients | hosting | expenses | users | company-data | spreadsheet`) and gates each tab behind `user.permissions` / `user.role` **at both the sidebar-button and content-render sites** (rendering the relevant top-level component itself rather than using nested routes). Most feature routes under `src/app/api/**` exist to serve this shell; there's essentially one client route (`/`).
+Next.js 15 App Router app with a **single-page-app shell**: `src/app/page.tsx` renders `AppContent`, which shows `LoginForm` or `TaskApp` based on `AuthContext`. `TaskApp` (`src/components/TaskApp.tsx`) is the main shell — it owns an `activeTab` state (`tasks | clients | hosting | expenses | users | company-data | spreadsheet`) and gates each tab behind `user.permissions` / `user.role` **at both the sidebar-button and content-render sites** (rendering the relevant top-level component itself rather than using nested routes). Most feature routes under `src/app/api/**` exist to serve this shell; there's essentially one client route (`/`), plus the standalone `/invoices/new` route described below.
+
+### Invoice generator (in progress)
+
+Unlike every other feature, the invoice generator is a **real nested route**, not another `activeTab` value on `TaskApp`: `src/app/invoices/new/page.tsx` renders `InvoiceNewPage` (`src/components/invoices/InvoiceNewPage.tsx`), which does its own `useAuth()` + `role === 'admin'` gate rather than relying on `TaskApp`'s gating. It's linked from the sidebar (`TaskApp.tsx`) as a `next/link` `<Link>` for admins only, alongside (not inside) the `activeTab` buttons.
+
+As of the current phase (see recent commits — "invoice generator phases 1 to 3"), it is **client-side only**: no `Invoice` model, no `/api/invoices` route, and no `use*` hook — `InvoiceForm` holds all state locally and there is no persistence yet. Don't assume a save/fetch API exists without checking; if you add persistence, follow the standard model → API route → hook chain used elsewhere rather than inventing a new pattern.
+
+Money is handled as integer minor units (pence) end-to-end, never floats — `src/lib/invoices/calculations.ts` parses/formats via `parseMajorToMinor`/`formatMinor` and does discount/VAT allocation with `BigInt`-based rounded-ratio math to keep line items summing exactly to the total. Follow this convention (no `number` arithmetic on currency) if you touch invoice totals.
 
 ### Data flow pattern
 
