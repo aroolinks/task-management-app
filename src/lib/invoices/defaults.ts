@@ -1,8 +1,10 @@
-import type { InvoiceBankDetails, InvoiceParty } from '@/types/invoice';
+import type { InvoiceBankDetails, InvoiceParty, SavedBankAccount } from '@/types/invoice';
 
 export interface InvoiceDefaults {
   seller: InvoiceParty;
   bankDetails: InvoiceBankDetails;
+  bankAccounts: SavedBankAccount[];
+  selectedBankAccountId: string;
   paymentTerms: string;
   notes: string;
 }

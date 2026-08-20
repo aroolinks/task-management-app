@@ -57,6 +57,34 @@ body {
   transition-duration: 150ms;
 }
 
+.invoice-print-target {
+  display: block;
+  position: fixed;
+  top: 0;
+  left: -10000px;
+  width: 794px;
+  pointer-events: none;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .invoice-print-target,
+  .invoice-print-target * {
+    visibility: visible;
+  }
+
+  .invoice-print-target {
+    display: block;
+    position: absolute;
+    inset: 0;
+    width: 210mm;
+    height: 297mm;
+  }
+}
+
 /* Focus styles */
 .focus-ring {
   @apply focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:ring-offset-2 focus:ring-offset-slate-900;

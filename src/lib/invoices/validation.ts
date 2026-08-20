@@ -24,7 +24,6 @@ export const invoiceLineItemSchema = z.object({
 
 export const invoiceDraftSchema = z.object({
   invoiceNumber: z.string().trim().min(1, 'Invoice number is required').max(50),
-  status: z.enum(['draft', 'sent', 'paid', 'partially_paid', 'overdue']),
   issueDate: z.iso.date(),
   dueDate: z.iso.date(),
   currency: z.literal('GBP'),

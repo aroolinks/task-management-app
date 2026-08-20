@@ -4,6 +4,15 @@ export async function downloadInvoicePdf(element: HTMLElement, filename: string)
     import('jspdf'),
   ]);
 
+  await Promise.all(Array.from(element.querySelectorAll('img')).map(async (image) => {
+    if (!image.complete) await new Promise<void>((resolve) => {
+      const finish = () => resolve();
+      image.addEventListener('load', finish, { once: true });
+      image.addEventListener('error', finish, { once: true });
+    });
+    if (typeof image.decode === 'function') await image.decode().catch(() => undefined);
+  }));
+
   const canvas = await html2canvas(element, {
     scale: 2,
     backgroundColor: '#ffffff',

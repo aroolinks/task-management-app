@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import InvoiceNewPage from '@/components/invoices/InvoiceNewPage';
+import AdminInvoiceGuard from '@/components/invoices/AdminInvoiceGuard';
 
 export const metadata: Metadata = {
   title: 'Create Invoice | Metalogics',
@@ -7,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function NewInvoicePage() {
-  return <InvoiceNewPage />;
+  return <AdminInvoiceGuard><InvoiceNewPage /></AdminInvoiceGuard>;
 }
