@@ -3,12 +3,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useClients } from '@/contexts/ClientContext';
+import { useInvoices } from '@/hooks/useInvoices';
 import { calculateInvoice, parseMajorToMinor, percentageToBasisPoints } from '@/lib/invoices/calculations';
 import { invoiceDraftSchema } from '@/lib/invoices/validation';
-import { createInvoiceDraft } from '@/lib/invoices/utils';
+import { createCompanyParty, createInvoiceDraft, getSavedBankAccounts } from '@/lib/invoices/utils';
 import { loadInvoiceDefaults, saveInvoiceDefaults } from '@/lib/invoices/defaults';
 import { downloadInvoicePdf } from '@/lib/invoices/pdf';
-import type { InvoiceDiscountType, InvoiceDraft } from '@/types/invoice';
+import type { InvoiceDiscountType, InvoiceDraft, InvoiceBankDetails, SavedBankAccount } from '@/types/invoice';
 import InvoiceCurrencyInput from './InvoiceCurrencyInput';
 import InvoiceLineItems from './InvoiceLineItems';
 import InvoicePartyFields from './InvoicePartyFields';
@@ -20,7 +21,13 @@ const labelClass = 'mb-1 block text-xs font-medium text-slate-600';
 
 export default function InvoiceForm() {
   const { clients } = useClients();
-  const [invoice, setInvoice] = useState<InvoiceDraft>(() => createInvoiceDraft(loadInvoiceDefaults()));
+  const { createInvoice } = useInvoices();
+  const [savedDefaults] = useState(() => loadInvoiceDefaults());
+  const [bankAccounts, setBankAccounts] = useState<SavedBankAccount[]>(() => getSavedBankAccounts(savedDefaults));
+  const [selectedBankAccountId, setSelectedBankAccountId] = useState(() => savedDefaults?.selectedBankAccountId ?? getSavedBankAccounts(savedDefaults)[0]?.id ?? '');
+  const [invoice, setInvoice] = useState<InvoiceDraft>(() => createInvoiceDraft({ ...savedDefaults, bankAccounts, selectedBankAccountId }));
+  const [isAddingBank, setIsAddingBank] = useState(false);
+  const [newBank, setNewBank] = useState<InvoiceBankDetails>({ accountName: 'Metalogics Solutions Limited', bankName: '', sortCode: '', accountNumber: '' });
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
@@ -30,23 +37,52 @@ export default function InvoiceForm() {
     saveInvoiceDefaults({
       seller: invoice.seller,
       bankDetails: invoice.bankDetails,
+      bankAccounts,
+      selectedBankAccountId,
       paymentTerms: invoice.paymentTerms,
       notes: invoice.notes,
     });
-  }, [invoice.seller, invoice.bankDetails, invoice.paymentTerms, invoice.notes]);
+  }, [invoice.seller, invoice.bankDetails, invoice.paymentTerms, invoice.notes, bankAccounts, selectedBankAccountId]);
+
+  const selectBankAccount = (accountId: string) => {
+    const account = bankAccounts.find((candidate) => candidate.id === accountId);
+    if (!account) return;
+    setSelectedBankAccountId(accountId);
+    setInvoice((current) => ({ ...current, bankDetails: account.details }));
+  };
+
+  const updateSelectedBankDetails = (details: InvoiceBankDetails) => {
+    setInvoice((current) => ({ ...current, bankDetails: details }));
+    setBankAccounts((current) => current.map((account) => account.id === selectedBankAccountId ? { ...account, details } : account));
+  };
+
+  const addBankAccount = () => {
+    if (!newBank.bankName.trim() || !newBank.accountNumber.trim()) return;
+    const account = { id: `bank-${Date.now()}`, label: newBank.bankName.trim(), details: { ...newBank, bankName: newBank.bankName.trim(), accountNumber: newBank.accountNumber.trim() } };
+    setBankAccounts((current) => [...current, account]);
+    setSelectedBankAccountId(account.id);
+    setInvoice((current) => ({ ...current, bankDetails: account.details }));
+    setNewBank({ accountName: 'Metalogics Solutions Limited', bankName: '', sortCode: '', accountNumber: '' });
+    setIsAddingBank(false);
+  };
 
   const setDiscountType = (type: InvoiceDiscountType) => {
     setInvoice((current) => ({ ...current, discount: { type, value: 0 } }));
   };
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     const result = invoiceDraftSchema.safeParse(invoice);
     if (!result.success) {
       setMessage({ type: 'error', text: result.error.issues[0]?.message || 'Please check the invoice details.' });
       return;
     }
-    setMessage({ type: 'success', text: 'Invoice details are valid. Saving will be added in the database phase.' });
+    const outcome = await createInvoice(result.data);
+    if (!outcome.success) {
+      setMessage({ type: 'error', text: outcome.error });
+      return;
+    }
+    setMessage({ type: 'success', text: 'Invoice saved. You can print or download it from the invoice archive.' });
   };
 
   const handleDownloadPdf = async () => {
@@ -67,10 +103,10 @@ export default function InvoiceForm() {
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur sm:px-6">
         <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <Link href="/" className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">← Dashboard</Link>
-            <div><h1 className="font-semibold text-slate-900">Create invoice</h1><p className="text-xs text-slate-500">Draft values are not saved yet</p></div>
+            <div className="flex gap-2"><Link href="/invoices" className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">Archive</Link><Link href="/" className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">← Dashboard</Link></div>
+            <div><h1 className="font-semibold text-slate-900">Create invoice</h1><p className="text-xs text-slate-500">Saved invoices are available in the archive</p></div>
           </div>
-          <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Validate draft</button>
+          <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Save invoice</button>
         </div>
       </header>
 
@@ -82,13 +118,21 @@ export default function InvoiceForm() {
             <h2 className="mb-4 font-semibold text-slate-900">Invoice details</h2>
             <div className="grid gap-3 sm:grid-cols-2">
               <label><span className={labelClass}>Invoice number *</span><input value={invoice.invoiceNumber} onChange={(event) => setInvoice({ ...invoice, invoiceNumber: event.target.value })} className={fieldClass} required /></label>
-              <label><span className={labelClass}>Status</span><select value={invoice.status} onChange={(event) => setInvoice({ ...invoice, status: event.target.value as InvoiceDraft['status'] })} className={fieldClass}><option value="draft">Draft</option><option value="sent">Sent</option><option value="partially_paid">Partially paid</option><option value="paid">Paid</option><option value="overdue">Overdue</option></select></label>
               <label><span className={labelClass}>Issue date</span><input type="date" value={invoice.issueDate} onChange={(event) => setInvoice({ ...invoice, issueDate: event.target.value })} className={fieldClass} /></label>
               <label><span className={labelClass}>Due date</span><input type="date" value={invoice.dueDate} onChange={(event) => setInvoice({ ...invoice, dueDate: event.target.value })} className={fieldClass} /></label>
             </div>
           </section>
 
-          <InvoicePartyFields idPrefix="seller" title="Your business" party={invoice.seller} onChange={(seller) => setInvoice({ ...invoice, seller })} />
+          <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5" aria-labelledby="company-details-heading">
+            <h2 id="company-details-heading" className="mb-3 font-semibold text-slate-900">Your business</h2>
+            <div className="grid gap-1 text-sm text-slate-600 sm:grid-cols-2">
+              <p className="font-medium text-slate-900">{createCompanyParty().name}</p>
+              <p>{createCompanyParty().email}</p>
+              <p>{createCompanyParty().addressLine1}</p>
+              <p>{createCompanyParty().city}, {createCompanyParty().postcode}</p>
+              <p>{createCompanyParty().country}</p>
+            </div>
+          </section>
 
           <InvoicePartyFields
             idPrefix="customer"
@@ -121,10 +165,12 @@ export default function InvoiceForm() {
           <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
             <h2 className="mb-4 font-semibold text-slate-900">Payment details and notes</h2>
             <div className="grid gap-3 sm:grid-cols-2">
-              <label><span className={labelClass}>Account name</span><input value={invoice.bankDetails.accountName} onChange={(event) => setInvoice({ ...invoice, bankDetails: { ...invoice.bankDetails, accountName: event.target.value } })} className={fieldClass} /></label>
-              <label><span className={labelClass}>Bank name</span><input value={invoice.bankDetails.bankName} onChange={(event) => setInvoice({ ...invoice, bankDetails: { ...invoice.bankDetails, bankName: event.target.value } })} className={fieldClass} /></label>
-              <label><span className={labelClass}>Sort code</span><input value={invoice.bankDetails.sortCode} onChange={(event) => setInvoice({ ...invoice, bankDetails: { ...invoice.bankDetails, sortCode: event.target.value } })} className={fieldClass} /></label>
-              <label><span className={labelClass}>Account number</span><input value={invoice.bankDetails.accountNumber} onChange={(event) => setInvoice({ ...invoice, bankDetails: { ...invoice.bankDetails, accountNumber: event.target.value } })} className={fieldClass} /></label>
+              <div className="sm:col-span-2"><span className={labelClass}>Bank account</span><div className="flex gap-2"><select value={selectedBankAccountId} onChange={(event) => selectBankAccount(event.target.value)} className={fieldClass}>{bankAccounts.map((account) => <option key={account.id} value={account.id}>{account.label} · {account.details.accountNumber}</option>)}</select><button type="button" onClick={() => setIsAddingBank((current) => !current)} className="shrink-0 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">{isAddingBank ? 'Cancel' : 'Add bank'}</button></div></div>
+              {isAddingBank && <div className="grid gap-3 rounded-lg border border-blue-100 bg-blue-50 p-3 sm:col-span-2 sm:grid-cols-2"><label><span className={labelClass}>Account name</span><input value={newBank.accountName} onChange={(event) => setNewBank({ ...newBank, accountName: event.target.value })} className={fieldClass} /></label><label><span className={labelClass}>Bank name *</span><input value={newBank.bankName} onChange={(event) => setNewBank({ ...newBank, bankName: event.target.value })} className={fieldClass} required /></label><label><span className={labelClass}>Sort code</span><input value={newBank.sortCode} onChange={(event) => setNewBank({ ...newBank, sortCode: event.target.value })} className={fieldClass} /></label><label><span className={labelClass}>Account number *</span><input value={newBank.accountNumber} onChange={(event) => setNewBank({ ...newBank, accountNumber: event.target.value })} className={fieldClass} required /></label><button type="button" onClick={addBankAccount} className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700 sm:col-span-2">Save bank account</button></div>}
+              <label><span className={labelClass}>Account name</span><input value={invoice.bankDetails.accountName} onChange={(event) => updateSelectedBankDetails({ ...invoice.bankDetails, accountName: event.target.value })} className={fieldClass} /></label>
+              <label><span className={labelClass}>Bank name</span><input value={invoice.bankDetails.bankName} onChange={(event) => updateSelectedBankDetails({ ...invoice.bankDetails, bankName: event.target.value })} className={fieldClass} /></label>
+              <label><span className={labelClass}>Sort code</span><input value={invoice.bankDetails.sortCode} onChange={(event) => updateSelectedBankDetails({ ...invoice.bankDetails, sortCode: event.target.value })} className={fieldClass} /></label>
+              <label><span className={labelClass}>Account number</span><input value={invoice.bankDetails.accountNumber} onChange={(event) => updateSelectedBankDetails({ ...invoice.bankDetails, accountNumber: event.target.value })} className={fieldClass} /></label>
               <label className="sm:col-span-2"><span className={labelClass}>Payment terms</span><textarea rows={3} value={invoice.paymentTerms} onChange={(event) => setInvoice({ ...invoice, paymentTerms: event.target.value })} className={fieldClass} /></label>
               <label className="sm:col-span-2"><span className={labelClass}>Notes</span><textarea rows={3} value={invoice.notes} onChange={(event) => setInvoice({ ...invoice, notes: event.target.value })} className={fieldClass} /></label>
             </div>

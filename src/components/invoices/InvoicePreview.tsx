@@ -28,13 +28,12 @@ export default function InvoicePreview({ invoice, totals }: InvoicePreviewProps)
       <div className="flex h-full flex-col p-[6%] text-[clamp(7px,1vw,12px)]">
         <header className="flex items-start justify-between border-b-2 border-blue-900 pb-[4%]">
           <div>
-            <Image src="/metalogics-logo-full.svg" alt="Metalogics" width={274} height={56} className="mb-3 h-14 w-auto" priority />
+            <Image src="/metalogics-logo-full.png" alt="Metalogics" width={274} height={51} className="mb-3 h-14 w-auto" priority unoptimized />
             <Address party={invoice.seller} />
           </div>
           <div className="text-right">
             <h1 className="text-[2.4em] font-bold tracking-tight text-blue-950">INVOICE</h1>
             <p className="mt-2 font-semibold text-slate-900">{invoice.invoiceNumber || 'Draft invoice'}</p>
-            <p className="mt-1 capitalize text-slate-500">{invoice.status.replace('_', ' ')}</p>
           </div>
         </header>
 
@@ -74,15 +73,15 @@ export default function InvoicePreview({ invoice, totals }: InvoicePreviewProps)
           </div>
         </div>
 
-        <footer className="mt-4 grid grid-cols-2 gap-6 border-t border-slate-200 pt-3 text-[0.9em]">
-          <div>
-            <p className="font-semibold text-slate-900">Payment details</p>
-            <p>{invoice.bankDetails.accountName}</p>
-            <p>{invoice.bankDetails.bankName}</p>
-            {(invoice.bankDetails.sortCode || invoice.bankDetails.accountNumber) && <p>{invoice.bankDetails.sortCode} · {invoice.bankDetails.accountNumber}</p>}
+        <footer className="mt-6 grid grid-cols-2 gap-8 border-t-2 border-slate-200 pt-5 text-[1em] leading-relaxed">
+          <div className="min-w-0">
+            <p className="mb-1 text-[1.15em] font-semibold text-slate-900">Payment details</p>
+            <p>{invoice.bankDetails.accountName || 'Account name'}</p>
+            <p>{invoice.bankDetails.bankName || 'Bank name'}</p>
+            {(invoice.bankDetails.sortCode || invoice.bankDetails.accountNumber) && <p className="mt-1 font-medium text-slate-900">{invoice.bankDetails.sortCode} · {invoice.bankDetails.accountNumber}</p>}
           </div>
-          <div>
-            <p className="font-semibold text-slate-900">Terms & notes</p>
+          <div className="min-w-0">
+            <p className="mb-1 text-[1.15em] font-semibold text-slate-900">Terms & notes</p>
             <p className="whitespace-pre-wrap">{invoice.paymentTerms}</p>
             <p className="mt-1 whitespace-pre-wrap text-slate-500">{invoice.notes}</p>
           </div>

@@ -16,7 +16,6 @@ import UserManagement from '@/components/UserManagement';
 import HostingManagement from '@/components/HostingManagement';
 import MonthlyExpenses from '@/components/MonthlyExpenses';
 import CompanyDataManagement from '@/components/CompanyDataManagement';
-import SpreadsheetPage from '@/components/SpreadsheetPage';
 
 export default function TaskApp() {
   const { user, logout } = useAuth();
@@ -35,7 +34,7 @@ export default function TaskApp() {
   const [selectedGroup] = useState<string>('all');
   const [showYearEarnings, setShowYearEarnings] = useState(false);
   const [showProjectValue, setShowProjectValue] = useState(false);
-  const [activeTab, setActiveTab] = useState<'tasks' | 'clients' | 'hosting' | 'expenses' | 'users' | 'company-data' | 'spreadsheet'>('tasks');
+  const [activeTab, setActiveTab] = useState<'tasks' | 'clients' | 'hosting' | 'expenses' | 'users' | 'company-data'>('tasks');
   const [openClientTabs, setOpenClientTabs] = useState<string[]>([]);
   const [activeClientTab, setActiveClientTab] = useState<string | null>(null);
   const hasSetInitialTab = useRef(false);
@@ -210,6 +209,12 @@ export default function TaskApp() {
           {/* Primary Navigation */}
           <div className="px-3 py-4 border-b border-gray-200 space-y-1">
             {user?.permissions?.canViewTasks && (
+              <Link href="/tasks" className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors">
+                <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" /></svg>
+                <span className="flex-1 text-left">Team Tasks</span>
+              </Link>
+            )}
+            {user?.permissions?.canViewTasks && (
               <button
                 onClick={() => {
                   setActiveTab('tasks');
@@ -327,27 +332,8 @@ export default function TaskApp() {
             )}
 
             {user?.role === 'admin' && (
-              <button
-                onClick={() => {
-                  setActiveTab('spreadsheet');
-                  setActiveClientTab(null);
-                }}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  activeTab === 'spreadsheet'
-                    ? 'bg-teal-50 text-teal-600'
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                }`}
-              >
-                <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18M9 4v16M15 4v16M5 4h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z" />
-                </svg>
-                <span className="flex-1 text-left">Spreadsheet</span>
-              </button>
-            )}
-
-            {user?.role === 'admin' && (
               <Link
-                href="/invoices/new"
+                href="/invoices"
                 className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
               >
                 <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -602,11 +588,6 @@ export default function TaskApp() {
             /* Company Data Content */
             <div className="flex-1 bg-gray-50">
               <CompanyDataManagement />
-            </div>
-          ) : activeTab === 'spreadsheet' && user?.role === 'admin' ? (
-            /* Spreadsheet Content */
-            <div className="flex-1 bg-gray-50">
-              <SpreadsheetPage />
             </div>
           ) : (
             /* No Permission Message */

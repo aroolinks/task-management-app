@@ -1,6 +1,5 @@
 export type MinorUnit = number;
 
-export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'partially_paid' | 'overdue';
 export type InvoiceDiscountType = 'none' | 'percentage' | 'fixed';
 
 export interface InvoiceParty {
@@ -35,9 +34,14 @@ export interface InvoiceBankDetails {
   accountNumber: string;
 }
 
+export interface SavedBankAccount {
+  id: string;
+  label: string;
+  details: InvoiceBankDetails;
+}
+
 export interface InvoiceDraft {
   invoiceNumber: string;
-  status: InvoiceStatus;
   issueDate: string;
   dueDate: string;
   currency: 'GBP';
