@@ -71,7 +71,7 @@ function TaskForm({ initial, members, sections, busy, onCancel, onSubmit }: { in
 }
 
 type GroupBy = 'section' | 'status' | 'assignee' | 'priority' | 'none';
-type CellField = 'assignedTo' | 'dueDate' | 'priority' | 'status';
+type CellField = 'title' | 'assignedTo' | 'dueDate' | 'priority' | 'status';
 type Group = { key: string; label: string; sectionId?: string | null; canManage?: boolean; addStatus?: TeamTaskStatus; tasks: TeamTask[] };
 
 export default function TeamTasksPage() {
@@ -178,9 +178,9 @@ export default function TeamTasksPage() {
 
   const commitCell = async (task: TeamTask, field: CellField, raw: string) => {
     setEditCell(null);
-    const value = field === 'dueDate' ? (raw || null) : raw;
+    const value = field === 'dueDate' ? (raw || null) : field === 'title' ? raw.trim() : raw;
     const current = field === 'assignedTo' ? task.assignedTo.id : field === 'dueDate' ? (task.dueDate?.slice(0, 10) ?? null) : task[field];
-    if (value === current || (field === 'assignedTo' && !value)) return;
+    if (value === current || ((field === 'assignedTo' || field === 'title') && !value)) return;
     setPendingId(task.id);
     const result = await updateTask(task.id, { [field]: value } as Partial<TeamTaskInput>);
     setPendingId(null);
@@ -214,9 +214,20 @@ export default function TeamTasksPage() {
         </button>
 
         <div className="min-w-0 flex-1 py-2 sm:py-2.5">
-          <button type="button" onClick={() => open('view', task)} className={`block w-full truncate text-left text-sm ${done ? 'text-slate-400 line-through' : 'text-slate-800 hover:text-blue-600'}`}>
-            {task.title}
-          </button>
+          {editing('title') ? (
+            <input
+              autoFocus
+              defaultValue={task.title}
+              maxLength={200}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } else if (e.key === 'Escape') { e.currentTarget.value = task.title; e.currentTarget.blur(); } }}
+              onBlur={e => commitCell(task, 'title', e.target.value)}
+              className="block w-full rounded border border-slate-300 px-1.5 py-1 text-sm text-slate-900 outline-none focus:border-blue-500"
+            />
+          ) : (
+            <button type="button" onClick={() => (canEdit ? setEditCell({ id: task.id, field: 'title' }) : open('view', task))} className={`block w-full truncate rounded text-left text-sm ${done ? 'text-slate-400 line-through' : 'text-slate-800 hover:text-blue-600'} ${canEdit ? 'px-1 hover:bg-slate-100' : ''}`}>
+              {task.title}
+            </button>
+          )}
           <div className="mt-1 flex flex-wrap items-center gap-2 text-xs sm:hidden">
             {task.assignedTo.id && <span className="text-slate-500">{task.assignedTo.username}</span>}
             {task.dueDate && <span className={done ? 'text-slate-400' : overdue ? 'font-medium text-red-600' : 'text-slate-500'}>{formatDay(task.dueDate, true)}</span>}
