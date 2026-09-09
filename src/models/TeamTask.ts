@@ -8,6 +8,7 @@ const TeamTaskSchema = new mongoose.Schema({
   description: { type: String, default: '', maxlength: 5000 },
   assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, immutable: true },
+  section: { type: mongoose.Schema.Types.ObjectId, ref: 'TeamSection', default: null },
   priority: { type: String, enum: TEAM_TASK_PRIORITIES, default: 'Medium' },
   status: { type: String, enum: TEAM_TASK_STATUSES, default: 'To Do' },
   dueDate: { type: Date, default: null },

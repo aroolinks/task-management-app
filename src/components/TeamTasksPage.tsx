@@ -6,11 +6,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import LoginForm from '@/components/LoginForm';
 import Logo from '@/components/Logo';
 import { useTeamTasks } from '@/hooks/useTeamTasks';
-import { TeamMember, TeamTask, TeamTaskInput, TeamTaskPriority, TeamTaskStatus } from '@/types/team-task';
+import { TeamMember, TeamSection, TeamTask, TeamTaskInput, TeamTaskPriority, TeamTaskStatus } from '@/types/team-task';
 
 const statuses: TeamTaskStatus[] = ['To Do', 'In Progress', 'Completed', 'On Hold'];
 const priorities: TeamTaskPriority[] = ['Low', 'Medium', 'High', 'Urgent'];
-const emptyForm: TeamTaskInput = { title: '', description: '', assignedTo: '', priority: 'Medium', status: 'To Do', dueDate: '', notes: '' };
+const emptyForm: TeamTaskInput = { title: '', description: '', assignedTo: '', section: null, priority: 'Medium', status: 'To Do', dueDate: '', notes: '' };
 const fieldClass = 'w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100';
 const toolbarSelect = 'rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-700 outline-none focus:border-blue-500';
 const statusClass: Record<TeamTaskStatus, string> = { 'To Do': 'bg-slate-100 text-slate-700', 'In Progress': 'bg-blue-100 text-blue-700', Completed: 'bg-emerald-100 text-emerald-700', 'On Hold': 'bg-amber-100 text-amber-700' };
@@ -21,7 +21,7 @@ const avatarColor = (id: string) => AVATAR_COLORS[[...id].reduce((sum, ch) => su
 const initials = (name: string) => name.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase() || '?';
 
 function toForm(task: TeamTask): TeamTaskInput {
-  return { title: task.title, description: task.description, assignedTo: task.assignedTo.id, priority: task.priority, status: task.status, dueDate: task.dueDate?.slice(0, 10) || '', notes: task.notes };
+  return { title: task.title, description: task.description, assignedTo: task.assignedTo.id, section: task.section, priority: task.priority, status: task.status, dueDate: task.dueDate?.slice(0, 10) || '', notes: task.notes };
 }
 
 // Real timestamps (created / updated / completed) - shown in the viewer's timezone.
@@ -47,11 +47,11 @@ function isOverdue(task: TeamTask) {
   return task.dueDate.slice(0, 10) < dateKey(new Date());
 }
 
-function Chevron({ className = '' }: { className?: string }) {
-  return <svg viewBox="0 0 20 20" fill="currentColor" className={className}><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.06l3.71-3.83a.75.75 0 111.08 1.04l-4.25 4.39a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clipRule="evenodd" /></svg>;
-}
+const Chevron = ({ className = '' }: { className?: string }) => <svg viewBox="0 0 20 20" fill="currentColor" className={className}><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.06l3.71-3.83a.75.75 0 111.08 1.04l-4.25 4.39a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clipRule="evenodd" /></svg>;
+const EditIcon = () => <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-8.5 8.5a1 1 0 01-.464.263l-3.1.886a.5.5 0 01-.618-.618l.886-3.1a1 1 0 01.263-.464l8.5-8.5z" /></svg>;
+const TrashIcon = () => <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor"><path fillRule="evenodd" d="M8.5 2a1 1 0 00-.94.66L7.2 4H4a1 1 0 000 2h12a1 1 0 100-2h-3.2l-.36-1.34A1 1 0 0011.5 2h-3zM6 7l.7 9.13A2 2 0 008.69 18h2.62a2 2 0 001.99-1.87L14 7H6z" clipRule="evenodd" /></svg>;
 
-function TaskForm({ initial, members, busy, onCancel, onSubmit }: { initial: TeamTaskInput; members: TeamMember[]; busy: boolean; onCancel: () => void; onSubmit: (value: TeamTaskInput) => void }) {
+function TaskForm({ initial, members, sections, busy, onCancel, onSubmit }: { initial: TeamTaskInput; members: TeamMember[]; sections: TeamSection[]; busy: boolean; onCancel: () => void; onSubmit: (value: TeamTaskInput) => void }) {
   const [form, setForm] = useState(initial);
   const set = <K extends keyof TeamTaskInput>(key: K, value: TeamTaskInput[K]) => setForm(v => ({ ...v, [key]: value }));
   const submit = (event: FormEvent) => { event.preventDefault(); if (form.title.trim() && form.assignedTo) onSubmit({ ...form, title: form.title.trim(), dueDate: form.dueDate || null }); };
@@ -60,6 +60,7 @@ function TaskForm({ initial, members, busy, onCancel, onSubmit }: { initial: Tea
     <div><label className="mb-1.5 block text-sm font-medium text-slate-700">Description</label><textarea rows={3} value={form.description} onChange={e => set('description', e.target.value)} className={fieldClass} placeholder="Add context or acceptance criteria…" /></div>
     <div className="grid gap-4 sm:grid-cols-2">
       <div><label className="mb-1.5 block text-sm font-medium text-slate-700">Assign to <span className="text-red-500">*</span></label><select required value={form.assignedTo} onChange={e => set('assignedTo', e.target.value)} className={fieldClass}><option value="">Select team member</option>{members.map(m => <option key={m.id} value={m.id}>{m.username}</option>)}</select></div>
+      <div><label className="mb-1.5 block text-sm font-medium text-slate-700">Section</label><select value={form.section ?? ''} onChange={e => set('section', e.target.value || null)} className={fieldClass}><option value="">No section</option>{sections.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></div>
       <div><label className="mb-1.5 block text-sm font-medium text-slate-700">Due date</label><input type="date" value={form.dueDate || ''} onChange={e => set('dueDate', e.target.value)} className={fieldClass} /></div>
       <div><label className="mb-1.5 block text-sm font-medium text-slate-700">Priority</label><select value={form.priority} onChange={e => set('priority', e.target.value as TeamTaskPriority)} className={fieldClass}>{priorities.map(p => <option key={p}>{p}</option>)}</select></div>
       <div><label className="mb-1.5 block text-sm font-medium text-slate-700">Status</label><select value={form.status} onChange={e => set('status', e.target.value as TeamTaskStatus)} className={fieldClass}>{statuses.map(s => <option key={s}>{s}</option>)}</select></div>
@@ -69,16 +70,19 @@ function TaskForm({ initial, members, busy, onCancel, onSubmit }: { initial: Tea
   </form>;
 }
 
-type GroupBy = 'status' | 'assignee' | 'priority' | 'none';
+type GroupBy = 'section' | 'status' | 'assignee' | 'priority' | 'none';
+type Group = { key: string; label: string; sectionId?: string | null; canManage?: boolean; addStatus?: TeamTaskStatus; tasks: TeamTask[] };
 
 export default function TeamTasksPage() {
   const { user, loading: authLoading, logout } = useAuth();
-  const { tasks, members, loading, error, setError, fetchTasks, createTask, updateTask, deleteTask } = useTeamTasks();
+  const { tasks, members, sections, loading, error, setError, fetchTasks, createTask, updateTask, deleteTask, createSection, updateSection, deleteSection } = useTeamTasks();
   const [busy, setBusy] = useState(false); const [pendingId, setPendingId] = useState<string | null>(null); const [notice, setNotice] = useState('');
   const [modal, setModal] = useState<'add' | 'edit' | 'view' | 'delete' | null>(null); const [selected, setSelected] = useState<TeamTask | null>(null);
   const [addPreset, setAddPreset] = useState<Partial<TeamTaskInput>>({});
   const [scope, setScope] = useState<'all' | 'mine'>('all'); const [search, setSearch] = useState(''); const [assignee, setAssignee] = useState('All'); const [due, setDue] = useState('All');
-  const [groupBy, setGroupBy] = useState<GroupBy>('status'); const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [groupBy, setGroupBy] = useState<GroupBy>('section'); const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [addingSection, setAddingSection] = useState(false); const [newSectionName, setNewSectionName] = useState('');
+  const [editingSectionId, setEditingSectionId] = useState<string | null>(null); const [editName, setEditName] = useState('');
 
   useEffect(() => { if (user) fetchTasks(); }, [user, fetchTasks]);
   useEffect(() => {
@@ -94,6 +98,29 @@ export default function TeamTasksPage() {
   const toggleComplete = (task: TeamTask) => changeStatus(task, task.status === 'Completed' ? 'To Do' : 'Completed');
   const remove = async () => { if (!selected) return; setBusy(true); const success = await deleteTask(selected.id); setBusy(false); if (success) { setModal(null); setSelected(null); toast('Task deleted'); } };
   const toggleCollapse = (key: string) => setCollapsed(prev => { const next = new Set(prev); if (next.has(key)) next.delete(key); else next.add(key); return next; });
+
+  const addSection = async (event: FormEvent) => {
+    event.preventDefault();
+    const name = newSectionName.trim();
+    if (!name) return;
+    const created = await createSection(name);
+    if (created) { setNewSectionName(''); setAddingSection(false); toast('Section added'); }
+  };
+  const commitRename = async (id: string, original: string) => {
+    const name = editName.trim();
+    setEditingSectionId(null);
+    if (name && name !== original) await updateSection(id, { name });
+  };
+  const moveSection = async (id: string, dir: -1 | 1) => {
+    const index = sections.findIndex(s => s.id === id);
+    const swap = sections[index + dir];
+    if (index < 0 || !swap) return;
+    await Promise.all([updateSection(id, { order: swap.order }), updateSection(swap.id, { order: sections[index].order })]);
+  };
+  const handleDeleteSection = async (id: string, name: string) => {
+    if (!window.confirm(`Delete section “${name}”? Its tasks move to “No section”.`)) return;
+    if (await deleteSection(id)) toast('Section deleted');
+  };
 
   const filtered = useMemo(() => tasks.filter(task => {
     if (scope === 'mine' && task.assignedTo.id !== user?.id) return false;
@@ -114,8 +141,13 @@ export default function TeamTasksPage() {
 
   const overdueCount = useMemo(() => filtered.filter(isOverdue).length, [filtered]);
 
-  const groups = useMemo(() => {
-    type Group = { key: string; label: string; addStatus?: TeamTaskStatus; tasks: TeamTask[] };
+  const groups = useMemo<Group[]>(() => {
+    if (groupBy === 'section') {
+      return [
+        { key: '__none', label: 'No section', sectionId: null, tasks: filtered.filter(t => !t.section) },
+        ...sections.map<Group>(s => ({ key: s.id, label: s.name, sectionId: s.id, canManage: true, tasks: filtered.filter(t => t.section === s.id) })),
+      ];
+    }
     if (groupBy === 'status') return statuses.map<Group>(s => ({ key: s, label: s, addStatus: s, tasks: filtered.filter(t => t.status === s) }));
     if (groupBy === 'priority') return priorities.map<Group>(p => ({ key: p, label: `${p} priority`, tasks: filtered.filter(t => t.priority === p) })).filter(g => g.tasks.length);
     if (groupBy === 'assignee') {
@@ -123,18 +155,23 @@ export default function TeamTasksPage() {
       const unassigned = filtered.filter(t => !t.assignedTo.id);
       return [...byMember, ...(unassigned.length ? [{ key: '__unassigned', label: 'Unassigned', tasks: unassigned } as Group] : [])].filter(g => g.tasks.length);
     }
-    return [{ key: '__all', label: 'All tasks', tasks: filtered } as Group];
-  }, [filtered, groupBy, members]);
+    return [{ key: '__all', label: 'All tasks', tasks: filtered }];
+  }, [filtered, groupBy, members, sections]);
 
   if (authLoading) return <div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500">Loading…</div>;
   if (!user) return <LoginForm />;
   if (!user.permissions.canViewTasks) return <div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-700">You do not have permission to view team tasks.</div>;
 
   const canEdit = user.permissions.canEditTasks;
+  const sectionName = (id: string | null) => id ? (sections.find(s => s.id === id)?.name ?? '—') : 'No section';
   const open = (kind: 'edit' | 'view' | 'delete', task: TeamTask) => { setSelected(task); setModal(kind); setError(''); };
-  const openAdd = (preset: Partial<TeamTaskInput> = {}) => { setAddPreset(preset); setSelected(null); setModal('add'); setError(''); };
+  const openAdd = (preset: Partial<TeamTaskInput> = {}) => {
+    const clean = Object.fromEntries(Object.entries(preset).filter(([, v]) => v !== undefined)) as Partial<TeamTaskInput>;
+    setAddPreset(clean); setSelected(null); setModal('add'); setError('');
+  };
   const filtersActive = scope !== 'all' || !!search || assignee !== 'All' || due !== 'All';
   const clearFilters = () => { setScope('all'); setSearch(''); setAssignee('All'); setDue('All'); };
+  const showEmptyCard = !loading && filtered.length === 0 && groupBy !== 'section';
 
   const row = (task: TeamTask) => {
     const done = task.status === 'Completed';
@@ -188,12 +225,8 @@ export default function TeamTasksPage() {
 
         <div className="hidden w-16 shrink-0 items-center justify-end gap-0.5 text-slate-400 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100 sm:flex">
           {canEdit && <>
-            <button type="button" onClick={() => open('edit', task)} title="Edit" className="rounded p-1.5 hover:bg-slate-200 hover:text-slate-700">
-              <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-8.5 8.5a1 1 0 01-.464.263l-3.1.886a.5.5 0 01-.618-.618l.886-3.1a1 1 0 01.263-.464l8.5-8.5z" /></svg>
-            </button>
-            <button type="button" onClick={() => open('delete', task)} title="Delete" className="rounded p-1.5 hover:bg-red-100 hover:text-red-600">
-              <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor"><path fillRule="evenodd" d="M8.5 2a1 1 0 00-.94.66L7.2 4H4a1 1 0 000 2h12a1 1 0 100-2h-3.2l-.36-1.34A1 1 0 0011.5 2h-3zM6 7l.7 9.13A2 2 0 008.69 18h2.62a2 2 0 001.99-1.87L14 7H6z" clipRule="evenodd" /></svg>
-            </button>
+            <button type="button" onClick={() => open('edit', task)} title="Edit" className="rounded p-1.5 hover:bg-slate-200 hover:text-slate-700"><EditIcon /></button>
+            <button type="button" onClick={() => open('delete', task)} title="Delete" className="rounded p-1.5 hover:bg-red-100 hover:text-red-600"><TrashIcon /></button>
           </>}
         </div>
       </div>
@@ -231,7 +264,7 @@ export default function TeamTasksPage() {
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search tasks…" className={`${toolbarSelect} w-full sm:w-56`} />
             <label className="flex items-center gap-1.5 text-sm text-slate-500">Group
               <select value={groupBy} onChange={e => setGroupBy(e.target.value as GroupBy)} className={toolbarSelect}>
-                <option value="status">Status</option><option value="assignee">Assignee</option><option value="priority">Priority</option><option value="none">None</option>
+                <option value="section">Section</option><option value="status">Status</option><option value="assignee">Assignee</option><option value="priority">Priority</option><option value="none">None</option>
               </select>
             </label>
             <select value={assignee} onChange={e => setAssignee(e.target.value)} className={toolbarSelect}><option value="All">All assignees</option>{members.map(m => <option key={m.id} value={m.id}>{m.username}</option>)}</select>
@@ -243,7 +276,7 @@ export default function TeamTasksPage() {
           <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
             {loading ? (
               <div className="p-16 text-center text-sm text-slate-500">Loading team tasks…</div>
-            ) : filtered.length === 0 ? (
+            ) : showEmptyCard ? (
               <div className="p-16 text-center">
                 <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-xl">✓</div>
                 <h2 className="font-semibold">{tasks.length === 0 ? 'No team tasks yet' : 'No tasks match your filters'}</h2>
@@ -262,30 +295,62 @@ export default function TeamTasksPage() {
                   <span className="w-16 shrink-0" />
                 </div>
 
-                {groups.map(group => {
+                {groups.map((group, groupIndex) => {
                   const isCollapsed = collapsed.has(group.key);
+                  const isEditing = editingSectionId === group.key;
                   return (
                     <div key={group.key} className="border-b border-slate-100 last:border-b-0">
-                      <div className="flex items-center gap-2 px-3 pt-3 sm:px-4">
-                        <button type="button" onClick={() => toggleCollapse(group.key)} className="flex items-center gap-2 rounded py-1 pr-2 text-left hover:bg-slate-50">
-                          <Chevron className={`h-4 w-4 text-slate-400 transition-transform ${isCollapsed ? '-rotate-90' : ''}`} />
-                          <span className="text-sm font-semibold text-slate-700">{group.label}</span>
-                          <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-500">{group.tasks.length}</span>
-                        </button>
+                      <div className="group/sec flex items-center gap-1 px-3 pt-3 sm:px-4">
+                        {isEditing ? (
+                          <form onSubmit={e => { e.preventDefault(); commitRename(group.key, group.label); }} className="flex items-center gap-2 py-1">
+                            <Chevron className="h-4 w-4 text-slate-300" />
+                            <input autoFocus value={editName} onChange={e => setEditName(e.target.value)} onBlur={() => commitRename(group.key, group.label)} className="rounded border border-slate-300 px-2 py-0.5 text-sm font-semibold outline-none focus:border-blue-500" />
+                          </form>
+                        ) : (
+                          <button type="button" onClick={() => toggleCollapse(group.key)} className="flex items-center gap-2 rounded py-1 pr-2 text-left hover:bg-slate-50">
+                            <Chevron className={`h-4 w-4 text-slate-400 transition-transform ${isCollapsed ? '-rotate-90' : ''}`} />
+                            <span className="text-sm font-semibold text-slate-700">{group.label}</span>
+                            <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-500">{group.tasks.length}</span>
+                          </button>
+                        )}
+                        {group.canManage && canEdit && !isEditing && (
+                          <div className="flex items-center gap-0.5 text-slate-300 opacity-0 transition-opacity focus-within:opacity-100 group-hover/sec:opacity-100">
+                            <button type="button" onClick={() => moveSection(group.key, -1)} disabled={groupIndex <= 1} title="Move up" className="rounded p-1 hover:bg-slate-100 hover:text-slate-600 disabled:opacity-30">↑</button>
+                            <button type="button" onClick={() => moveSection(group.key, 1)} disabled={groupIndex >= groups.length - 1} title="Move down" className="rounded p-1 hover:bg-slate-100 hover:text-slate-600 disabled:opacity-30">↓</button>
+                            <button type="button" onClick={() => { setEditingSectionId(group.key); setEditName(group.label); }} title="Rename section" className="rounded p-1 hover:bg-slate-100 hover:text-slate-600"><EditIcon /></button>
+                            <button type="button" onClick={() => handleDeleteSection(group.key, group.label)} title="Delete section" className="rounded p-1 hover:bg-red-100 hover:text-red-600"><TrashIcon /></button>
+                          </div>
+                        )}
                       </div>
                       {!isCollapsed && <div className="mt-1">
                         {group.tasks.map(row)}
-                        {canEdit && group.addStatus && (
-                          <button type="button" onClick={() => openAdd({ status: group.addStatus })} className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm text-slate-400 hover:bg-slate-50 hover:text-slate-600 sm:px-4">
+                        {canEdit && (group.addStatus || group.sectionId !== undefined) && (
+                          <button type="button" onClick={() => openAdd({ status: group.addStatus, section: group.sectionId ?? null })} className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm text-slate-400 hover:bg-slate-50 hover:text-slate-600 sm:px-4">
                             <span className="flex h-[18px] w-[18px] items-center justify-center text-base leading-none">+</span>
                             <span>Add task</span>
                           </button>
                         )}
-                        {group.tasks.length === 0 && !group.addStatus && <p className="px-4 py-3 text-sm text-slate-400">No tasks</p>}
+                        {group.tasks.length === 0 && !group.addStatus && group.sectionId === undefined && <p className="px-4 py-3 text-sm text-slate-400">No tasks</p>}
                       </div>}
                     </div>
                   );
                 })}
+
+                {groupBy === 'section' && canEdit && (
+                  <div className="px-3 py-3 sm:px-4">
+                    {addingSection ? (
+                      <form onSubmit={addSection} className="flex flex-wrap items-center gap-2">
+                        <input autoFocus value={newSectionName} onChange={e => setNewSectionName(e.target.value)} maxLength={120} placeholder="Section name" className={`${toolbarSelect} w-64`} />
+                        <button className="rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-semibold text-white hover:bg-slate-800">Add section</button>
+                        <button type="button" onClick={() => { setAddingSection(false); setNewSectionName(''); }} className="text-sm text-slate-500 hover:text-slate-700">Cancel</button>
+                      </form>
+                    ) : (
+                      <button type="button" onClick={() => setAddingSection(true)} className="flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-800">
+                        <span className="text-base leading-none">+</span> Add section
+                      </button>
+                    )}
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -293,6 +358,6 @@ export default function TeamTasksPage() {
       </main>
     </div>
 
-    {modal && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" onMouseDown={e => { if (e.target === e.currentTarget && !busy) { setModal(null); setSelected(null); } }}><div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl"><div className="flex items-center justify-between border-b border-slate-100 px-5 py-4"><h2 className="text-lg font-semibold">{modal === 'add' ? 'Add task' : modal === 'edit' ? 'Edit task' : modal === 'delete' ? 'Delete this task?' : 'Task details'}</h2><button onClick={() => { setModal(null); setSelected(null); }} className="rounded p-1 text-xl text-slate-400 hover:bg-slate-100">×</button></div><div className="p-5">{modal === 'add' && <TaskForm initial={{ ...emptyForm, assignedTo: user.id, ...addPreset }} members={members} busy={busy} onCancel={() => setModal(null)} onSubmit={save} />}{modal === 'edit' && selected && <TaskForm initial={toForm(selected)} members={members} busy={busy} onCancel={() => setModal(null)} onSubmit={save} />}{modal === 'delete' && selected && <div><p className="text-sm text-slate-600">“{selected.title}” will be permanently deleted. This action cannot be undone.</p><div className="mt-6 flex justify-end gap-2"><button onClick={() => setModal(null)} className="rounded-lg border border-slate-200 px-4 py-2 text-sm">Cancel</button><button disabled={busy} onClick={remove} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{busy ? 'Deleting…' : 'Delete'}</button></div></div>}{modal === 'view' && selected && <div><div className="flex flex-wrap gap-2"><span className={`rounded-full px-2.5 py-1 text-xs font-medium ${priorityClass[selected.priority]}`}>{selected.priority}</span><span className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusClass[selected.status]}`}>{selected.status}</span>{isOverdue(selected) && <span className="rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-700">Overdue</span>}</div><p className="mt-5 whitespace-pre-wrap text-sm leading-6 text-slate-600">{selected.description || 'No description provided.'}</p><dl className="mt-6 grid gap-4 rounded-xl bg-slate-50 p-4 sm:grid-cols-2">{[['Assigned to', selected.assignedTo.username], ['Created by', selected.createdBy.username], ['Due date', formatDay(selected.dueDate)], ['Created', formatDate(selected.createdAt)], ['Last updated', formatDate(selected.updatedAt)], ['Completed', formatDate(selected.completedAt)]].map(([k, v]) => <div key={k}><dt className="text-xs uppercase tracking-wide text-slate-400">{k}</dt><dd className="mt-1 text-sm font-medium">{v}</dd></div>)}</dl>{selected.notes && <div className="mt-5"><h3 className="text-sm font-semibold">Notes</h3><p className="mt-2 whitespace-pre-wrap rounded-lg border border-slate-200 p-3 text-sm text-slate-600">{selected.notes}</p></div>}<div className="mt-6 flex justify-end gap-2"><button onClick={() => { setModal(null); setSelected(null); }} className="rounded-lg border border-slate-200 px-4 py-2 text-sm">Close</button>{canEdit && <button onClick={() => setModal('edit')} className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white">Edit task</button>}</div></div>}</div></div></div>}
+    {modal && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" onMouseDown={e => { if (e.target === e.currentTarget && !busy) { setModal(null); setSelected(null); } }}><div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl"><div className="flex items-center justify-between border-b border-slate-100 px-5 py-4"><h2 className="text-lg font-semibold">{modal === 'add' ? 'Add task' : modal === 'edit' ? 'Edit task' : modal === 'delete' ? 'Delete this task?' : 'Task details'}</h2><button onClick={() => { setModal(null); setSelected(null); }} className="rounded p-1 text-xl text-slate-400 hover:bg-slate-100">×</button></div><div className="p-5">{modal === 'add' && <TaskForm initial={{ ...emptyForm, assignedTo: user.id, ...addPreset }} members={members} sections={sections} busy={busy} onCancel={() => setModal(null)} onSubmit={save} />}{modal === 'edit' && selected && <TaskForm initial={toForm(selected)} members={members} sections={sections} busy={busy} onCancel={() => setModal(null)} onSubmit={save} />}{modal === 'delete' && selected && <div><p className="text-sm text-slate-600">“{selected.title}” will be permanently deleted. This action cannot be undone.</p><div className="mt-6 flex justify-end gap-2"><button onClick={() => setModal(null)} className="rounded-lg border border-slate-200 px-4 py-2 text-sm">Cancel</button><button disabled={busy} onClick={remove} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{busy ? 'Deleting…' : 'Delete'}</button></div></div>}{modal === 'view' && selected && <div><div className="flex flex-wrap gap-2"><span className={`rounded-full px-2.5 py-1 text-xs font-medium ${priorityClass[selected.priority]}`}>{selected.priority}</span><span className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusClass[selected.status]}`}>{selected.status}</span>{isOverdue(selected) && <span className="rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-700">Overdue</span>}</div><p className="mt-5 whitespace-pre-wrap text-sm leading-6 text-slate-600">{selected.description || 'No description provided.'}</p><dl className="mt-6 grid gap-4 rounded-xl bg-slate-50 p-4 sm:grid-cols-2">{[['Assigned to', selected.assignedTo.username], ['Section', sectionName(selected.section)], ['Created by', selected.createdBy.username], ['Due date', formatDay(selected.dueDate)], ['Created', formatDate(selected.createdAt)], ['Last updated', formatDate(selected.updatedAt)], ['Completed', formatDate(selected.completedAt)]].map(([k, v]) => <div key={k}><dt className="text-xs uppercase tracking-wide text-slate-400">{k}</dt><dd className="mt-1 text-sm font-medium">{v}</dd></div>)}</dl>{selected.notes && <div className="mt-5"><h3 className="text-sm font-semibold">Notes</h3><p className="mt-2 whitespace-pre-wrap rounded-lg border border-slate-200 p-3 text-sm text-slate-600">{selected.notes}</p></div>}<div className="mt-6 flex justify-end gap-2"><button onClick={() => { setModal(null); setSelected(null); }} className="rounded-lg border border-slate-200 px-4 py-2 text-sm">Close</button>{canEdit && <button onClick={() => setModal('edit')} className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white">Edit task</button>}</div></div>}</div></div></div>}
   </div>;
 }

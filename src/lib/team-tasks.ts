@@ -1,3 +1,5 @@
+import mongoose from 'mongoose';
+import TeamSection from '@/models/TeamSection';
 import type { TeamTask } from '@/types/team-task';
 
 type PopulatedRef = { _id?: unknown; username?: unknown; email?: unknown } | null | undefined;
@@ -25,6 +27,20 @@ const toIso = (value: unknown): string | null => {
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
 };
 
+/**
+ * Normalises a client-supplied `section` value for a task write.
+ * - `undefined`  -> field absent from the update (returns undefined)
+ * - `null` / ''  -> explicitly no section (returns null)
+ * - valid id of an existing section -> that id
+ * - anything else (bad id, missing section) -> undefined (ignored)
+ */
+export async function resolveSection(value: unknown): Promise<string | null | undefined> {
+  if (value === undefined) return undefined;
+  if (value === null || value === '') return null;
+  if (typeof value !== 'string' || !mongoose.Types.ObjectId.isValid(value)) return undefined;
+  return (await TeamSection.exists({ _id: value })) ? value : undefined;
+}
+
 /** Serializes a lean TeamTask document (with populated refs) for the API response. */
 export function serializeTeamTask(task: Record<string, unknown>): TeamTask {
   return {
@@ -33,6 +49,7 @@ export function serializeTeamTask(task: Record<string, unknown>): TeamTask {
     description: typeof task.description === 'string' ? task.description : '',
     assignedTo: serializeMember(task.assignedTo as PopulatedRef),
     createdBy: serializeMember(task.createdBy as PopulatedRef),
+    section: task.section == null ? null : String(task.section),
     priority: task.priority as TeamTask['priority'],
     status: task.status as TeamTask['status'],
     dueDate: toIso(task.dueDate),

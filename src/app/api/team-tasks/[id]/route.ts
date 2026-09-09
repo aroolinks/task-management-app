@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import mongoose from 'mongoose';
 import dbConnect from '@/lib/mongodb';
 import { verifyAuth } from '@/lib/auth';
-import { serializeTeamTask } from '@/lib/team-tasks';
+import { serializeTeamTask, resolveSection } from '@/lib/team-tasks';
 import TeamTask, { TEAM_TASK_PRIORITIES, TEAM_TASK_STATUSES } from '@/models/TeamTask';
 import User from '@/models/User';
 
@@ -25,6 +25,10 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     if (body.assignedTo && (!mongoose.Types.ObjectId.isValid(body.assignedTo) || !(await User.exists({ _id: body.assignedTo })))) return NextResponse.json({ success: false, error: 'Invalid team member' }, { status: 400 });
     if (body.priority && !TEAM_TASK_PRIORITIES.includes(body.priority)) return NextResponse.json({ success: false, error: 'Invalid priority' }, { status: 400 });
     if (body.status && !TEAM_TASK_STATUSES.includes(body.status)) return NextResponse.json({ success: false, error: 'Invalid status' }, { status: 400 });
+    if ('section' in body) {
+      const section = await resolveSection(body.section);
+      if (section === undefined) delete body.section; else body.section = section;
+    }
     delete body.createdBy; delete body.completedAt;
     const existing = await TeamTask.findById(id);
     if (!existing) return NextResponse.json({ success: false, error: 'Task not found' }, { status: 404 });
