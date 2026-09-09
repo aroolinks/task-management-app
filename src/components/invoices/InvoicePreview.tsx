@@ -22,19 +22,7 @@ function Address({ party }: { party: InvoiceDraft['customer'] }) {
   );
 }
 
-function paymentStatus(totals: InvoiceTotals): { label: string; className: string } {
-  if (totals.totalMinor > 0 && totals.amountDueMinor === 0) {
-    return { label: 'Paid', className: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
-  }
-  if (totals.amountPaidMinor > 0) {
-    return { label: 'Part paid', className: 'bg-amber-50 text-amber-700 border-amber-200' };
-  }
-  return { label: 'Due', className: 'bg-blue-50 text-blue-800 border-blue-200' };
-}
-
 export default function InvoicePreview({ invoice, totals }: InvoicePreviewProps) {
-  const status = paymentStatus(totals);
-
   return (
     <div className="mx-auto w-full max-w-[794px] [container-type:inline-size]">
       <div
@@ -50,9 +38,6 @@ export default function InvoicePreview({ invoice, totals }: InvoicePreviewProps)
           <div className="shrink-0 text-right">
             <p className="text-[2.1em] font-bold leading-none tracking-tight text-blue-950">INVOICE</p>
             <p className="mt-2 text-[1.1em] font-semibold text-slate-900">{invoice.invoiceNumber || 'Draft invoice'}</p>
-            <span className={`mt-2 inline-block rounded-full border px-[0.7em] py-[0.15em] text-[0.78em] font-semibold uppercase tracking-wide ${status.className}`}>
-              {status.label}
-            </span>
           </div>
         </header>
 

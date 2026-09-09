@@ -74,7 +74,7 @@ export function createInvoiceDraft(defaults?: Partial<InvoiceDefaults> | null): 
   const selectedBankAccountId = defaults?.selectedBankAccountId ?? bankAccounts[0]?.id;
   const selectedBankAccount = bankAccounts.find((account) => account.id === selectedBankAccountId) ?? bankAccounts[0];
   return {
-    invoiceNumber: `DRAFT-${issueDate.replaceAll('-', '')}`,
+    invoiceNumber: `INV-${issueDate.replaceAll('-', '')}`,
     issueDate,
     dueDate: localIsoDateAfterDays(30),
     currency: 'GBP',
