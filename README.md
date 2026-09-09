@@ -37,7 +37,7 @@ A modern task management application built with Next.js 15, React 19, TypeScript
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd task-management-app-netlify
+   cd task-management-app
    ```
 
 2. **Install dependencies**
