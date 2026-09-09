@@ -67,6 +67,14 @@ body {
 }
 
 @media print {
+  /* Zero the page margin so browsers omit their own date/title/URL header
+     and footer. The invoice has its own 6% internal padding, so content
+     still isn't flush to the paper edge. */
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
   body * {
     visibility: hidden;
   }
