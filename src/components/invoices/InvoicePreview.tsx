@@ -58,7 +58,7 @@ export default function InvoicePreview({ invoice, totals }: InvoicePreviewProps)
 
         <div className="mt-[5%] h-[3px] rounded-full bg-blue-950" />
 
-        <section className="mt-[5%] flex justify-between gap-8">
+        <section className="mt-[5%] flex justify-between gap-8 rounded-lg border border-slate-100 bg-slate-50 px-[4%] py-[3.5%]">
           <div className="min-w-0">
             <p className="mb-1.5 text-[0.78em] font-bold uppercase tracking-[0.18em] text-slate-400">Bill to</p>
             <Address party={invoice.customer} />
