@@ -24,8 +24,12 @@ function Address({ party }: { party: InvoiceDraft['customer'] }) {
 
 export default function InvoicePreview({ invoice, totals }: InvoicePreviewProps) {
   return (
-    <div className="mx-auto aspect-[210/297] w-full max-w-[794px] overflow-hidden bg-white text-slate-700 shadow-xl ring-1 ring-slate-200" role="region" aria-label="Live invoice preview">
-      <div className="flex h-full flex-col p-[6%] text-[clamp(7px,1vw,12px)]">
+    <div className="mx-auto w-full max-w-[794px] [container-type:inline-size]">
+      <div
+        className="flex aspect-[210/297] flex-col overflow-hidden bg-white p-[6%] text-[max(9px,1.75cqw)] text-slate-700 shadow-xl ring-1 ring-slate-200"
+        role="region"
+        aria-label="Live invoice preview"
+      >
         <header className="flex items-start justify-between border-b-2 border-blue-900 pb-[4%]">
           <div>
             <Image src="/metalogics-logo-full.png" alt="Metalogics" width={274} height={51} className="mb-3 h-14 w-auto" priority unoptimized />
