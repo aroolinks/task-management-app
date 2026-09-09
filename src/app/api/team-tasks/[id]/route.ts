@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import mongoose from 'mongoose';
 import dbConnect from '@/lib/mongodb';
 import { verifyAuth } from '@/lib/auth';
+import { serializeTeamTask } from '@/lib/team-tasks';
 import TeamTask, { TEAM_TASK_PRIORITIES, TEAM_TASK_STATUSES } from '@/models/TeamTask';
 import User from '@/models/User';
 
@@ -30,8 +31,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     if (body.status === 'Completed' && existing.status !== 'Completed') body.completedAt = new Date();
     if (body.status && body.status !== 'Completed') body.completedAt = null;
     const task = await TeamTask.findByIdAndUpdate(id, body, { new: true, runValidators: true }).populate('assignedTo', 'username email').populate('createdBy', 'username email').lean();
-    const serialized = task as unknown as Record<string, unknown>;
-    return NextResponse.json({ success: true, data: { ...serialized, id: String(serialized._id), _id: undefined } });
+    if (!task) return NextResponse.json({ success: false, error: 'Task not found' }, { status: 404 });
+    return NextResponse.json({ success: true, data: serializeTeamTask(task as Record<string, unknown>) });
   } catch (error) { return NextResponse.json({ success: false, error: error instanceof Error ? error.message : 'Failed to update task' }, { status: 400 }); }
 }
 
