@@ -71,6 +71,7 @@ function TaskForm({ initial, members, sections, busy, onCancel, onSubmit }: { in
 }
 
 type GroupBy = 'section' | 'status' | 'assignee' | 'priority' | 'none';
+type CellField = 'assignedTo' | 'dueDate' | 'priority' | 'status';
 type Group = { key: string; label: string; sectionId?: string | null; canManage?: boolean; addStatus?: TeamTaskStatus; tasks: TeamTask[] };
 
 export default function TeamTasksPage() {
@@ -83,6 +84,8 @@ export default function TeamTasksPage() {
   const [groupBy, setGroupBy] = useState<GroupBy>('section'); const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [addingSection, setAddingSection] = useState(false); const [newSectionName, setNewSectionName] = useState('');
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null); const [editName, setEditName] = useState('');
+  const [editCell, setEditCell] = useState<{ id: string; field: CellField } | null>(null);
+  const [quickAddKey, setQuickAddKey] = useState<string | null>(null); const [quickAddTitle, setQuickAddTitle] = useState(''); const [quickBusy, setQuickBusy] = useState(false);
 
   useEffect(() => { if (user) fetchTasks(); }, [user, fetchTasks]);
   useEffect(() => {
@@ -173,10 +176,31 @@ export default function TeamTasksPage() {
   const clearFilters = () => { setScope('all'); setSearch(''); setAssignee('All'); setDue('All'); };
   const showEmptyCard = !loading && filtered.length === 0 && groupBy !== 'section';
 
+  const commitCell = async (task: TeamTask, field: CellField, raw: string) => {
+    setEditCell(null);
+    const value = field === 'dueDate' ? (raw || null) : raw;
+    const current = field === 'assignedTo' ? task.assignedTo.id : field === 'dueDate' ? (task.dueDate?.slice(0, 10) ?? null) : task[field];
+    if (value === current || (field === 'assignedTo' && !value)) return;
+    setPendingId(task.id);
+    const result = await updateTask(task.id, { [field]: value } as Partial<TeamTaskInput>);
+    setPendingId(null);
+    if (result) toast('Task updated');
+  };
+  const submitQuickAdd = async (group: Group) => {
+    const title = quickAddTitle.trim();
+    if (!title || quickBusy) return;
+    setQuickBusy(true);
+    const created = await createTask({ ...emptyForm, title, assignedTo: user.id, section: group.sectionId ?? null, status: group.addStatus ?? emptyForm.status });
+    setQuickBusy(false);
+    if (created) { setQuickAddTitle(''); toast('Task created'); }
+  };
+
   const row = (task: TeamTask) => {
     const done = task.status === 'Completed';
     const overdue = isOverdue(task);
     const rowPending = pendingId === task.id;
+    const editing = (field: CellField) => editCell?.id === task.id && editCell.field === field;
+    const cellBtn = canEdit ? 'hover:bg-slate-100' : 'cursor-default';
     return (
       <div key={task.id} className="group flex items-start gap-3 border-b border-slate-100 px-3 hover:bg-slate-50 sm:items-center sm:px-4">
         <button
@@ -197,30 +221,63 @@ export default function TeamTasksPage() {
             {task.assignedTo.id && <span className="text-slate-500">{task.assignedTo.username}</span>}
             {task.dueDate && <span className={done ? 'text-slate-400' : overdue ? 'font-medium text-red-600' : 'text-slate-500'}>{formatDay(task.dueDate, true)}</span>}
             <span className={`rounded-full px-1.5 py-0.5 font-medium ${priorityClass[task.priority]}`}>{task.priority}</span>
+            <span className={`rounded-full px-1.5 py-0.5 font-medium ${statusClass[task.status]}`}>{task.status}</span>
           </div>
         </div>
 
-        <div className="hidden w-44 shrink-0 items-center gap-2 sm:flex">
-          {task.assignedTo.id ? (
-            <>
-              <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold text-white ${avatarColor(task.assignedTo.id)}`}>{initials(task.assignedTo.username)}</span>
-              <span className="truncate text-sm text-slate-600">{task.assignedTo.username}</span>
-            </>
+        <div className="hidden w-44 shrink-0 sm:block">
+          {editing('assignedTo') ? (
+            <select autoFocus defaultValue={task.assignedTo.id} onChange={e => commitCell(task, 'assignedTo', e.target.value)} onBlur={() => setEditCell(null)} className="w-full rounded border border-slate-300 px-1.5 py-1 text-sm outline-none focus:border-blue-500">
+              {members.map(m => <option key={m.id} value={m.id}>{m.username}</option>)}
+            </select>
           ) : (
-            <span className="flex h-6 w-6 items-center justify-center rounded-full border border-dashed border-slate-300 text-slate-300">
-              <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" fill="currentColor"><path d="M10 10a3 3 0 100-6 3 3 0 000 6zm-7 8a7 7 0 0114 0H3z" /></svg>
-            </span>
+            <button type="button" disabled={!canEdit} onClick={() => setEditCell({ id: task.id, field: 'assignedTo' })} className={`flex w-full items-center gap-2 rounded px-1 py-1 text-left ${cellBtn}`}>
+              {task.assignedTo.id ? (
+                <>
+                  <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold text-white ${avatarColor(task.assignedTo.id)}`}>{initials(task.assignedTo.username)}</span>
+                  <span className="truncate text-sm text-slate-600">{task.assignedTo.username}</span>
+                </>
+              ) : (
+                <span className="flex h-6 w-6 items-center justify-center rounded-full border border-dashed border-slate-300 text-slate-300"><svg viewBox="0 0 20 20" className="h-3.5 w-3.5" fill="currentColor"><path d="M10 10a3 3 0 100-6 3 3 0 000 6zm-7 8a7 7 0 0114 0H3z" /></svg></span>
+              )}
+            </button>
           )}
         </div>
 
         <div className="hidden w-28 shrink-0 text-sm sm:block">
-          {task.dueDate
-            ? <span className={done ? 'text-slate-300' : overdue ? 'font-medium text-red-600' : 'text-slate-600'}>{formatDay(task.dueDate, true)}</span>
-            : <span className="flex h-6 w-6 items-center justify-center rounded-full border border-dashed border-slate-300 text-slate-300"><svg viewBox="0 0 20 20" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="3.5" y="4.5" width="13" height="12" rx="2" /><path d="M3.5 8.5h13M7 3.5v2M13 3.5v2" strokeLinecap="round" /></svg></span>}
+          {editing('dueDate') ? (
+            <input type="date" autoFocus defaultValue={task.dueDate?.slice(0, 10) ?? ''} onChange={e => { if (e.target.value) commitCell(task, 'dueDate', e.target.value); }} onBlur={e => commitCell(task, 'dueDate', e.target.value)} className="w-full rounded border border-slate-300 px-1.5 py-1 text-sm outline-none focus:border-blue-500" />
+          ) : (
+            <button type="button" disabled={!canEdit} onClick={() => setEditCell({ id: task.id, field: 'dueDate' })} className={`rounded px-1 py-1 ${cellBtn}`}>
+              {task.dueDate
+                ? <span className={done ? 'text-slate-300' : overdue ? 'font-medium text-red-600' : 'text-slate-600'}>{formatDay(task.dueDate, true)}</span>
+                : <span className="flex h-6 w-6 items-center justify-center rounded-full border border-dashed border-slate-300 text-slate-300"><svg viewBox="0 0 20 20" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="3.5" y="4.5" width="13" height="12" rx="2" /><path d="M3.5 8.5h13M7 3.5v2M13 3.5v2" strokeLinecap="round" /></svg></span>}
+            </button>
+          )}
         </div>
 
         <div className="hidden w-24 shrink-0 sm:block">
-          <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${priorityClass[task.priority]}`}>{task.priority}</span>
+          {editing('priority') ? (
+            <select autoFocus defaultValue={task.priority} onChange={e => commitCell(task, 'priority', e.target.value)} onBlur={() => setEditCell(null)} className="w-full rounded border border-slate-300 px-1 py-1 text-xs outline-none focus:border-blue-500">
+              {priorities.map(p => <option key={p}>{p}</option>)}
+            </select>
+          ) : (
+            <button type="button" disabled={!canEdit} onClick={() => setEditCell({ id: task.id, field: 'priority' })} className={canEdit ? '' : 'cursor-default'}>
+              <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${priorityClass[task.priority]}`}>{task.priority}</span>
+            </button>
+          )}
+        </div>
+
+        <div className="hidden w-24 shrink-0 sm:block">
+          {editing('status') ? (
+            <select autoFocus defaultValue={task.status} onChange={e => commitCell(task, 'status', e.target.value)} onBlur={() => setEditCell(null)} className="w-full rounded border border-slate-300 px-1 py-1 text-xs outline-none focus:border-blue-500">
+              {statuses.map(s => <option key={s}>{s}</option>)}
+            </select>
+          ) : (
+            <button type="button" disabled={!canEdit} onClick={() => setEditCell({ id: task.id, field: 'status' })} className={canEdit ? '' : 'cursor-default'}>
+              <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${statusClass[task.status]}`}>{task.status}</span>
+            </button>
+          )}
         </div>
 
         <div className="hidden w-16 shrink-0 items-center justify-end gap-0.5 text-slate-400 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100 sm:flex">
@@ -292,6 +349,7 @@ export default function TeamTasksPage() {
                   <span className="w-44 shrink-0 py-2.5">Assignee</span>
                   <span className="w-28 shrink-0 py-2.5">Due date</span>
                   <span className="w-24 shrink-0 py-2.5">Priority</span>
+                  <span className="w-24 shrink-0 py-2.5">Status</span>
                   <span className="w-16 shrink-0" />
                 </div>
 
@@ -324,12 +382,19 @@ export default function TeamTasksPage() {
                       </div>
                       {!isCollapsed && <div className="mt-1">
                         {group.tasks.map(row)}
-                        {canEdit && (group.addStatus || group.sectionId !== undefined) && (
-                          <button type="button" onClick={() => openAdd({ status: group.addStatus, section: group.sectionId ?? null })} className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm text-slate-400 hover:bg-slate-50 hover:text-slate-600 sm:px-4">
+                        {canEdit && (group.addStatus || group.sectionId !== undefined) && (quickAddKey === group.key ? (
+                          <div className="flex items-center gap-3 px-3 py-1.5 sm:px-4">
+                            <span className="w-[18px] shrink-0" />
+                            <input autoFocus value={quickAddTitle} maxLength={200} onChange={e => setQuickAddTitle(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); submitQuickAdd(group); } else if (e.key === 'Escape') { setQuickAddKey(null); setQuickAddTitle(''); } }} onBlur={() => { if (!quickAddTitle.trim()) setQuickAddKey(null); }} placeholder="Task name, then press Enter" className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+                            <button type="button" onMouseDown={e => e.preventDefault()} onClick={() => submitQuickAdd(group)} disabled={quickBusy || !quickAddTitle.trim()} className="rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50">{quickBusy ? 'Adding…' : 'Add'}</button>
+                            <button type="button" onMouseDown={e => e.preventDefault()} onClick={() => { setQuickAddKey(null); setQuickAddTitle(''); }} className="text-sm text-slate-500 hover:text-slate-700">Cancel</button>
+                          </div>
+                        ) : (
+                          <button type="button" onClick={() => { setQuickAddKey(group.key); setQuickAddTitle(''); }} className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm text-slate-400 hover:bg-slate-50 hover:text-slate-600 sm:px-4">
                             <span className="flex h-[18px] w-[18px] items-center justify-center text-base leading-none">+</span>
                             <span>Add task</span>
                           </button>
-                        )}
+                        ))}
                         {group.tasks.length === 0 && !group.addStatus && group.sectionId === undefined && <p className="px-4 py-3 text-sm text-slate-400">No tasks</p>}
                       </div>}
                     </div>
