@@ -7,6 +7,7 @@ interface InvoiceSummaryProps {
 }
 
 export default function InvoiceSummary({ totals, compact = false }: InvoiceSummaryProps) {
+  const showVat = totals.vatMinor > 0;
   return (
     <dl className={compact ? 'space-y-1' : 'ml-auto mt-5 max-w-xs space-y-2 text-sm'}>
       <div className="flex justify-between gap-6">
@@ -18,6 +19,18 @@ export default function InvoiceSummary({ totals, compact = false }: InvoiceSumma
           <dt className="text-slate-500">Discount</dt>
           <dd>-{formatMinor(totals.discountMinor)}</dd>
         </div>
+      )}
+      {showVat && (
+        <>
+          <div className="flex justify-between gap-6">
+            <dt className="text-slate-500">Net</dt>
+            <dd>{formatMinor(totals.netMinor)}</dd>
+          </div>
+          <div className="flex justify-between gap-6">
+            <dt className="text-slate-500">VAT</dt>
+            <dd>{formatMinor(totals.vatMinor)}</dd>
+          </div>
+        </>
       )}
       <div className="flex justify-between gap-6 border-t border-slate-200 pt-2 font-semibold text-slate-900">
         <dt>Total</dt>
