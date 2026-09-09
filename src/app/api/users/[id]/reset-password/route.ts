@@ -3,23 +3,22 @@ import { jwtVerify } from 'jose';
 import bcrypt from 'bcryptjs';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
+import { getJwtSecret } from '@/lib/auth';
 
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'your-secret-key');
-
-// Verify admin permissions. Checks the live user record rather than the
-// JWT payload, so a permission change takes effect immediately instead of
+// Verify user-management permissions. Checks the live user record rather than
+// the JWT payload, so a permission change takes effect immediately instead of
 // requiring the affected user to log out and back in.
-async function verifyAdmin(request: NextRequest) {
+async function verifyManager(request: NextRequest) {
   try {
     const token = request.cookies.get('auth-token')?.value;
     if (!token) {
       return null;
     }
 
-    const { payload } = await jwtVerify(token, JWT_SECRET);
+    const { payload } = await jwtVerify(token, getJwtSecret());
 
     await dbConnect();
-    const dbUser = await User.findById(payload.userId as string);
+    const dbUser = await User.findById(payload.userId as string).select('role permissions');
     if (!dbUser) {
       return null;
     }
@@ -30,7 +29,7 @@ async function verifyAdmin(request: NextRequest) {
 
     return payload;
   } catch (error) {
-    console.error('Admin verification error:', error);
+    console.error('Manager verification error:', error);
     return null;
   }
 }
@@ -41,7 +40,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const admin = await verifyAdmin(request);
+    const admin = await verifyManager(request);
     if (!admin) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized - Admin access required' },
@@ -61,11 +60,6 @@ export async function POST(
     }
 
     await dbConnect();
-    
-    console.log('🔐 Resetting password for user:', {
-      userId: id,
-      adminUser: admin.username,
-    });
 
     // Find the user
     const user = await User.findById(id);
@@ -82,11 +76,6 @@ export async function POST(
     // Update the password
     user.password = hashedPassword;
     await user.save();
-
-    console.log('✅ Password reset successfully for user:', {
-      userId: user._id,
-      username: user.username,
-    });
 
     return NextResponse.json({
       success: true,

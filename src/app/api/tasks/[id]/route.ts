@@ -2,12 +2,21 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Task from '@/models/Task';
 import mongoose from 'mongoose';
+import { verifyAuth } from '@/lib/auth';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await verifyAuth(request);
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+    if (!user.permissions?.canViewTasks) {
+      return NextResponse.json({ success: false, error: 'Insufficient permissions' }, { status: 403 });
+    }
+
     await dbConnect();
     const { id } = await params;
     
@@ -41,6 +50,14 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await verifyAuth(request);
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+    if (!user.permissions?.canEditTasks) {
+      return NextResponse.json({ success: false, error: 'Insufficient permissions' }, { status: 403 });
+    }
+
     await dbConnect();
     const { id } = await params;
     
@@ -80,6 +97,14 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await verifyAuth(request);
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+    if (!user.permissions?.canEditTasks) {
+      return NextResponse.json({ success: false, error: 'Insufficient permissions' }, { status: 403 });
+    }
+
     await dbConnect();
     const { id } = await params;
     

@@ -18,7 +18,9 @@ export default function TaskList({ tasks, onDeleteTask, onEditTask, selectedGrou
   const { user } = useAuth();
   const effectiveSelectedGroup = selectedGroupProp ?? 'all';
   const [showEarnings, setShowEarnings] = useState<boolean>(false);
-  const [showCost, setShowCost] = useState<boolean>(false);
+  // Cost columns are currently disabled in the UI; kept as a constant so the
+  // pass-through props below don't need to change if it's re-enabled.
+  const showCost = false;
   const [statusTab, setStatusTab] = useState<'all' | 'inprocess' | 'completed'>('inprocess');
   const [viewMode, setViewMode] = useState<'list' | 'card'>(() => {
     if (typeof window === 'undefined') return 'list';

@@ -1,54 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { jwtVerify } from 'jose';
 import bcrypt from 'bcryptjs';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
-
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'your-secret-key');
-
-// Verify admin permissions. Checks the live user record rather than the
-// JWT payload, so a permission change takes effect immediately instead of
-// requiring the affected user to log out and back in.
-async function verifyAdmin(request: NextRequest) {
-  try {
-    const token = request.cookies.get('auth-token')?.value;
-    if (!token) {
-      return null;
-    }
-
-    const { payload } = await jwtVerify(token, JWT_SECRET);
-
-    await dbConnect();
-    const dbUser = await User.findById(payload.userId as string);
-    if (!dbUser) {
-      return null;
-    }
-
-    if (dbUser.role !== 'admin' && !dbUser.permissions?.canManageUsers) {
-      return null;
-    }
-
-    return payload;
-  } catch (error) {
-    console.error('Admin verification error:', error);
-    return null;
-  }
-}
+import { verifyAuth } from '@/lib/auth';
 
 // GET /api/users - List all users (for assignments and admin management)
 export async function GET(request: NextRequest) {
   try {
-    // Verify user is authenticated (any authenticated user can see the list for assignments)
-    const token = request.cookies.get('auth-token')?.value;
-    if (!token) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    const { payload } = await jwtVerify(token, JWT_SECRET);
-    if (!payload) {
+    const user = await verifyAuth(request);
+    if (!user) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
@@ -56,37 +16,36 @@ export async function GET(request: NextRequest) {
     }
 
     await dbConnect();
-    
-    // Return only basic info (username) for non-admins, full info for admins
-    const role = payload.role as string | undefined;
-    const permissions = payload.permissions as { canManageUsers?: boolean } | undefined;
-    const isAdmin = role === 'admin' || permissions?.canManageUsers;
-    
+
+    // verifyAuth re-checks role/permissions against the live DB record, so
+    // this reflects the user's current access, not a stale JWT snapshot.
+    const isAdmin = user.role === 'admin' || user.permissions.canManageUsers;
+
     if (isAdmin) {
       // Full user info for admins
       const users = await User.find({}, { password: 0 }).sort({ createdAt: -1 });
-      
+
       return NextResponse.json({
         success: true,
-        users: users.map(user => ({
-          id: user._id,
-          username: user.username,
-          email: user.email,
-          role: user.role,
-          permissions: user.permissions,
-          createdAt: user.createdAt,
-          updatedAt: user.updatedAt
+        users: users.map(u => ({
+          id: u._id,
+          username: u.username,
+          email: u.email,
+          role: u.role,
+          permissions: u.permissions,
+          createdAt: u.createdAt,
+          updatedAt: u.updatedAt
         }))
       });
     } else {
       // Only usernames for regular users (for assignment dropdown)
       const users = await User.find({}, { username: 1 }).sort({ username: 1 });
-      
+
       return NextResponse.json({
         success: true,
-        users: users.map(user => ({
-          id: user._id,
-          username: user.username
+        users: users.map(u => ({
+          id: u._id,
+          username: u.username
         }))
       });
     }
@@ -99,11 +58,19 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/users - Create new user (admin only)
+// POST /api/users - Create new user (admin / user-manager only)
 export async function POST(request: NextRequest) {
   try {
-    const admin = await verifyAdmin(request);
-    if (!admin) {
+    const actor = await verifyAuth(request);
+    if (!actor) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const isAdmin = actor.role === 'admin';
+    if (!isAdmin && !actor.permissions.canManageUsers) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized - Admin access required' },
         { status: 403 }
@@ -111,9 +78,9 @@ export async function POST(request: NextRequest) {
     }
 
     await dbConnect();
-    
+
     const { username, email, password, role, permissions } = await request.json();
-    
+
     // Validation
     if (!username || !email || !password) {
       return NextResponse.json(
@@ -153,6 +120,17 @@ export async function POST(request: NextRequest) {
       canManageUsers: false
     };
 
+    // Only a full admin may mint another admin or grant user-management
+    // rights. A non-admin user-manager can create ordinary team members
+    // only, so they cannot escalate their own privilege level.
+    let finalRole: 'admin' | 'team_member' = role === 'admin' ? 'admin' : 'team_member';
+    const finalPermissions = { ...defaultPermissions, ...(permissions || {}) };
+
+    if (!isAdmin) {
+      finalRole = 'team_member';
+      finalPermissions.canManageUsers = false;
+    }
+
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -161,8 +139,8 @@ export async function POST(request: NextRequest) {
       username,
       email,
       password: hashedPassword,
-      role: role || 'team_member',
-      permissions: permissions || defaultPermissions
+      role: finalRole,
+      permissions: finalPermissions
     });
 
     await newUser.save();

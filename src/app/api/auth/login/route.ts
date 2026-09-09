@@ -3,8 +3,7 @@ import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import { SignJWT } from 'jose';
 import bcrypt from 'bcryptjs';
-
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'your-secret-key');
+import { getJwtSecret } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,18 +25,7 @@ export async function POST(request: NextRequest) {
         { email: username }
       ]
     }).select('+password +email +role +permissions');
-    
-    console.log('🔍 Login: Found user:', {
-      exists: !!user,
-      username: user?.username,
-      hasEmail: !!user?.email,
-      hasRole: !!user?.role,
-      hasPermissions: !!user?.permissions,
-      email: user?.email,
-      role: user?.role,
-      permissions: user?.permissions
-    });
-    
+
     if (!user) {
       return NextResponse.json(
         { success: false, error: 'Invalid credentials' },
@@ -49,7 +37,6 @@ export async function POST(request: NextRequest) {
     const isPasswordValid = await bcrypt.compare(password, user.password);
     
     if (!isPasswordValid) {
-      console.log('❌ Login: Invalid password for user:', user.username);
       return NextResponse.json(
         { success: false, error: 'Invalid credentials' },
         { status: 401 }
@@ -71,14 +58,7 @@ export async function POST(request: NextRequest) {
     })
       .setProtectedHeader({ alg: 'HS256' })
       .setExpirationTime(sessionLength)
-      .sign(JWT_SECRET);
-
-    console.log('🔑 Login: Creating token for user:', {
-      username: user.username,
-      email: user.email,
-      role: user.role,
-      permissions: user.permissions
-    });
+      .sign(getJwtSecret());
 
     const response = NextResponse.json({
       success: true,
@@ -100,8 +80,6 @@ export async function POST(request: NextRequest) {
       sameSite: 'lax',
       ...(rememberMe ? { maxAge: 30 * 24 * 60 * 60 } : {})
     });
-
-    console.log('🔑 Login: Cookie set successfully');
 
     return response;
   } catch (error) {

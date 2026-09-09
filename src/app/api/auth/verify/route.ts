@@ -1,29 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { jwtVerify } from 'jose';
-
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'your-secret-key');
+import { verifyAuth } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
-    const token = request.cookies.get('auth-token')?.value;
-    
-    if (!token) {
+    // verifyAuth re-checks the user's role/permissions against the live DB
+    // record, so the client always receives current access rather than the
+    // snapshot baked into the JWT at login time.
+    const user = await verifyAuth(request);
+
+    if (!user) {
       return NextResponse.json(
-        { success: false, error: 'No token found' },
+        { success: false, error: 'Invalid token' },
         { status: 401 }
       );
     }
 
-    const { payload } = await jwtVerify(token, JWT_SECRET);
-    
     return NextResponse.json({
       success: true,
       user: {
-        id: payload.userId,
-        username: payload.username,
-        email: payload.email,
-        role: payload.role,
-        permissions: payload.permissions
+        id: user.userId,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        permissions: user.permissions
       }
     });
   } catch (error) {

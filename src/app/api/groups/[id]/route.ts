@@ -2,12 +2,26 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Group from '@/models/Group';
 import mongoose from 'mongoose';
+import { verifyAuth } from '@/lib/auth';
+
+/** Escapes a user-supplied string for safe use inside a RegExp. */
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await verifyAuth(request);
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+    if (user.role !== 'admin') {
+      return NextResponse.json({ success: false, error: 'Only administrators can manage groups' }, { status: 403 });
+    }
+
     await dbConnect();
     const { id } = await params;
 
@@ -28,7 +42,7 @@ export async function PUT(
     }
 
     const name = rawName.trim();
-    const dup = await Group.findOne({ _id: { $ne: id }, name: new RegExp(`^${name}$`, 'i') });
+    const dup = await Group.findOne({ _id: { $ne: id }, name: new RegExp(`^${escapeRegExp(name)}$`, 'i') });
     if (dup) {
       return NextResponse.json(
         { success: false, error: 'Group name already in use' },
@@ -63,6 +77,14 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await verifyAuth(request);
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+    if (user.role !== 'admin') {
+      return NextResponse.json({ success: false, error: 'Only administrators can manage groups' }, { status: 403 });
+    }
+
     await dbConnect();
     const { id } = await params;
 

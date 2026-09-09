@@ -2,23 +2,23 @@ import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
+import { getJwtSecret } from '@/lib/auth';
 
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'your-secret-key');
-
-// Verify admin permissions. Checks the live user record rather than the
-// JWT payload, so a permission change takes effect immediately instead of
-// requiring the affected user to log out and back in.
-async function verifyAdmin(request: NextRequest) {
+// Verify user-management permissions. Checks the live user record rather than
+// the JWT payload, so a permission change takes effect immediately instead of
+// requiring the affected user to log out and back in. Returns the token
+// payload plus whether the caller is a full admin (vs. a delegated manager).
+async function verifyManager(request: NextRequest) {
   try {
     const token = request.cookies.get('auth-token')?.value;
     if (!token) {
       return null;
     }
 
-    const { payload } = await jwtVerify(token, JWT_SECRET);
+    const { payload } = await jwtVerify(token, getJwtSecret());
 
     await dbConnect();
-    const dbUser = await User.findById(payload.userId as string);
+    const dbUser = await User.findById(payload.userId as string).select('role permissions');
     if (!dbUser) {
       return null;
     }
@@ -27,9 +27,9 @@ async function verifyAdmin(request: NextRequest) {
       return null;
     }
 
-    return payload;
+    return { payload, isAdmin: dbUser.role === 'admin' };
   } catch (error) {
-    console.error('Admin verification error:', error);
+    console.error('Manager verification error:', error);
     return null;
   }
 }
@@ -40,8 +40,8 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const admin = await verifyAdmin(request);
-    if (!admin) {
+    const auth = await verifyManager(request);
+    if (!auth) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized - Admin access required' },
         { status: 403 }
@@ -50,26 +50,30 @@ export async function PUT(
 
     const { id } = await params;
     await dbConnect();
-    
+
     const updates = await request.json();
-    
-    console.log('📝 Updating user:', {
-      id,
-      updates,
-      adminUser: admin.username,
-    });
-    
+
     // Don't allow updating password through this endpoint for security
     // Password updates are handled through the reset-password endpoint
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...safeUpdates } = updates;
-    
+
     // Validate role if provided
     if (safeUpdates.role && !['admin', 'team_member'].includes(safeUpdates.role)) {
       return NextResponse.json(
         { success: false, error: 'Invalid role' },
         { status: 400 }
       );
+    }
+
+    // Only a full admin may change a user's role or grant user-management
+    // rights. A delegated manager editing users cannot escalate anyone
+    // (including themselves) to admin or to canManageUsers.
+    if (!auth.isAdmin) {
+      delete safeUpdates.role;
+      if (safeUpdates.permissions && typeof safeUpdates.permissions === 'object') {
+        safeUpdates.permissions = { ...safeUpdates.permissions, canManageUsers: false };
+      }
     }
 
     const user = await User.findByIdAndUpdate(
@@ -84,13 +88,6 @@ export async function PUT(
         { status: 404 }
       );
     }
-
-    console.log('✅ User updated successfully:', {
-      id: user._id,
-      username: user.username,
-      email: user.email,
-      role: user.role,
-    });
 
     return NextResponse.json({
       success: true,
@@ -130,8 +127,8 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const admin = await verifyAdmin(request);
-    if (!admin) {
+    const auth = await verifyManager(request);
+    if (!auth) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized - Admin access required' },
         { status: 403 }
@@ -140,9 +137,9 @@ export async function DELETE(
 
     const { id } = await params;
     await dbConnect();
-    
+
     // Prevent deleting yourself
-    if (admin.userId === id) {
+    if (auth.payload.userId === id) {
       return NextResponse.json(
         { success: false, error: 'Cannot delete your own account' },
         { status: 400 }
