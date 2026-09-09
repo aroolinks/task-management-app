@@ -66,7 +66,6 @@ export default function InvoicePreview({ invoice, totals }: InvoicePreviewProps)
           <dl className="shrink-0 space-y-1 text-right">
             <div className="flex justify-between gap-10"><dt className="text-slate-400">Issue date</dt><dd className="font-medium text-slate-900">{invoice.issueDate}</dd></div>
             <div className="flex justify-between gap-10"><dt className="text-slate-400">Due date</dt><dd className="font-medium text-slate-900">{invoice.dueDate}</dd></div>
-            <div className="mt-1 flex justify-between gap-10 border-t border-slate-200 pt-1"><dt className="text-slate-400">Amount due</dt><dd className="font-bold text-blue-950">{formatMinor(totals.amountDueMinor)}</dd></div>
           </dl>
         </section>
 

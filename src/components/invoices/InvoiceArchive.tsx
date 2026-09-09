@@ -13,6 +13,7 @@ export default function InvoiceArchive() {
   const { user, loading: authLoading } = useAuth();
   const { invoices, loading, error, fetchInvoices, deleteInvoice } = useInvoices();
   const [selected, setSelected] = useState<StoredInvoice | null>(null);
+  const [viewing, setViewing] = useState<StoredInvoice | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [monthFilter, setMonthFilter] = useState('all');
@@ -22,6 +23,13 @@ export default function InvoiceArchive() {
     if (!user || user.role !== 'admin') return;
     fetchInvoices();
   }, [user, fetchInvoices]);
+
+  useEffect(() => {
+    if (!viewing) return;
+    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') setViewing(null); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [viewing]);
 
   const months = Array.from(new Set(invoices.map((invoice) => invoice.draft.issueDate.slice(0, 7)))).sort().reverse();
   const filteredInvoices = monthFilter === 'all' ? invoices : invoices.filter((invoice) => invoice.draft.issueDate.startsWith(monthFilter));
@@ -95,7 +103,7 @@ export default function InvoiceArchive() {
                       <td className="px-4 py-4">{invoice.draft.customer.name}</td>
                       <td className="px-4 py-4">{invoice.draft.issueDate}</td>
                       <td className="px-4 py-4 font-medium">{formatMinor(invoice.totals.totalMinor, invoice.draft.currency)}</td>
-                      <td className="px-4 py-4 text-right"><div className="flex justify-end gap-2"><button type="button" onClick={() => printInvoice(invoice)} className="rounded-md border border-slate-200 px-3 py-1.5 font-medium hover:bg-slate-50">Print</button><button type="button" onClick={() => downloadPdf(invoice)} disabled={isDownloading} className="rounded-md bg-slate-900 px-3 py-1.5 font-medium text-white hover:bg-slate-800 disabled:opacity-50">PDF</button><button type="button" onClick={() => handleDelete(invoice)} className="rounded-md border border-red-200 px-3 py-1.5 font-medium text-red-700 hover:bg-red-50">Delete</button></div></td>
+                      <td className="px-4 py-4 text-right"><div className="flex justify-end gap-2"><button type="button" onClick={() => setViewing(invoice)} className="rounded-md border border-slate-200 px-3 py-1.5 font-medium hover:bg-slate-50">View</button><button type="button" onClick={() => printInvoice(invoice)} className="rounded-md border border-slate-200 px-3 py-1.5 font-medium hover:bg-slate-50">Print</button><button type="button" onClick={() => downloadPdf(invoice)} disabled={isDownloading} className="rounded-md bg-slate-900 px-3 py-1.5 font-medium text-white hover:bg-slate-800 disabled:opacity-50">PDF</button><button type="button" onClick={() => handleDelete(invoice)} className="rounded-md border border-red-200 px-3 py-1.5 font-medium text-red-700 hover:bg-red-50">Delete</button></div></td>
                     </tr>
                   ))}
                 </tbody>
@@ -104,6 +112,31 @@ export default function InvoiceArchive() {
           </div>
         )}
       </div>
+
+      {viewing && (
+        <div
+          className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 p-4 sm:p-8"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Invoice ${viewing.invoiceNumber}`}
+          onClick={() => setViewing(null)}
+        >
+          <div className="mx-auto max-w-4xl" onClick={(event) => event.stopPropagation()}>
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-white px-4 py-3 shadow">
+              <div>
+                <p className="text-sm font-semibold text-slate-900">{viewing.invoiceNumber}</p>
+                <p className="text-xs text-slate-500">{viewing.draft.customer.name} · {viewing.draft.issueDate}</p>
+              </div>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => printInvoice(viewing)} className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">Print</button>
+                <button type="button" onClick={() => downloadPdf(viewing)} disabled={isDownloading} className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50">{isDownloading ? 'Generating…' : 'PDF'}</button>
+                <button type="button" onClick={() => setViewing(null)} className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">Close</button>
+              </div>
+            </div>
+            <InvoicePreview invoice={viewing.draft} totals={viewing.totals} />
+          </div>
+        </div>
+      )}
 
       {selected && <div ref={printRef} className="invoice-print-target"><InvoicePreview invoice={selected.draft} totals={selected.totals} /></div>}
     </main>
