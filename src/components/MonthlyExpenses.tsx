@@ -962,7 +962,7 @@ export default function MonthlyExpenses({ tasks }: MonthlyExpensesProps) {
 
       {activeSection === 'expenses' ? (
         /* Category-grouped, inline-editable expense list (mirrors the Team Tasks layout) */
-        <div className="space-y-3">
+        <div>
           {loading ? (
             <div className="rounded-lg border border-gray-200 bg-white p-6 text-center text-gray-500">Loading...</div>
           ) : expenseCategoryGroups.length === 0 ? (
@@ -970,7 +970,9 @@ export default function MonthlyExpenses({ tasks }: MonthlyExpensesProps) {
               {selectedMonth === 'all' ? `No expenses recorded for ${selectedYear} yet.` : 'No expenses recorded for this month yet.'}
             </div>
           ) : (
-            expenseCategoryGroups.map(categoryGroup)
+            <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-2">
+              {expenseCategoryGroups.map(categoryGroup)}
+            </div>
           )}
         </div>
       ) : (
