@@ -82,7 +82,8 @@ export default function TeamTasksPage() {
   const [addPreset, setAddPreset] = useState<Partial<TeamTaskInput>>({});
   const [scope, setScope] = useState<'all' | 'mine'>('all'); const [search, setSearch] = useState(''); const [assignee, setAssignee] = useState('All'); const [due, setDue] = useState('All');
   const [groupBy, setGroupBy] = useState<GroupBy>('section'); const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
-  const [layout, setLayout] = useState<'list' | 'grid'>('list');
+  const [layout, setLayout] = useState<'sections' | 'list' | 'grid'>('sections');
+  const [selectedSectionKey, setSelectedSectionKey] = useState<string | null>(null);
   const [addingSection, setAddingSection] = useState(false); const [newSectionName, setNewSectionName] = useState('');
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null); const [editName, setEditName] = useState('');
   const [editCell, setEditCell] = useState<{ id: string; field: CellField } | null>(null);
@@ -162,6 +163,19 @@ export default function TeamTasksPage() {
     return [{ key: '__all', label: 'All tasks', tasks: filtered }];
   }, [filtered, groupBy, members, sections]);
 
+  // Independent of `groupBy` - the sections layout always browses by section, and only
+  // surfaces the "No section" bucket when it actually holds a task (no default empty tab).
+  const sectionGroups = useMemo<Group[]>(() => {
+    const real = sections.map<Group>(s => ({ key: s.id, label: s.name, sectionId: s.id, canManage: true, tasks: filtered.filter(t => t.section === s.id) }));
+    const none = filtered.filter(t => !t.section);
+    return none.length ? [...real, { key: '__none', label: 'No section', sectionId: null, tasks: none }] : real;
+  }, [filtered, sections]);
+
+  useEffect(() => {
+    if (!sectionGroups.length) { if (selectedSectionKey !== null) setSelectedSectionKey(null); return; }
+    if (!sectionGroups.some(g => g.key === selectedSectionKey)) setSelectedSectionKey(sectionGroups[0].key);
+  }, [sectionGroups, selectedSectionKey]);
+
   if (authLoading) return <div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500">Loading…</div>;
   if (!user) return <LoginForm />;
   if (!user.permissions.canViewTasks) return <div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-700">You do not have permission to view team tasks.</div>;
@@ -176,6 +190,7 @@ export default function TeamTasksPage() {
   const filtersActive = scope !== 'all' || !!search || assignee !== 'All' || due !== 'All';
   const clearFilters = () => { setScope('all'); setSearch(''); setAssignee('All'); setDue('All'); };
   const showEmptyCard = !loading && filtered.length === 0 && groupBy !== 'section';
+  const selectedGroup = sectionGroups.find(g => g.key === selectedSectionKey) ?? null;
 
   const commitCell = async (task: TeamTask, field: CellField, raw: string) => {
     setEditCell(null);
@@ -469,15 +484,16 @@ export default function TeamTasksPage() {
               <button onClick={() => setScope('mine')} className={`rounded-md px-3 py-1.5 text-sm font-medium ${scope === 'mine' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}>My tasks</button>
             </div>
             <div className="flex rounded-lg bg-slate-100 p-0.5">
+              <button type="button" onClick={() => setLayout('sections')} title="Sections view" aria-label="Sections view" className={`rounded-md px-2.5 py-1.5 ${layout === 'sections' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}><svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="3" y="4" width="14" height="12" rx="2" /><path d="M8 4v12" strokeLinecap="round" /></svg></button>
               <button type="button" onClick={() => setLayout('list')} title="List view" aria-label="List view" className={`rounded-md px-2.5 py-1.5 ${layout === 'list' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}><svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor"><path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" /></svg></button>
               <button type="button" onClick={() => setLayout('grid')} title="Grid view" aria-label="Grid view" className={`rounded-md px-2.5 py-1.5 ${layout === 'grid' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}><svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor"><path d="M4 4h5v5H4V4zm7 0h5v5h-5V4zM4 11h5v5H4v-5zm7 0h5v5h-5v-5z" /></svg></button>
             </div>
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search tasks…" className={`${toolbarSelect} w-full sm:w-56`} />
-            <label className="flex items-center gap-1.5 text-sm text-slate-500">Group
+            {layout !== 'sections' && <label className="flex items-center gap-1.5 text-sm text-slate-500">Group
               <select value={groupBy} onChange={e => setGroupBy(e.target.value as GroupBy)} className={toolbarSelect}>
                 <option value="section">Section</option><option value="status">Status</option><option value="assignee">Assignee</option><option value="priority">Priority</option><option value="none">None</option>
               </select>
-            </label>
+            </label>}
             <select value={assignee} onChange={e => setAssignee(e.target.value)} className={toolbarSelect}><option value="All">All assignees</option>{members.map(m => <option key={m.id} value={m.id}>{m.username}</option>)}</select>
             <select value={due} onChange={e => setDue(e.target.value)} className={toolbarSelect}>{['All', 'Today', 'This Week', 'Overdue'].map(d => <option key={d}>{d === 'All' ? 'Any due date' : d}</option>)}</select>
             {filtersActive && <button onClick={clearFilters} className="text-sm font-medium text-blue-600 hover:text-blue-700">Clear</button>}
@@ -486,6 +502,113 @@ export default function TeamTasksPage() {
 
           {loading ? (
             <div className="rounded-xl border border-slate-200 bg-white p-16 text-center text-sm text-slate-500 shadow-sm">Loading team tasks…</div>
+          ) : layout === 'sections' ? (
+            sectionGroups.length === 0 ? (
+              <div className="rounded-xl border border-slate-200 bg-white p-16 text-center shadow-sm">
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-xl">✓</div>
+                <h2 className="font-semibold">No sections yet</h2>
+                <p className="mt-1 text-sm text-slate-500">{canEdit ? 'Add a section to start organizing tasks.' : 'Check back once sections have been added.'}</p>
+                {canEdit && (addingSection ? (
+                  <form onSubmit={addSection} className="mx-auto mt-4 flex max-w-xs flex-col gap-2">
+                    <input autoFocus value={newSectionName} onChange={e => setNewSectionName(e.target.value)} maxLength={120} placeholder="Section name" className={toolbarSelect} />
+                    <div className="flex justify-center gap-2">
+                      <button className="rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-semibold text-white hover:bg-slate-800">Add section</button>
+                      <button type="button" onClick={() => { setAddingSection(false); setNewSectionName(''); }} className="text-sm text-slate-500 hover:text-slate-700">Cancel</button>
+                    </div>
+                  </form>
+                ) : (
+                  <button type="button" onClick={() => setAddingSection(true)} className="mt-4 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">+ Add section</button>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                <aside className="flex shrink-0 flex-col rounded-xl border border-slate-200 bg-white shadow-sm sm:w-64">
+                  <nav className="flex flex-col gap-0.5 p-1.5">
+                    {sectionGroups.map(group => (
+                      <button
+                        key={group.key}
+                        type="button"
+                        onClick={() => setSelectedSectionKey(group.key)}
+                        className={`flex items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left text-sm font-medium ${selectedSectionKey === group.key ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:bg-slate-50'}`}
+                      >
+                        <span className="truncate">{group.label}</span>
+                        <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-xs font-medium ${selectedSectionKey === group.key ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>{group.tasks.length}</span>
+                      </button>
+                    ))}
+                  </nav>
+                  {canEdit && (
+                    <div className="border-t border-slate-100 p-1.5">
+                      {addingSection ? (
+                        <form onSubmit={addSection} className="space-y-2 p-1">
+                          <input autoFocus value={newSectionName} onChange={e => setNewSectionName(e.target.value)} maxLength={120} placeholder="Section name" className={`${toolbarSelect} w-full`} />
+                          <div className="flex gap-2">
+                            <button className="rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-semibold text-white hover:bg-slate-800">Add</button>
+                            <button type="button" onClick={() => { setAddingSection(false); setNewSectionName(''); }} className="text-sm text-slate-500 hover:text-slate-700">Cancel</button>
+                          </div>
+                        </form>
+                      ) : (
+                        <button type="button" onClick={() => setAddingSection(true)} className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-800">
+                          <span className="text-base leading-none">+</span> Add section
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </aside>
+
+                <div className="min-w-0 flex-1 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                  {!selectedGroup ? (
+                    <div className="p-16 text-center text-sm text-slate-400">Select a section</div>
+                  ) : (
+                    <>
+                      <div className="group/sec flex items-center gap-1 border-b border-slate-200 px-4 py-3">
+                        {editingSectionId === selectedGroup.key ? (
+                          <form onSubmit={e => { e.preventDefault(); commitRename(selectedGroup.key, selectedGroup.label); }} className="flex flex-1 items-center gap-2">
+                            <input autoFocus value={editName} onChange={e => setEditName(e.target.value)} onBlur={() => commitRename(selectedGroup.key, selectedGroup.label)} className="min-w-0 flex-1 rounded border border-slate-300 px-2 py-1 text-base font-semibold outline-none focus:border-blue-500" />
+                          </form>
+                        ) : (
+                          <div className="flex flex-1 items-center gap-2">
+                            <h2 className="text-base font-semibold text-slate-800">{selectedGroup.label}</h2>
+                            <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-500">{selectedGroup.tasks.length}</span>
+                          </div>
+                        )}
+                        {selectedGroup.canManage && canEdit && editingSectionId !== selectedGroup.key && (
+                          <div className="flex items-center gap-0.5 text-slate-400">
+                            <button type="button" onClick={() => { setEditingSectionId(selectedGroup.key); setEditName(selectedGroup.label); }} title="Rename section" className="rounded p-1.5 hover:bg-slate-100 hover:text-slate-600"><EditIcon /></button>
+                            <button type="button" onClick={() => handleDeleteSection(selectedGroup.key, selectedGroup.label)} title="Delete section" className="rounded p-1.5 hover:bg-red-100 hover:text-red-600"><TrashIcon /></button>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="hidden items-center gap-3 border-b border-slate-200 px-4 text-xs font-medium uppercase tracking-wide text-slate-400 sm:flex">
+                        <span className="w-[18px] shrink-0" />
+                        <span className="flex-1 py-2.5">Name</span>
+                        <span className="w-44 shrink-0 py-2.5">Assignee</span>
+                        <span className="w-28 shrink-0 py-2.5">Due date</span>
+                        <span className="w-24 shrink-0 py-2.5">Priority</span>
+                        <span className="w-24 shrink-0 py-2.5">Status</span>
+                        <span className="w-16 shrink-0" />
+                      </div>
+
+                      {selectedGroup.tasks.map(row)}
+                      {selectedGroup.tasks.length === 0 && <p className="px-4 py-8 text-center text-sm text-slate-400">No tasks in this section</p>}
+                      {canEdit && (quickAddKey === selectedGroup.key ? (
+                        <div className="flex items-center gap-3 px-3 py-1.5 sm:px-4">
+                          <span className="w-[18px] shrink-0" />
+                          <input autoFocus value={quickAddTitle} maxLength={200} onChange={e => setQuickAddTitle(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); submitQuickAdd(selectedGroup); } else if (e.key === 'Escape') { setQuickAddKey(null); setQuickAddTitle(''); } }} onBlur={() => { if (!quickAddTitle.trim()) setQuickAddKey(null); }} placeholder="Task name, then press Enter" className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+                          <button type="button" onMouseDown={e => e.preventDefault()} onClick={() => submitQuickAdd(selectedGroup)} disabled={quickBusy || !quickAddTitle.trim()} className="rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50">{quickBusy ? 'Adding…' : 'Add'}</button>
+                          <button type="button" onMouseDown={e => e.preventDefault()} onClick={() => { setQuickAddKey(null); setQuickAddTitle(''); }} className="text-sm text-slate-500 hover:text-slate-700">Cancel</button>
+                        </div>
+                      ) : (
+                        <button type="button" onClick={() => { setQuickAddKey(selectedGroup.key); setQuickAddTitle(''); }} className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm text-slate-400 hover:bg-slate-50 hover:text-slate-600 sm:px-4">
+                          <span className="flex h-[18px] w-[18px] items-center justify-center text-base leading-none">+</span>
+                          <span>Add task</span>
+                        </button>
+                      ))}
+                    </>
+                  )}
+                </div>
+              </div>
+            )
           ) : showEmptyCard ? (
             <div className="rounded-xl border border-slate-200 bg-white p-16 text-center shadow-sm">
               <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-xl">✓</div>
