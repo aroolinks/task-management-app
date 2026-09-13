@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { Task, TaskInput } from '@/types/task';
 import { useTasks } from '@/hooks/useTasks';
@@ -16,6 +15,8 @@ import UserManagement from '@/components/UserManagement';
 import HostingManagement from '@/components/HostingManagement';
 import MonthlyExpenses from '@/components/MonthlyExpenses';
 import CompanyDataManagement from '@/components/CompanyDataManagement';
+import TeamTasksPage from '@/components/TeamTasksPage';
+import InvoicesTab from '@/components/invoices/InvoicesTab';
 
 export default function TaskApp() {
   const { user, logout } = useAuth();
@@ -34,7 +35,7 @@ export default function TaskApp() {
   const [selectedGroup] = useState<string>('all');
   const [showYearEarnings, setShowYearEarnings] = useState(false);
   const [showProjectValue, setShowProjectValue] = useState(false);
-  const [activeTab, setActiveTab] = useState<'tasks' | 'clients' | 'hosting' | 'expenses' | 'users' | 'company-data'>('tasks');
+  const [activeTab, setActiveTab] = useState<'tasks' | 'clients' | 'hosting' | 'expenses' | 'users' | 'company-data' | 'team-tasks' | 'invoices'>('tasks');
   const [openClientTabs, setOpenClientTabs] = useState<string[]>([]);
   const [activeClientTab, setActiveClientTab] = useState<string | null>(null);
   const hasSetInitialTab = useRef(false);
@@ -209,10 +210,20 @@ export default function TaskApp() {
           {/* Primary Navigation */}
           <div className="px-3 py-4 border-b border-gray-200 space-y-1">
             {user?.permissions?.canViewTasks && (
-              <Link href="/tasks" className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors">
+              <button
+                onClick={() => {
+                  setActiveTab('team-tasks');
+                  setActiveClientTab(null);
+                }}
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === 'team-tasks'
+                    ? 'bg-blue-50 text-blue-600'
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                }`}
+              >
                 <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" /></svg>
                 <span className="flex-1 text-left">Team Tasks</span>
-              </Link>
+              </button>
             )}
             {user?.permissions?.canViewTasks && (
               <button
@@ -332,15 +343,22 @@ export default function TaskApp() {
             )}
 
             {user?.role === 'admin' && (
-              <Link
-                href="/invoices"
-                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+              <button
+                onClick={() => {
+                  setActiveTab('invoices');
+                  setActiveClientTab(null);
+                }}
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === 'invoices'
+                    ? 'bg-blue-50 text-blue-600'
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                }`}
               >
                 <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 <span className="flex-1 text-left">Invoices</span>
-              </Link>
+              </button>
             )}
           </div>
 
@@ -588,6 +606,16 @@ export default function TaskApp() {
             /* Company Data Content */
             <div className="flex-1 bg-gray-50">
               <CompanyDataManagement />
+            </div>
+          ) : activeTab === 'team-tasks' && user?.permissions?.canViewTasks ? (
+            /* Team Tasks Content */
+            <div className="flex-1 bg-slate-50">
+              <TeamTasksPage embedded />
+            </div>
+          ) : activeTab === 'invoices' && user?.role === 'admin' ? (
+            /* Invoices Content */
+            <div className="flex-1 bg-slate-100">
+              <InvoicesTab />
             </div>
           ) : (
             /* No Permission Message */
