@@ -82,6 +82,7 @@ export default function TeamTasksPage() {
   const [addPreset, setAddPreset] = useState<Partial<TeamTaskInput>>({});
   const [scope, setScope] = useState<'all' | 'mine'>('all'); const [search, setSearch] = useState(''); const [assignee, setAssignee] = useState('All'); const [due, setDue] = useState('All');
   const [groupBy, setGroupBy] = useState<GroupBy>('section'); const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [layout, setLayout] = useState<'list' | 'grid'>('list');
   const [addingSection, setAddingSection] = useState(false); const [newSectionName, setNewSectionName] = useState('');
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null); const [editName, setEditName] = useState('');
   const [editCell, setEditCell] = useState<{ id: string; field: CellField } | null>(null);
@@ -301,6 +302,144 @@ export default function TeamTasksPage() {
     );
   };
 
+  // Compact per-task card used by the grid/board layout - same fields and inline editors as `row`, laid out vertically.
+  const card = (task: TeamTask) => {
+    const done = task.status === 'Completed';
+    const overdue = isOverdue(task);
+    const rowPending = pendingId === task.id;
+    const editing = (field: CellField) => editCell?.id === task.id && editCell.field === field;
+    return (
+      <div key={task.id} className="group/card flex items-start gap-2.5 p-3 hover:bg-slate-50">
+        <button
+          type="button"
+          disabled={!canEdit || rowPending}
+          onClick={() => toggleComplete(task)}
+          aria-label={done ? 'Mark incomplete' : 'Mark complete'}
+          className={`mt-0.5 flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border transition-colors ${done ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-slate-300 text-transparent hover:border-emerald-500 hover:text-emerald-400'} ${!canEdit ? 'cursor-default' : ''} ${rowPending ? 'opacity-50' : ''}`}
+        >
+          <svg viewBox="0 0 12 12" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2.5 6.2l2.3 2.3L9.5 3.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+        </button>
+
+        <div className="min-w-0 flex-1">
+          {editing('title') ? (
+            <input
+              autoFocus
+              defaultValue={task.title}
+              maxLength={200}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } else if (e.key === 'Escape') { e.currentTarget.value = task.title; e.currentTarget.blur(); } }}
+              onBlur={e => commitCell(task, 'title', e.target.value)}
+              className="block w-full rounded border border-slate-300 px-1.5 py-1 text-sm text-slate-900 outline-none focus:border-blue-500"
+            />
+          ) : (
+            <button type="button" onClick={() => (canEdit ? setEditCell({ id: task.id, field: 'title' }) : open('view', task))} className={`block w-full truncate rounded text-left text-sm ${done ? 'text-slate-400 line-through' : 'text-slate-800 hover:text-blue-600'} ${canEdit ? 'px-1 hover:bg-slate-100' : ''}`}>
+              {task.title}
+            </button>
+          )}
+
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+            {editing('assignedTo') ? (
+              <select autoFocus defaultValue={task.assignedTo.id} onChange={e => commitCell(task, 'assignedTo', e.target.value)} onBlur={() => setEditCell(null)} className="rounded border border-slate-300 px-1.5 py-0.5 text-xs outline-none focus:border-blue-500">
+                {members.map(m => <option key={m.id} value={m.id}>{m.username}</option>)}
+              </select>
+            ) : (
+              <button type="button" disabled={!canEdit} onClick={() => setEditCell({ id: task.id, field: 'assignedTo' })} className={`flex items-center gap-1 rounded-full py-0.5 pl-0.5 pr-2 text-xs ${canEdit ? 'hover:bg-slate-100' : ''}`}>
+                {task.assignedTo.id ? (
+                  <>
+                    <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-semibold text-white ${avatarColor(task.assignedTo.id)}`}>{initials(task.assignedTo.username)}</span>
+                    <span className="text-slate-600">{task.assignedTo.username}</span>
+                  </>
+                ) : (
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full border border-dashed border-slate-300 text-slate-300"><svg viewBox="0 0 20 20" className="h-3 w-3" fill="currentColor"><path d="M10 10a3 3 0 100-6 3 3 0 000 6zm-7 8a7 7 0 0114 0H3z" /></svg></span>
+                )}
+              </button>
+            )}
+
+            {editing('dueDate') ? (
+              <input type="date" autoFocus defaultValue={task.dueDate?.slice(0, 10) ?? ''} onChange={e => { if (e.target.value) commitCell(task, 'dueDate', e.target.value); }} onBlur={e => commitCell(task, 'dueDate', e.target.value)} className="rounded border border-slate-300 px-1.5 py-0.5 text-xs outline-none focus:border-blue-500" />
+            ) : (
+              <button type="button" disabled={!canEdit} onClick={() => setEditCell({ id: task.id, field: 'dueDate' })} className={`rounded-full px-2 py-0.5 text-xs ${canEdit ? 'hover:bg-slate-100' : ''} ${task.dueDate ? (done ? 'text-slate-400' : overdue ? 'font-medium text-red-600' : 'text-slate-600') : 'text-slate-300'}`}>
+                {task.dueDate ? formatDay(task.dueDate, true) : 'No date'}
+              </button>
+            )}
+
+            {editing('priority') ? (
+              <select autoFocus defaultValue={task.priority} onChange={e => commitCell(task, 'priority', e.target.value)} onBlur={() => setEditCell(null)} className="rounded border border-slate-300 px-1 py-0.5 text-xs outline-none focus:border-blue-500">
+                {priorities.map(p => <option key={p}>{p}</option>)}
+              </select>
+            ) : (
+              <button type="button" disabled={!canEdit} onClick={() => setEditCell({ id: task.id, field: 'priority' })}>
+                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${priorityClass[task.priority]}`}>{task.priority}</span>
+              </button>
+            )}
+
+            {editing('status') ? (
+              <select autoFocus defaultValue={task.status} onChange={e => commitCell(task, 'status', e.target.value)} onBlur={() => setEditCell(null)} className="rounded border border-slate-300 px-1 py-0.5 text-xs outline-none focus:border-blue-500">
+                {statuses.map(s => <option key={s}>{s}</option>)}
+              </select>
+            ) : (
+              <button type="button" disabled={!canEdit} onClick={() => setEditCell({ id: task.id, field: 'status' })}>
+                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusClass[task.status]}`}>{task.status}</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="hidden shrink-0 items-center gap-0.5 text-slate-400 opacity-0 transition-opacity group-hover/card:opacity-100 sm:flex">
+          {canEdit && <>
+            <button type="button" onClick={() => open('edit', task)} title="Edit" className="rounded p-1.5 hover:bg-slate-200 hover:text-slate-700"><EditIcon /></button>
+            <button type="button" onClick={() => open('delete', task)} title="Delete" className="rounded p-1.5 hover:bg-red-100 hover:text-red-600"><TrashIcon /></button>
+          </>}
+        </div>
+      </div>
+    );
+  };
+
+  // One section/status/etc. group rendered as its own card for the grid/board layout.
+  const sectionCard = (group: Group, groupIndex: number) => {
+    const isCollapsed = collapsed.has(group.key);
+    const isEditing = editingSectionId === group.key;
+    return (
+      <div key={group.key} className="flex flex-col rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="group/sec flex items-center gap-1 border-b border-slate-100 px-3 py-2.5">
+          {isEditing ? (
+            <form onSubmit={e => { e.preventDefault(); commitRename(group.key, group.label); }} className="flex min-w-0 flex-1 items-center gap-2">
+              <Chevron className="h-4 w-4 shrink-0 text-slate-300" />
+              <input autoFocus value={editName} onChange={e => setEditName(e.target.value)} onBlur={() => commitRename(group.key, group.label)} className="min-w-0 flex-1 rounded border border-slate-300 px-2 py-0.5 text-sm font-semibold outline-none focus:border-blue-500" />
+            </form>
+          ) : (
+            <button type="button" onClick={() => toggleCollapse(group.key)} className="flex min-w-0 flex-1 items-center gap-2 rounded py-0.5 pr-2 text-left hover:bg-slate-50">
+              <Chevron className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${isCollapsed ? '-rotate-90' : ''}`} />
+              <span className="truncate text-sm font-semibold text-slate-700">{group.label}</span>
+              <span className="shrink-0 rounded-full bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-500">{group.tasks.length}</span>
+            </button>
+          )}
+          {group.canManage && canEdit && !isEditing && (
+            <div className="flex shrink-0 items-center gap-0.5 text-slate-300 opacity-0 transition-opacity focus-within:opacity-100 group-hover/sec:opacity-100">
+              <button type="button" onClick={() => moveSection(group.key, -1)} disabled={groupIndex <= 1} title="Move up" className="rounded p-1 hover:bg-slate-100 hover:text-slate-600 disabled:opacity-30">↑</button>
+              <button type="button" onClick={() => moveSection(group.key, 1)} disabled={groupIndex >= groups.length - 1} title="Move down" className="rounded p-1 hover:bg-slate-100 hover:text-slate-600 disabled:opacity-30">↓</button>
+              <button type="button" onClick={() => { setEditingSectionId(group.key); setEditName(group.label); }} title="Rename section" className="rounded p-1 hover:bg-slate-100 hover:text-slate-600"><EditIcon /></button>
+              <button type="button" onClick={() => handleDeleteSection(group.key, group.label)} title="Delete section" className="rounded p-1 hover:bg-red-100 hover:text-red-600"><TrashIcon /></button>
+            </div>
+          )}
+        </div>
+        {!isCollapsed && <div className="flex flex-1 flex-col divide-y divide-slate-100">
+          {group.tasks.map(card)}
+          {group.tasks.length === 0 && <p className="px-3 py-4 text-center text-xs text-slate-400">No tasks</p>}
+          {canEdit && (group.addStatus || group.sectionId !== undefined) && (quickAddKey === group.key ? (
+            <div className="flex items-center gap-2 p-2.5">
+              <input autoFocus value={quickAddTitle} maxLength={200} onChange={e => setQuickAddTitle(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); submitQuickAdd(group); } else if (e.key === 'Escape') { setQuickAddKey(null); setQuickAddTitle(''); } }} onBlur={() => { if (!quickAddTitle.trim()) setQuickAddKey(null); }} placeholder="Task name, then press Enter" className="min-w-0 flex-1 rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+              <button type="button" onMouseDown={e => e.preventDefault()} onClick={() => submitQuickAdd(group)} disabled={quickBusy || !quickAddTitle.trim()} className="shrink-0 rounded-lg bg-slate-900 px-2.5 py-1.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50">{quickBusy ? '…' : 'Add'}</button>
+            </div>
+          ) : (
+            <button type="button" onClick={() => { setQuickAddKey(group.key); setQuickAddTitle(''); }} className="flex w-full items-center gap-2 p-2.5 text-left text-sm text-slate-400 hover:bg-slate-50 hover:text-slate-600">
+              <span className="text-base leading-none">+</span> Add task
+            </button>
+          ))}
+        </div>}
+      </div>
+    );
+  };
+
   return <div className="min-h-screen bg-slate-50 text-slate-900">
     {notice && <div className="fixed right-4 top-4 z-[70] rounded-lg bg-slate-900 px-4 py-3 text-sm font-medium text-white shadow-lg">{notice}</div>}
     <div className="flex min-h-screen">
@@ -329,6 +468,10 @@ export default function TeamTasksPage() {
               <button onClick={() => setScope('all')} className={`rounded-md px-3 py-1.5 text-sm font-medium ${scope === 'all' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}>All tasks</button>
               <button onClick={() => setScope('mine')} className={`rounded-md px-3 py-1.5 text-sm font-medium ${scope === 'mine' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}>My tasks</button>
             </div>
+            <div className="flex rounded-lg bg-slate-100 p-0.5">
+              <button type="button" onClick={() => setLayout('list')} title="List view" aria-label="List view" className={`rounded-md px-2.5 py-1.5 ${layout === 'list' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}><svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor"><path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" /></svg></button>
+              <button type="button" onClick={() => setLayout('grid')} title="Grid view" aria-label="Grid view" className={`rounded-md px-2.5 py-1.5 ${layout === 'grid' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}><svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor"><path d="M4 4h5v5H4V4zm7 0h5v5h-5V4zM4 11h5v5H4v-5zm7 0h5v5h-5v-5z" /></svg></button>
+            </div>
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search tasks…" className={`${toolbarSelect} w-full sm:w-56`} />
             <label className="flex items-center gap-1.5 text-sm text-slate-500">Group
               <select value={groupBy} onChange={e => setGroupBy(e.target.value as GroupBy)} className={toolbarSelect}>
@@ -341,30 +484,50 @@ export default function TeamTasksPage() {
             <span className="ml-auto text-xs text-slate-500">{filtered.length} of {tasks.length}</span>
           </div>
 
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-            {loading ? (
-              <div className="p-16 text-center text-sm text-slate-500">Loading team tasks…</div>
-            ) : showEmptyCard ? (
-              <div className="p-16 text-center">
-                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-xl">✓</div>
-                <h2 className="font-semibold">{tasks.length === 0 ? 'No team tasks yet' : 'No tasks match your filters'}</h2>
-                <p className="mt-1 text-sm text-slate-500">{tasks.length === 0 ? (canEdit ? 'Create your first task to get started.' : 'Check back once tasks have been added.') : 'Try adjusting or clearing your filters.'}</p>
-                {tasks.length > 0 && filtersActive && <button onClick={clearFilters} className="mt-4 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">Clear filters</button>}
-                {tasks.length === 0 && canEdit && <button onClick={() => openAdd()} className="mt-4 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">+ Add task</button>}
+          {loading ? (
+            <div className="rounded-xl border border-slate-200 bg-white p-16 text-center text-sm text-slate-500 shadow-sm">Loading team tasks…</div>
+          ) : showEmptyCard ? (
+            <div className="rounded-xl border border-slate-200 bg-white p-16 text-center shadow-sm">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-xl">✓</div>
+              <h2 className="font-semibold">{tasks.length === 0 ? 'No team tasks yet' : 'No tasks match your filters'}</h2>
+              <p className="mt-1 text-sm text-slate-500">{tasks.length === 0 ? (canEdit ? 'Create your first task to get started.' : 'Check back once tasks have been added.') : 'Try adjusting or clearing your filters.'}</p>
+              {tasks.length > 0 && filtersActive && <button onClick={clearFilters} className="mt-4 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">Clear filters</button>}
+              {tasks.length === 0 && canEdit && <button onClick={() => openAdd()} className="mt-4 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">+ Add task</button>}
+            </div>
+          ) : layout === 'grid' ? (
+            <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {groups.map((group, groupIndex) => sectionCard(group, groupIndex))}
+              {groupBy === 'section' && canEdit && (
+                addingSection ? (
+                  <div className="rounded-xl border border-dashed border-slate-300 bg-white p-3">
+                    <form onSubmit={addSection} className="space-y-2">
+                      <input autoFocus value={newSectionName} onChange={e => setNewSectionName(e.target.value)} maxLength={120} placeholder="Section name" className={`${toolbarSelect} w-full`} />
+                      <div className="flex gap-2">
+                        <button className="rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-semibold text-white hover:bg-slate-800">Add section</button>
+                        <button type="button" onClick={() => { setAddingSection(false); setNewSectionName(''); }} className="text-sm text-slate-500 hover:text-slate-700">Cancel</button>
+                      </div>
+                    </form>
+                  </div>
+                ) : (
+                  <button type="button" onClick={() => setAddingSection(true)} className="flex min-h-[64px] items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 bg-white text-sm font-medium text-slate-500 hover:border-slate-400 hover:text-slate-800">
+                    <span className="text-base leading-none">+</span> Add section
+                  </button>
+                )
+              )}
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+              <div className="hidden items-center gap-3 border-b border-slate-200 px-4 text-xs font-medium uppercase tracking-wide text-slate-400 sm:flex">
+                <span className="w-[18px] shrink-0" />
+                <span className="flex-1 py-2.5">Name</span>
+                <span className="w-44 shrink-0 py-2.5">Assignee</span>
+                <span className="w-28 shrink-0 py-2.5">Due date</span>
+                <span className="w-24 shrink-0 py-2.5">Priority</span>
+                <span className="w-24 shrink-0 py-2.5">Status</span>
+                <span className="w-16 shrink-0" />
               </div>
-            ) : (
-              <>
-                <div className="hidden items-center gap-3 border-b border-slate-200 px-4 text-xs font-medium uppercase tracking-wide text-slate-400 sm:flex">
-                  <span className="w-[18px] shrink-0" />
-                  <span className="flex-1 py-2.5">Name</span>
-                  <span className="w-44 shrink-0 py-2.5">Assignee</span>
-                  <span className="w-28 shrink-0 py-2.5">Due date</span>
-                  <span className="w-24 shrink-0 py-2.5">Priority</span>
-                  <span className="w-24 shrink-0 py-2.5">Status</span>
-                  <span className="w-16 shrink-0" />
-                </div>
 
-                {groups.map((group, groupIndex) => {
+              {groups.map((group, groupIndex) => {
                   const isCollapsed = collapsed.has(group.key);
                   const isEditing = editingSectionId === group.key;
                   return (
@@ -427,12 +590,11 @@ export default function TeamTasksPage() {
                     )}
                   </div>
                 )}
-              </>
+              </div>
             )}
           </div>
-        </div>
-      </main>
-    </div>
+        </main>
+      </div>
 
     {modal && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" onMouseDown={e => { if (e.target === e.currentTarget && !busy) { setModal(null); setSelected(null); } }}><div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl"><div className="flex items-center justify-between border-b border-slate-100 px-5 py-4"><h2 className="text-lg font-semibold">{modal === 'add' ? 'Add task' : modal === 'edit' ? 'Edit task' : modal === 'delete' ? 'Delete this task?' : 'Task details'}</h2><button onClick={() => { setModal(null); setSelected(null); }} className="rounded p-1 text-xl text-slate-400 hover:bg-slate-100">×</button></div><div className="p-5">{modal === 'add' && <TaskForm initial={{ ...emptyForm, assignedTo: user.id, ...addPreset }} members={members} sections={sections} busy={busy} onCancel={() => setModal(null)} onSubmit={save} />}{modal === 'edit' && selected && <TaskForm initial={toForm(selected)} members={members} sections={sections} busy={busy} onCancel={() => setModal(null)} onSubmit={save} />}{modal === 'delete' && selected && <div><p className="text-sm text-slate-600">“{selected.title}” will be permanently deleted. This action cannot be undone.</p><div className="mt-6 flex justify-end gap-2"><button onClick={() => setModal(null)} className="rounded-lg border border-slate-200 px-4 py-2 text-sm">Cancel</button><button disabled={busy} onClick={remove} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{busy ? 'Deleting…' : 'Delete'}</button></div></div>}{modal === 'view' && selected && <div><div className="flex flex-wrap gap-2"><span className={`rounded-full px-2.5 py-1 text-xs font-medium ${priorityClass[selected.priority]}`}>{selected.priority}</span><span className={`rounded-full px-2.5 py-1 text-xs font-medium ${statusClass[selected.status]}`}>{selected.status}</span>{isOverdue(selected) && <span className="rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-700">Overdue</span>}</div><p className="mt-5 whitespace-pre-wrap text-sm leading-6 text-slate-600">{selected.description || 'No description provided.'}</p><dl className="mt-6 grid gap-4 rounded-xl bg-slate-50 p-4 sm:grid-cols-2">{[['Assigned to', selected.assignedTo.username], ['Section', sectionName(selected.section)], ['Created by', selected.createdBy.username], ['Due date', formatDay(selected.dueDate)], ['Created', formatDate(selected.createdAt)], ['Last updated', formatDate(selected.updatedAt)], ['Completed', formatDate(selected.completedAt)]].map(([k, v]) => <div key={k}><dt className="text-xs uppercase tracking-wide text-slate-400">{k}</dt><dd className="mt-1 text-sm font-medium">{v}</dd></div>)}</dl>{selected.notes && <div className="mt-5"><h3 className="text-sm font-semibold">Notes</h3><p className="mt-2 whitespace-pre-wrap rounded-lg border border-slate-200 p-3 text-sm text-slate-600">{selected.notes}</p></div>}<div className="mt-6 flex justify-end gap-2"><button onClick={() => { setModal(null); setSelected(null); }} className="rounded-lg border border-slate-200 px-4 py-2 text-sm">Close</button>{canEdit && <button onClick={() => setModal('edit')} className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white">Edit task</button>}</div></div>}</div></div></div>}
   </div>;
