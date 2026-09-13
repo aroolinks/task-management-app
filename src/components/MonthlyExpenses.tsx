@@ -7,7 +7,6 @@ import { useExpenseCategories } from '@/contexts/ExpenseCategoryContext';
 
 type ExpenseCellField = 'description' | 'amount' | 'date' | 'category';
 
-const ChevronIcon = ({ className = '' }: { className?: string }) => <svg viewBox="0 0 20 20" fill="currentColor" className={className}><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.06l3.71-3.83a.75.75 0 111.08 1.04l-4.25 4.39a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clipRule="evenodd" /></svg>;
 const PencilIcon = () => <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-8.5 8.5a1 1 0 01-.464.263l-3.1.886a.5.5 0 01-.618-.618l.886-3.1a1 1 0 01.263-.464l8.5-8.5z" /></svg>;
 const TrashIcon = () => <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" fill="currentColor"><path fillRule="evenodd" d="M8.5 2a1 1 0 00-.94.66L7.2 4H4a1 1 0 000 2h12a1 1 0 100-2h-3.2l-.36-1.34A1 1 0 0011.5 2h-3zM6 7l.7 9.13A2 2 0 008.69 18h2.62a2 2 0 001.99-1.87L14 7H6z" clipRule="evenodd" /></svg>;
 
@@ -46,7 +45,7 @@ const getToday = () => new Date().toISOString().split('T')[0];
 
 export default function MonthlyExpenses({ tasks }: MonthlyExpensesProps) {
   const { clients } = useClients();
-  const { expenseCategoryNames } = useExpenseCategories();
+  const { expenseCategories, expenseCategoryNames, addExpenseCategory, renameExpenseCategory, removeExpenseCategory } = useExpenseCategories();
 
   const [activeSection, setActiveSection] = useState<'expenses' | 'income'>('expenses');
 
@@ -70,8 +69,13 @@ export default function MonthlyExpenses({ tasks }: MonthlyExpensesProps) {
   const [expFormError, setExpFormError] = useState<string | null>(null);
   const [expSubmitting, setExpSubmitting] = useState(false);
 
-  // Category-grouped, inline-editable expense list (mirrors the Team Tasks layout)
-  const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
+  // Category-grouped, inline-editable expense list (mirrors the Team Tasks sections layout:
+  // a category sidebar on the left, the selected category's expenses on the right)
+  const [selectedCategoryName, setSelectedCategoryName] = useState<string | null>(null);
+  const [addingCategory, setAddingCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [renamingCategory, setRenamingCategory] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
   const [editCell, setEditCell] = useState<{ id: string; field: ExpenseCellField } | null>(null);
   const [rowPendingId, setRowPendingId] = useState<string | null>(null);
   const [quickAddCategory, setQuickAddCategory] = useState<string | null>(null);
@@ -186,9 +190,16 @@ export default function MonthlyExpenses({ tasks }: MonthlyExpensesProps) {
     const names = Array.from(new Set([...expenseCategoryNames, ...monthExpenses.map(e => e.category)]));
     return names.map(name => {
       const items = monthExpenses.filter(e => e.category === name);
-      return { name, items, subtotal: items.reduce((sum, e) => sum + e.amount, 0) };
+      return { name, items, subtotal: items.reduce((sum, e) => sum + e.amount, 0), canManage: expenseCategoryNames.includes(name) };
     });
   }, [expenseCategoryNames, monthExpenses]);
+
+  useEffect(() => {
+    if (!expenseCategoryGroups.length) { if (selectedCategoryName !== null) setSelectedCategoryName(null); return; }
+    if (!expenseCategoryGroups.some(g => g.name === selectedCategoryName)) setSelectedCategoryName(expenseCategoryGroups[0].name);
+  }, [expenseCategoryGroups, selectedCategoryName]);
+
+  const selectedCategoryGroup = expenseCategoryGroups.find(g => g.name === selectedCategoryName) ?? null;
 
   const totalOtherIncome = useMemo(
     () => monthIncome.reduce((sum, i) => sum + i.amount, 0),
@@ -315,11 +326,38 @@ export default function MonthlyExpenses({ tasks }: MonthlyExpensesProps) {
     }
   };
 
-  const toggleCategoryCollapse = (name: string) => setCollapsedCategories(prev => {
-    const next = new Set(prev);
-    if (next.has(name)) next.delete(name); else next.add(name);
-    return next;
-  });
+  const submitAddCategory = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const name = newCategoryName.trim();
+    if (!name) return;
+    const created = await addExpenseCategory(name);
+    if (created) {
+      setNewCategoryName('');
+      setAddingCategory(false);
+      setSelectedCategoryName(name);
+    }
+  };
+
+  const startRenameCategory = (name: string) => {
+    setRenamingCategory(name);
+    setRenameValue(name);
+  };
+
+  const commitRenameCategory = async (name: string) => {
+    const id = expenseCategories.find(c => c.name === name)?.id;
+    const value = renameValue.trim();
+    setRenamingCategory(null);
+    if (!id || !value || value === name) return;
+    const ok = await renameExpenseCategory(id, value);
+    if (ok) setSelectedCategoryName(value);
+  };
+
+  const handleDeleteCategory = async (name: string) => {
+    const id = expenseCategories.find(c => c.name === name)?.id;
+    if (!id) return;
+    if (!window.confirm(`Delete category "${name}"? Existing expenses keep this category name until reassigned.`)) return;
+    await removeExpenseCategory(id);
+  };
 
   const patchExpense = async (id: string, payload: Record<string, unknown>, apply: (expense: Expense) => Expense) => {
     setRowPendingId(id);
@@ -591,54 +629,37 @@ export default function MonthlyExpenses({ tasks }: MonthlyExpensesProps) {
     );
   };
 
-  const categoryGroup = (group: { name: string; items: Expense[]; subtotal: number }) => {
-    const collapsed = collapsedCategories.has(group.name);
-    return (
-      <div key={group.name} className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-        <button type="button" onClick={() => toggleCategoryCollapse(group.name)} className="flex w-full items-center gap-2 px-4 py-3 text-left hover:bg-gray-50">
-          <ChevronIcon className={`h-4 w-4 shrink-0 text-gray-400 transition-transform ${collapsed ? '-rotate-90' : ''}`} />
-          <span className="font-medium text-gray-900">{group.name}</span>
-          <span className="rounded-full bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-500">{group.items.length}</span>
-          <span className="ml-auto text-sm font-semibold text-gray-700">{showValues ? formatCurrency(group.subtotal) : '••••'}</span>
-        </button>
-        {!collapsed && (
-          <div>
-            {group.items.length === 0 && <p className="border-t border-gray-100 px-4 py-3 text-sm text-gray-400">No expenses in this category</p>}
-            {group.items.map(expenseRow)}
-            {quickAddCategory === group.name ? (
-              <div className="flex flex-wrap items-center gap-2 border-t border-gray-100 px-4 py-2">
-                <input
-                  autoFocus
-                  value={quickDescription}
-                  onChange={e => setQuickDescription(e.target.value)}
-                  placeholder="Description"
-                  maxLength={200}
-                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); submitQuickExpense(group.name); } else if (e.key === 'Escape') { setQuickAddCategory(null); } }}
-                  className="min-w-0 flex-1 rounded border border-gray-300 px-2.5 py-1.5 text-sm text-gray-900 outline-none focus:border-blue-500"
-                />
-                <input
-                  value={quickAmount}
-                  onChange={e => setQuickAmount(e.target.value)}
-                  placeholder="0.00"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); submitQuickExpense(group.name); } else if (e.key === 'Escape') { setQuickAddCategory(null); } }}
-                  className="w-24 rounded border border-gray-300 px-2.5 py-1.5 text-sm text-gray-900 outline-none focus:border-blue-500"
-                />
-                <button type="button" onClick={() => submitQuickExpense(group.name)} disabled={quickBusy || !quickDescription.trim() || !quickAmount} className="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">{quickBusy ? 'Adding…' : 'Add'}</button>
-                <button type="button" onClick={() => { setQuickAddCategory(null); setQuickDescription(''); setQuickAmount(''); }} className="text-sm text-gray-500 hover:text-gray-700">Cancel</button>
-              </div>
-            ) : (
-              <button type="button" onClick={() => { setQuickAddCategory(group.name); setQuickDescription(''); setQuickAmount(''); }} className="flex w-full items-center gap-2 border-t border-gray-100 px-4 py-2 text-left text-sm text-gray-400 hover:bg-gray-50 hover:text-gray-600">
-                <span className="text-base leading-none">+</span> Add expense
-              </button>
-            )}
-          </div>
-        )}
+  const categoryQuickAdd = (categoryName: string) => (
+    quickAddCategory === categoryName ? (
+      <div className="flex flex-wrap items-center gap-2 border-t border-gray-100 px-4 py-2">
+        <input
+          autoFocus
+          value={quickDescription}
+          onChange={e => setQuickDescription(e.target.value)}
+          placeholder="Description"
+          maxLength={200}
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); submitQuickExpense(categoryName); } else if (e.key === 'Escape') { setQuickAddCategory(null); } }}
+          className="min-w-0 flex-1 rounded border border-gray-300 px-2.5 py-1.5 text-sm text-gray-900 outline-none focus:border-blue-500"
+        />
+        <input
+          value={quickAmount}
+          onChange={e => setQuickAmount(e.target.value)}
+          placeholder="0.00"
+          type="number"
+          step="0.01"
+          min="0"
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); submitQuickExpense(categoryName); } else if (e.key === 'Escape') { setQuickAddCategory(null); } }}
+          className="w-24 rounded border border-gray-300 px-2.5 py-1.5 text-sm text-gray-900 outline-none focus:border-blue-500"
+        />
+        <button type="button" onClick={() => submitQuickExpense(categoryName)} disabled={quickBusy || !quickDescription.trim() || !quickAmount} className="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">{quickBusy ? 'Adding…' : 'Add'}</button>
+        <button type="button" onClick={() => { setQuickAddCategory(null); setQuickDescription(''); setQuickAmount(''); }} className="text-sm text-gray-500 hover:text-gray-700">Cancel</button>
       </div>
-    );
-  };
+    ) : (
+      <button type="button" onClick={() => { setQuickAddCategory(categoryName); setQuickDescription(''); setQuickAmount(''); }} className="flex w-full items-center gap-2 border-t border-gray-100 px-4 py-2 text-left text-sm text-gray-400 hover:bg-gray-50 hover:text-gray-600">
+        <span className="text-base leading-none">+</span> Add expense
+      </button>
+    )
+  );
 
   return (
     <div className="p-6">
@@ -961,7 +982,7 @@ export default function MonthlyExpenses({ tasks }: MonthlyExpensesProps) {
       )}
 
       {activeSection === 'expenses' ? (
-        /* Category-grouped, inline-editable expense list (mirrors the Team Tasks layout) */
+        /* Category sidebar + selected category's expenses, mirroring the Team Tasks sections layout */
         <div>
           {loading ? (
             <div className="rounded-lg border border-gray-200 bg-white p-6 text-center text-gray-500">Loading...</div>
@@ -970,8 +991,77 @@ export default function MonthlyExpenses({ tasks }: MonthlyExpensesProps) {
               {selectedMonth === 'all' ? `No expenses recorded for ${selectedYear} yet.` : 'No expenses recorded for this month yet.'}
             </div>
           ) : (
-            <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-2">
-              {expenseCategoryGroups.map(categoryGroup)}
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+              <aside className="flex shrink-0 flex-col rounded-lg border border-gray-200 bg-white lg:w-72">
+                <nav className="flex flex-col gap-0.5 p-1.5">
+                  {expenseCategoryGroups.map(group => (
+                    <button
+                      key={group.name}
+                      type="button"
+                      onClick={() => setSelectedCategoryName(group.name)}
+                      className={`flex items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left text-sm font-medium ${selectedCategoryName === group.name ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'}`}
+                    >
+                      <span className="truncate">{group.name}</span>
+                      <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-xs font-medium ${selectedCategoryName === group.name ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'}`}>{group.items.length}</span>
+                    </button>
+                  ))}
+                </nav>
+                <div className="border-t border-gray-100 p-1.5">
+                  {addingCategory ? (
+                    <form onSubmit={submitAddCategory} className="space-y-2 p-1">
+                      <input autoFocus value={newCategoryName} onChange={e => setNewCategoryName(e.target.value)} maxLength={120} placeholder="Category name" className="w-full rounded border border-gray-300 px-2.5 py-1.5 text-sm text-gray-900 outline-none focus:border-blue-500" />
+                      <div className="flex gap-2">
+                        <button className="rounded bg-gray-900 px-3 py-1.5 text-sm font-semibold text-white hover:bg-gray-800">Add</button>
+                        <button type="button" onClick={() => { setAddingCategory(false); setNewCategoryName(''); }} className="text-sm text-gray-500 hover:text-gray-700">Cancel</button>
+                      </div>
+                    </form>
+                  ) : (
+                    <button type="button" onClick={() => setAddingCategory(true)} className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-800">
+                      <span className="text-base leading-none">+</span> Add category
+                    </button>
+                  )}
+                </div>
+              </aside>
+
+              <div className="min-w-0 flex-1 overflow-hidden rounded-lg border border-gray-200 bg-white">
+                {!selectedCategoryGroup ? (
+                  <div className="p-16 text-center text-sm text-gray-400">Select a category</div>
+                ) : (
+                  <>
+                    <div className="group/cat flex items-center gap-1 border-b border-gray-200 px-4 py-3">
+                      {renamingCategory === selectedCategoryGroup.name ? (
+                        <form onSubmit={e => { e.preventDefault(); commitRenameCategory(selectedCategoryGroup.name); }} className="flex flex-1 items-center gap-2">
+                          <input autoFocus value={renameValue} onChange={e => setRenameValue(e.target.value)} onBlur={() => commitRenameCategory(selectedCategoryGroup.name)} className="min-w-0 flex-1 rounded border border-gray-300 px-2 py-1 text-base font-semibold text-gray-900 outline-none focus:border-blue-500" />
+                        </form>
+                      ) : (
+                        <div className="flex flex-1 items-center gap-2">
+                          <h3 className="text-base font-semibold text-gray-900">{selectedCategoryGroup.name}</h3>
+                          <span className="rounded-full bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-500">{selectedCategoryGroup.items.length}</span>
+                          <span className="ml-auto text-sm font-semibold text-gray-700">{showValues ? formatCurrency(selectedCategoryGroup.subtotal) : '••••'}</span>
+                        </div>
+                      )}
+                      {selectedCategoryGroup.canManage && renamingCategory !== selectedCategoryGroup.name && (
+                        <div className="flex items-center gap-0.5 text-gray-400">
+                          <button type="button" onClick={() => startRenameCategory(selectedCategoryGroup.name)} title="Rename category" className="rounded p-1.5 hover:bg-gray-100 hover:text-gray-600"><PencilIcon /></button>
+                          <button type="button" onClick={() => handleDeleteCategory(selectedCategoryGroup.name)} title="Delete category" className="rounded p-1.5 hover:bg-red-100 hover:text-red-600"><TrashIcon /></button>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="hidden items-center gap-2 border-b border-gray-200 px-4 text-xs font-medium uppercase tracking-wide text-gray-400 sm:flex">
+                      <span className="min-w-0 flex-1 py-2.5">Description</span>
+                      <span className="w-28 shrink-0 py-2.5">Date</span>
+                      <span className="w-32 shrink-0 py-2.5">Category</span>
+                      <span className="w-24 shrink-0 py-2.5 text-right">Amount</span>
+                      <span className="w-16 shrink-0" />
+                    </div>
+
+                    {selectedCategoryGroup.items.length === 0 && <p className="px-4 py-8 text-center text-sm text-gray-400">No expenses in this category</p>}
+                    {selectedCategoryGroup.items.map(expenseRow)}
+                    {categoryQuickAdd(selectedCategoryGroup.name)}
+                  </>
+                )}
+              </div>
             </div>
           )}
         </div>
