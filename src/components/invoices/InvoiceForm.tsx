@@ -19,13 +19,20 @@ import InvoiceSummary from './InvoiceSummary';
 const fieldClass = 'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20';
 const labelClass = 'mb-1 block text-xs font-medium text-slate-600';
 
-export default function InvoiceForm() {
+interface InvoiceFormProps {
+  invoiceId?: string;
+  initialDraft?: InvoiceDraft;
+  onSaved?: () => void;
+}
+
+export default function InvoiceForm({ invoiceId, initialDraft, onSaved }: InvoiceFormProps) {
+  const isEditing = Boolean(invoiceId);
   const { clients } = useClients();
-  const { createInvoice } = useInvoices();
+  const { createInvoice, updateInvoice } = useInvoices();
   const [savedDefaults] = useState(() => loadInvoiceDefaults());
   const [bankAccounts, setBankAccounts] = useState<SavedBankAccount[]>(() => getSavedBankAccounts(savedDefaults));
   const [selectedBankAccountId, setSelectedBankAccountId] = useState(() => savedDefaults?.selectedBankAccountId ?? getSavedBankAccounts(savedDefaults)[0]?.id ?? '');
-  const [invoice, setInvoice] = useState<InvoiceDraft>(() => createInvoiceDraft({ ...savedDefaults, bankAccounts, selectedBankAccountId }));
+  const [invoice, setInvoice] = useState<InvoiceDraft>(() => initialDraft ?? createInvoiceDraft({ ...savedDefaults, bankAccounts, selectedBankAccountId }));
   const [isAddingBank, setIsAddingBank] = useState(false);
   const [newBank, setNewBank] = useState<InvoiceBankDetails>({ accountName: 'Metalogics Solutions Limited', bankName: '', sortCode: '', accountNumber: '' });
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -77,9 +84,13 @@ export default function InvoiceForm() {
       setMessage({ type: 'error', text: result.error.issues[0]?.message || 'Please check the invoice details.' });
       return;
     }
-    const outcome = await createInvoice(result.data);
+    const outcome = isEditing ? await updateInvoice(invoiceId!, result.data) : await createInvoice(result.data);
     if (!outcome.success) {
       setMessage({ type: 'error', text: outcome.error });
+      return;
+    }
+    if (isEditing) {
+      onSaved?.();
       return;
     }
     setMessage({ type: 'success', text: 'Invoice saved. You can print or download it from the invoice archive.' });
@@ -103,10 +114,10 @@ export default function InvoiceForm() {
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur sm:px-6">
         <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="flex gap-2"><Link href="/invoices" className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">Archive</Link><Link href="/" className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">← Dashboard</Link></div>
-            <div><h1 className="font-semibold text-slate-900">Create invoice</h1><p className="text-xs text-slate-500">Saved invoices are available in the archive</p></div>
+            <div className="flex gap-2">{onSaved ? <button type="button" onClick={onSaved} className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">Archive</button> : <Link href="/invoices" className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">Archive</Link>}<Link href="/" className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">← Dashboard</Link></div>
+            <div><h1 className="font-semibold text-slate-900">{isEditing ? 'Edit invoice' : 'Create invoice'}</h1><p className="text-xs text-slate-500">{isEditing ? 'Changes are saved to this invoice' : 'Saved invoices are available in the archive'}</p></div>
           </div>
-          <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Save invoice</button>
+          <button type="submit" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">{isEditing ? 'Update invoice' : 'Save invoice'}</button>
         </div>
       </header>
 

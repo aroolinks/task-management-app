@@ -53,6 +53,39 @@ export function useInvoices() {
     }
   }, []);
 
+  const updateInvoice = useCallback(async (id: string, draft: InvoiceDraft): Promise<{ success: true; data: StoredInvoice } | { success: false; error: string }> => {
+    try {
+      const response = await fetch(`/api/invoices/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(draft),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { success: false, error: data.error || 'Could not update the invoice.' };
+      }
+
+      setInvoices((current) => current.map((invoice) => (invoice._id === id ? data.data : invoice)));
+      return { success: true, data: data.data };
+    } catch {
+      return { success: false, error: 'Could not update the invoice.' };
+    }
+  }, []);
+
+  const getInvoice = useCallback(async (id: string): Promise<{ success: true; data: StoredInvoice } | { success: false; error: string }> => {
+    try {
+      const response = await fetch(`/api/invoices/${id}`, { cache: 'no-store' });
+      const data = await response.json();
+      if (!response.ok) {
+        return { success: false, error: data.error || 'Could not load that invoice.' };
+      }
+      return { success: true, data: data.data };
+    } catch {
+      return { success: false, error: 'Could not load that invoice.' };
+    }
+  }, []);
+
   const deleteInvoice = useCallback(async (id: string): Promise<boolean> => {
     try {
       const response = await fetch(`/api/invoices/${id}`, { method: 'DELETE' });
@@ -77,6 +110,8 @@ export function useInvoices() {
     error,
     fetchInvoices,
     createInvoice,
+    updateInvoice,
+    getInvoice,
     deleteInvoice,
   };
 }

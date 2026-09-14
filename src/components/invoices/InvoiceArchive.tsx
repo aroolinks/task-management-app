@@ -9,7 +9,12 @@ import { downloadInvoicePdf } from '@/lib/invoices/pdf';
 import { formatMinor } from '@/lib/invoices/calculations';
 import InvoicePreview from './InvoicePreview';
 
-export default function InvoiceArchive() {
+interface InvoiceArchiveProps {
+  onCreateNew?: () => void;
+  onEdit?: (invoice: StoredInvoice) => void;
+}
+
+export default function InvoiceArchive({ onCreateNew, onEdit }: InvoiceArchiveProps = {}) {
   const { user, loading: authLoading } = useAuth();
   const { invoices, loading, error, fetchInvoices, deleteInvoice } = useInvoices();
   const [selected, setSelected] = useState<StoredInvoice | null>(null);
@@ -73,7 +78,11 @@ export default function InvoiceArchive() {
             <h1 className="mt-2 text-2xl font-bold text-slate-900">Invoice archive</h1>
             <p className="text-sm text-slate-500">{filteredInvoices.length} of {invoices.length} saved invoice{invoices.length === 1 ? '' : 's'}</p>
           </div>
-          <Link href="/invoices/new" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Create invoice</Link>
+          {onCreateNew ? (
+            <button type="button" onClick={onCreateNew} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Create invoice</button>
+          ) : (
+            <Link href="/invoices/new" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Create invoice</Link>
+          )}
         </header>
 
         <nav aria-label="Filter invoices by month" className="mb-6 overflow-x-auto rounded-xl border border-slate-200 bg-white p-2">
@@ -103,7 +112,7 @@ export default function InvoiceArchive() {
                       <td className="px-4 py-4">{invoice.draft.customer.name}</td>
                       <td className="px-4 py-4">{invoice.draft.issueDate}</td>
                       <td className="px-4 py-4 font-medium">{formatMinor(invoice.totals.totalMinor, invoice.draft.currency)}</td>
-                      <td className="px-4 py-4 text-right"><div className="flex justify-end gap-2"><button type="button" onClick={() => setViewing(invoice)} className="rounded-md border border-slate-200 px-3 py-1.5 font-medium hover:bg-slate-50">View</button><button type="button" onClick={() => printInvoice(invoice)} className="rounded-md border border-slate-200 px-3 py-1.5 font-medium hover:bg-slate-50">Print</button><button type="button" onClick={() => downloadPdf(invoice)} disabled={isDownloading} className="rounded-md bg-slate-900 px-3 py-1.5 font-medium text-white hover:bg-slate-800 disabled:opacity-50">PDF</button><button type="button" onClick={() => handleDelete(invoice)} className="rounded-md border border-red-200 px-3 py-1.5 font-medium text-red-700 hover:bg-red-50">Delete</button></div></td>
+                      <td className="px-4 py-4 text-right"><div className="flex justify-end gap-2"><button type="button" onClick={() => setViewing(invoice)} className="rounded-md border border-slate-200 px-3 py-1.5 font-medium hover:bg-slate-50">View</button>{onEdit ? <button type="button" onClick={() => onEdit(invoice)} className="rounded-md border border-slate-200 px-3 py-1.5 font-medium hover:bg-slate-50">Edit</button> : <Link href={`/invoices/new?edit=${invoice._id}`} className="rounded-md border border-slate-200 px-3 py-1.5 font-medium hover:bg-slate-50">Edit</Link>}<button type="button" onClick={() => printInvoice(invoice)} className="rounded-md border border-slate-200 px-3 py-1.5 font-medium hover:bg-slate-50">Print</button><button type="button" onClick={() => downloadPdf(invoice)} disabled={isDownloading} className="rounded-md bg-slate-900 px-3 py-1.5 font-medium text-white hover:bg-slate-800 disabled:opacity-50">PDF</button><button type="button" onClick={() => handleDelete(invoice)} className="rounded-md border border-red-200 px-3 py-1.5 font-medium text-red-700 hover:bg-red-50">Delete</button></div></td>
                     </tr>
                   ))}
                 </tbody>
@@ -128,6 +137,7 @@ export default function InvoiceArchive() {
                 <p className="text-xs text-slate-500">{viewing.draft.customer.name} · {viewing.draft.issueDate}</p>
               </div>
               <div className="flex gap-2">
+                {onEdit ? <button type="button" onClick={() => onEdit(viewing)} className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">Edit</button> : <Link href={`/invoices/new?edit=${viewing._id}`} className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">Edit</Link>}
                 <button type="button" onClick={() => printInvoice(viewing)} className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">Print</button>
                 <button type="button" onClick={() => downloadPdf(viewing)} disabled={isDownloading} className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50">{isDownloading ? 'Generating…' : 'PDF'}</button>
                 <button type="button" onClick={() => setViewing(null)} className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">Close</button>
