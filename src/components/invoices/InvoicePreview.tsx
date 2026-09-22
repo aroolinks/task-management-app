@@ -86,16 +86,7 @@ export default function InvoicePreview({ invoice, totals }: InvoicePreviewProps)
           </div>
         </div>
 
-        <footer className="mt-6 grid grid-cols-3 gap-6 border-t-2 border-slate-200 pt-4">
-          <div className="min-w-0">
-            <p className="mb-1 text-[1.05em] font-semibold text-slate-900">Company details</p>
-            <p className="font-medium text-slate-900">{invoice.seller.name || 'Company name'}</p>
-            {invoice.seller.addressLine1 && <p>{invoice.seller.addressLine1}</p>}
-            {invoice.seller.addressLine2 && <p>{invoice.seller.addressLine2}</p>}
-            {(invoice.seller.city || invoice.seller.postcode) && <p>{[invoice.seller.city, invoice.seller.postcode].filter(Boolean).join(', ')}</p>}
-            {invoice.seller.country && <p>{invoice.seller.country}</p>}
-            <p className="mt-1 text-slate-500"> METALOGICS SOLUTIONS LIMITED # 16977151</p>
-          </div>
+        <footer className="mt-6 grid grid-cols-2 gap-8 border-t-2 border-slate-200 pt-4">
           <div className="min-w-0">
             <p className="mb-1 text-[1.05em] font-semibold text-slate-900">Payment details</p>
             <p>{invoice.bankDetails.accountName || 'Account name'}</p>
