@@ -6,6 +6,7 @@ export interface StoredInvoice {
   invoiceNumber: string;
   draft: InvoiceDraft;
   totals: InvoiceTotals;
+  paid: boolean;
   createdAt: string;
 }
 
@@ -97,6 +98,25 @@ export function useInvoices() {
     }
   }, []);
 
+  const setInvoicePaid = useCallback(async (id: string, paid: boolean): Promise<boolean> => {
+    setInvoices((current) => current.map((invoice) => (invoice._id === id ? { ...invoice, paid } : invoice)));
+    try {
+      const response = await fetch(`/api/invoices/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paid }),
+      });
+      if (!response.ok) {
+        setInvoices((current) => current.map((invoice) => (invoice._id === id ? { ...invoice, paid: !paid } : invoice)));
+        return false;
+      }
+      return true;
+    } catch {
+      setInvoices((current) => current.map((invoice) => (invoice._id === id ? { ...invoice, paid: !paid } : invoice)));
+      return false;
+    }
+  }, []);
+
   const deleteInvoice = useCallback(async (id: string): Promise<boolean> => {
     try {
       const response = await fetch(`/api/invoices/${id}`, { method: 'DELETE' });
@@ -124,6 +144,7 @@ export function useInvoices() {
     updateInvoice,
     getInvoice,
     getNextInvoiceNumber,
+    setInvoicePaid,
     deleteInvoice,
   };
 }

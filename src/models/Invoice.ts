@@ -7,6 +7,7 @@ export interface IInvoice {
   draft: InvoiceDraft;
   totals: InvoiceTotals;
   createdBy: string;
+  paid: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -17,6 +18,7 @@ const InvoiceSchema = new mongoose.Schema<IInvoice>(
     draft: { type: mongoose.Schema.Types.Mixed, required: true },
     totals: { type: mongoose.Schema.Types.Mixed, required: true },
     createdBy: { type: String, required: true },
+    paid: { type: Boolean, default: false },
   },
   { timestamps: true, collection: 'invoices' },
 );

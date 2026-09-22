@@ -58,6 +58,27 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   }
 }
 
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireAdmin(request);
+  if (auth.response) return auth.response;
+
+  try {
+    const { id } = await params;
+    const body = await request.json();
+    if (typeof body.paid !== 'boolean') {
+      return NextResponse.json({ success: false, error: 'paid must be a boolean' }, { status: 400 });
+    }
+
+    await dbConnect();
+    const invoice = await Invoice.findByIdAndUpdate(id, { paid: body.paid }, { new: true });
+    if (!invoice) return NextResponse.json({ success: false, error: 'Invoice not found' }, { status: 404 });
+    return NextResponse.json({ success: true, data: invoice });
+  } catch (error) {
+    console.error('Error updating invoice paid status:', error);
+    return NextResponse.json({ success: false, error: 'Failed to update invoice' }, { status: 500 });
+  }
+}
+
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await verifyAuth(request);
   if (!user) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });

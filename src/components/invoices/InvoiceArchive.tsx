@@ -16,11 +16,11 @@ interface InvoiceArchiveProps {
 
 export default function InvoiceArchive({ onCreateNew, onEdit }: InvoiceArchiveProps = {}) {
   const { user, loading: authLoading } = useAuth();
-  const { invoices, loading, error, fetchInvoices, deleteInvoice } = useInvoices();
+  const { invoices, loading, error, fetchInvoices, deleteInvoice, setInvoicePaid } = useInvoices();
   const [selected, setSelected] = useState<StoredInvoice | null>(null);
   const [viewing, setViewing] = useState<StoredInvoice | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [monthFilter, setMonthFilter] = useState('all');
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -52,7 +52,7 @@ export default function InvoiceArchive({ onCreateNew, onEdit }: InvoiceArchivePr
 
   const downloadPdf = async (invoice: StoredInvoice) => {
     setSelected(invoice);
-    setIsDownloading(true);
+    setDownloadingId(invoice._id);
     setMessage(null);
     try {
       await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
@@ -61,7 +61,7 @@ export default function InvoiceArchive({ onCreateNew, onEdit }: InvoiceArchivePr
     } catch {
       setMessage('Could not generate the PDF. Please try again.');
     } finally {
-      setIsDownloading(false);
+      setDownloadingId(null);
     }
   };
 
@@ -104,7 +104,7 @@ export default function InvoiceArchive({ onCreateNew, onEdit }: InvoiceArchivePr
           <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[680px] text-left text-sm">
-                <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-4 py-3">Invoice</th><th className="px-4 py-3">Customer</th><th className="px-4 py-3">Issue date</th><th className="px-4 py-3">Total</th><th className="px-4 py-3 text-right">Actions</th></tr></thead>
+                <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-4 py-3">Invoice</th><th className="px-4 py-3">Customer</th><th className="px-4 py-3">Issue date</th><th className="px-4 py-3">Total</th><th className="px-4 py-3">Paid</th><th className="px-4 py-3 text-right">Actions</th></tr></thead>
                 <tbody className="divide-y divide-slate-100">
                   {filteredInvoices.map((invoice) => (
                     <tr key={invoice._id} className="text-slate-700">
@@ -112,7 +112,13 @@ export default function InvoiceArchive({ onCreateNew, onEdit }: InvoiceArchivePr
                       <td className="px-4 py-4">{invoice.draft.customer.name}</td>
                       <td className="px-4 py-4">{invoice.draft.issueDate}</td>
                       <td className="px-4 py-4 font-medium">{formatMinor(invoice.totals.totalMinor, invoice.draft.currency)}</td>
-                      <td className="px-4 py-4 text-right"><div className="flex justify-end gap-2"><button type="button" onClick={() => setViewing(invoice)} className="rounded-md border border-slate-200 px-3 py-1.5 font-medium hover:bg-slate-50">View</button>{onEdit ? <button type="button" onClick={() => onEdit(invoice)} className="rounded-md border border-slate-200 px-3 py-1.5 font-medium hover:bg-slate-50">Edit</button> : <Link href={`/invoices/new?edit=${invoice._id}`} className="rounded-md border border-slate-200 px-3 py-1.5 font-medium hover:bg-slate-50">Edit</Link>}<button type="button" onClick={() => printInvoice(invoice)} className="rounded-md border border-slate-200 px-3 py-1.5 font-medium hover:bg-slate-50">Print</button><button type="button" onClick={() => downloadPdf(invoice)} disabled={isDownloading} className="rounded-md bg-slate-900 px-3 py-1.5 font-medium text-white hover:bg-slate-800 disabled:opacity-50">PDF</button><button type="button" onClick={() => handleDelete(invoice)} className="rounded-md border border-red-200 px-3 py-1.5 font-medium text-red-700 hover:bg-red-50">Delete</button></div></td>
+                      <td className="px-4 py-4">
+                        <label className="inline-flex cursor-pointer items-center gap-2 select-none">
+                          <input type="checkbox" checked={invoice.paid} onChange={(event) => setInvoicePaid(invoice._id, event.target.checked)} className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
+                          <span className={invoice.paid ? 'font-medium text-emerald-700' : 'text-slate-400'}>{invoice.paid ? 'Paid' : 'Unpaid'}</span>
+                        </label>
+                      </td>
+                      <td className="px-4 py-4 text-right"><div className="flex justify-end gap-2"><button type="button" onClick={() => setViewing(invoice)} className="rounded-md border border-slate-200 px-3 py-1.5 font-medium hover:bg-slate-50">View</button>{onEdit ? <button type="button" onClick={() => onEdit(invoice)} className="rounded-md border border-slate-200 px-3 py-1.5 font-medium hover:bg-slate-50">Edit</button> : <Link href={`/invoices/new?edit=${invoice._id}`} className="rounded-md border border-slate-200 px-3 py-1.5 font-medium hover:bg-slate-50">Edit</Link>}<button type="button" onClick={() => printInvoice(invoice)} className="rounded-md border border-slate-200 px-3 py-1.5 font-medium hover:bg-slate-50">Print</button><button type="button" onClick={() => downloadPdf(invoice)} disabled={downloadingId === invoice._id} className="rounded-md bg-slate-900 px-3 py-1.5 font-medium text-white hover:bg-slate-800 disabled:opacity-50">{downloadingId === invoice._id ? '…' : 'PDF'}</button><button type="button" onClick={() => handleDelete(invoice)} className="rounded-md border border-red-200 px-3 py-1.5 font-medium text-red-700 hover:bg-red-50">Delete</button></div></td>
                     </tr>
                   ))}
                 </tbody>
@@ -136,11 +142,17 @@ export default function InvoiceArchive({ onCreateNew, onEdit }: InvoiceArchivePr
                 <p className="text-sm font-semibold text-slate-900">{viewing.invoiceNumber}</p>
                 <p className="text-xs text-slate-500">{viewing.draft.customer.name} · {viewing.draft.issueDate}</p>
               </div>
-              <div className="flex gap-2">
-                {onEdit ? <button type="button" onClick={() => onEdit(viewing)} className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">Edit</button> : <Link href={`/invoices/new?edit=${viewing._id}`} className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">Edit</Link>}
-                <button type="button" onClick={() => printInvoice(viewing)} className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">Print</button>
-                <button type="button" onClick={() => downloadPdf(viewing)} disabled={isDownloading} className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50">{isDownloading ? 'Generating…' : 'PDF'}</button>
-                <button type="button" onClick={() => setViewing(null)} className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">Close</button>
+              <div className="flex items-center gap-3">
+                <label className="inline-flex cursor-pointer items-center gap-2 select-none text-sm">
+                  <input type="checkbox" checked={viewing.paid} onChange={(event) => { setInvoicePaid(viewing._id, event.target.checked); setViewing((current) => (current ? { ...current, paid: event.target.checked } : current)); }} className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
+                  <span className={viewing.paid ? 'font-medium text-emerald-700' : 'text-slate-400'}>{viewing.paid ? 'Paid' : 'Unpaid'}</span>
+                </label>
+                <div className="flex gap-2">
+                  {onEdit ? <button type="button" onClick={() => onEdit(viewing)} className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">Edit</button> : <Link href={`/invoices/new?edit=${viewing._id}`} className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">Edit</Link>}
+                  <button type="button" onClick={() => printInvoice(viewing)} className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">Print</button>
+                  <button type="button" onClick={() => downloadPdf(viewing)} disabled={downloadingId === viewing._id} className="rounded-md bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50">{downloadingId === viewing._id ? 'Generating…' : 'PDF'}</button>
+                  <button type="button" onClick={() => setViewing(null)} className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">Close</button>
+                </div>
               </div>
             </div>
             <InvoicePreview invoice={viewing.draft} totals={viewing.totals} />
