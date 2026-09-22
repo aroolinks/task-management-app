@@ -48,7 +48,7 @@ export function createInvoiceLineItem(): InvoiceLineItem {
 
 export function createCompanyParty(): InvoiceParty {
   return {
-    name: 'Metalogics',
+    name: 'Metalogics Solutions Ltd',
     email: 'work@metalogics.io',
     addressLine1: '51 Lonwood Avenue',
     addressLine2: '',
@@ -76,7 +76,7 @@ export function createInvoiceDraft(defaults?: Partial<InvoiceDefaults> | null): 
   return {
     invoiceNumber: `INV-${issueDate.replaceAll('-', '')}`,
     issueDate,
-    dueDate: localIsoDateAfterDays(30),
+    dueDate: localIsoDateAfterDays(14),
     currency: 'GBP',
     seller: createCompanyParty(),
     customer: createInvoiceParty(),
@@ -84,7 +84,7 @@ export function createInvoiceDraft(defaults?: Partial<InvoiceDefaults> | null): 
     discount: { type: 'none', value: 0 },
     amountPaidMinor: 0,
     notes: defaults?.notes ?? '',
-    paymentTerms: defaults?.paymentTerms ?? 'Payment is due within 30 days. Please use the invoice number as your payment reference.',
+    paymentTerms: defaults?.paymentTerms ?? 'Payment is due within 14 days. Please use the invoice number as your payment reference.',
     bankDetails: selectedBankAccount?.details ?? { accountName: '', bankName: '', sortCode: '', accountNumber: '' },
   };
 }

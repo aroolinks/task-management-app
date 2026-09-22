@@ -86,6 +86,17 @@ export function useInvoices() {
     }
   }, []);
 
+  const getNextInvoiceNumber = useCallback(async (): Promise<string | null> => {
+    try {
+      const response = await fetch('/api/invoices/next-number', { cache: 'no-store' });
+      const data = await response.json();
+      if (!response.ok || !data.success) return null;
+      return data.data.invoiceNumber as string;
+    } catch {
+      return null;
+    }
+  }, []);
+
   const deleteInvoice = useCallback(async (id: string): Promise<boolean> => {
     try {
       const response = await fetch(`/api/invoices/${id}`, { method: 'DELETE' });
@@ -112,6 +123,7 @@ export function useInvoices() {
     createInvoice,
     updateInvoice,
     getInvoice,
+    getNextInvoiceNumber,
     deleteInvoice,
   };
 }

@@ -28,11 +28,12 @@ interface InvoiceFormProps {
 export default function InvoiceForm({ invoiceId, initialDraft, onSaved }: InvoiceFormProps) {
   const isEditing = Boolean(invoiceId);
   const { clients } = useClients();
-  const { createInvoice, updateInvoice } = useInvoices();
+  const { createInvoice, updateInvoice, getNextInvoiceNumber } = useInvoices();
   const [savedDefaults] = useState(() => loadInvoiceDefaults());
   const [bankAccounts, setBankAccounts] = useState<SavedBankAccount[]>(() => getSavedBankAccounts(savedDefaults));
   const [selectedBankAccountId, setSelectedBankAccountId] = useState(() => savedDefaults?.selectedBankAccountId ?? getSavedBankAccounts(savedDefaults)[0]?.id ?? '');
   const [invoice, setInvoice] = useState<InvoiceDraft>(() => initialDraft ?? createInvoiceDraft({ ...savedDefaults, bankAccounts, selectedBankAccountId }));
+  const autoInvoiceNumberRef = useRef(invoice.invoiceNumber);
   const [isAddingBank, setIsAddingBank] = useState(false);
   const [newBank, setNewBank] = useState<InvoiceBankDetails>({ accountName: 'Metalogics Solutions Limited', bankName: '', sortCode: '', accountNumber: '' });
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -50,6 +51,21 @@ export default function InvoiceForm({ invoiceId, initialDraft, onSaved }: Invoic
       notes: invoice.notes,
     });
   }, [invoice.seller, invoice.bankDetails, invoice.paymentTerms, invoice.notes, bankAccounts, selectedBankAccountId]);
+
+  useEffect(() => {
+    if (isEditing) return;
+    let cancelled = false;
+    getNextInvoiceNumber().then((nextNumber) => {
+      if (cancelled || !nextNumber) return;
+      setInvoice((current) => {
+        if (current.invoiceNumber !== autoInvoiceNumberRef.current) return current;
+        autoInvoiceNumberRef.current = nextNumber;
+        return { ...current, invoiceNumber: nextNumber };
+      });
+    });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const selectBankAccount = (accountId: string) => {
     const account = bankAccounts.find((candidate) => candidate.id === accountId);
