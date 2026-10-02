@@ -36,9 +36,12 @@ export async function downloadInvoicePdf(element: HTMLElement, filename: string)
     element.style.maxWidth = previousMaxWidth;
   }
 
-  const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+  const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true });
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
-  pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, pageWidth, pageHeight);
+  // JPEG instead of PNG: the rendered page is lossless pixel data (text edges,
+  // subtle antialiasing noise) that PNG compresses poorly, often 5MB+. JPEG at
+  // high quality is visually indistinguishable here and a fraction of the size.
+  pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, pageWidth, pageHeight, undefined, 'FAST');
   pdf.save(filename);
 }
